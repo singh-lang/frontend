@@ -1,0 +1,14 @@
+# *
+User-agent: *
+Allow: /
+
+# *
+User-agent: *
+Disallow: /admin
+Disallow: /dashboard
+
+# Host
+Host: https://thedrivehub.com
+
+# Sitemaps
+Sitemap: https://thedrivehub.com/sitemap.xml

@@ -1,0 +1,44 @@
+{
+  "compilerOptions": {
+    "noImplicitAny": false,
+    "target": "ESNext",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@/app/*": ["src/app/*"],
+      "@/components/*": ["src/components/*"],
+      "@/styles/*": ["src/styles/*"],
+      "@/types/*": ["src/types/*"],
+      "@/public/*": ["public/*"],
+      "@/server/*": ["src/server/*"],
+      "@/lib/*": ["src/lib/*"]
+    },
+
+    "plugins": [{ "name": "next" }]
+  },
+  "include": [
+    "src",
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "src/app/loading.tsx",
+    "scripts/bump-version.js",
+    "next-auth.d.ts"
+  ],
+  "exclude": ["node_modules"]
+}

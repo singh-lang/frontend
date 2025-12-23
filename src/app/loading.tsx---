@@ -1,0 +1,63 @@
+"use client";
+
+import Image from "next/image";
+import { useEffect, useState } from "react";
+
+const Loading = () => {
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    const duration = 2000;
+    const steps = 60;
+    const increment = 100 / steps;
+    const stepDuration = duration / steps;
+
+    let currentProgress = 0;
+    const interval = setInterval(() => {
+      currentProgress += increment;
+      // if (currentProgress >= 100) {
+      //   currentProgress = 100;
+      //   clearInterval(interval);
+      //   setTimeout(() => {
+      //     onLoadingComplete();
+      //   }, 300);
+      // }
+      setProgress(currentProgress);
+    }, stepDuration);
+
+    return () => clearInterval(interval);
+  }, []);
+  return (
+    <div className="fixed inset-0 bg-dark-base z-50 flex flex-col items-center justify-center">
+      <div className="text-center animate-fade-in">
+        <Image
+          src="/assets/dlogo.png"
+          alt="DriveHub"
+          className="w-48 h-auto mx-auto mb-12 animate-pulse"
+          style={{
+            animation: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+          }}
+          height={100}
+          width={100}
+        />
+
+        <div className="w-64 mx-auto">
+          <div className="h-1 bg-dark-lighter rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-accent to-slate-teal transition-all duration-100 ease-out rounded-full"
+              style={{
+                width: `${progress}%`,
+                boxShadow: "0 0 20px rgba(20, 184, 166, 0.5)",
+              }}
+            />
+          </div>
+          <p className="text-grey text-sm mt-4 font-medium">
+            Loading your premium experience...
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Loading;
