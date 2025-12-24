@@ -38,7 +38,8 @@
     ".next/types/**/*.ts",
     "src/app/loading.tsx",
     "scripts/bump-version.js",
-    "next-auth.d.ts"
+    "next-auth.d.ts",
+    "next.config.js"
   ],
   "exclude": ["node_modules"]
 }
