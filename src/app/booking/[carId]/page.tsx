@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { CheckCircle2, Truck, Store } from "lucide-react";
 import { toast } from "sonner";
+import DatePicker from "@/components/ui/datePicker";
 
 import {
   useCalculateBookingMutation,
@@ -44,6 +45,7 @@ export default function BookingPage() {
   /* ---------------- FORM STATE ---------------- */
   const [priceType, setPriceType] = useState<PriceType>("daily");
   const [canPay, setCanPay] = useState(false);
+  const [addonsOpen, setAddonsOpen] = useState(false);
 
   const [pickupDate, setPickupDate] = useState("");
   const [pickupTime, setPickupTime] = useState("10:00");
@@ -107,12 +109,18 @@ export default function BookingPage() {
   const baseAmount = calc?.totalAmount ?? 0;
   const deliveryFee = calc?.deliveryCharges ?? 0;
 
-  const frontendTotal = baseAmount + deliveryFee + addonsTotal;
+  // Pay-now eligible amount
+  const payableNowBase = baseAmount + deliveryFee;
 
+  // Full booking total
+  const frontendTotal = payableNowBase + addonsTotal;
+
+  // Pay now (NO add-ons)
   const frontendPayNow = calc
-    ? Math.round((frontendTotal * calc.prepaymentPercent) / 100)
+    ? Math.round((payableNowBase * calc.prepaymentPercent) / 100)
     : 0;
 
+  // Pay later (includes add-ons)
   const frontendPayLater = frontendTotal - frontendPayNow;
 
   /* ---------------- ACTIONS ---------------- */
@@ -332,21 +340,26 @@ export default function BookingPage() {
             </div>
 
             {/* Dates & Time */}
+            {/* Dates & Time */}
             <div className={card}>
               <p className={sectionTitle}>Dates & Time</p>
 
               <div className="grid grid-cols-2 gap-3">
+                {/* Pickup Date */}
                 <div>
                   <label className={fieldLabel}>Pickup Date</label>
-                  <input
-                    type="date"
-                    min={today}
-                    value={pickupDate}
-                    onChange={(e) => setPickupDate(e.target.value)}
-                    className={inputBase}
+                  <DatePicker
+                    value={pickupDate ? new Date(pickupDate) : undefined}
+                    minDate={new Date()}
+                    onChange={(date) =>
+                      setPickupDate(
+                        date ? date.toISOString().split("T")[0] : ""
+                      )
+                    }
                   />
                 </div>
 
+                {/* Pickup Time (unchanged) */}
                 <div>
                   <label className={fieldLabel}>Pickup Time</label>
                   <input
@@ -357,17 +370,21 @@ export default function BookingPage() {
                   />
                 </div>
 
+                {/* Dropoff Date */}
                 <div>
                   <label className={fieldLabel}>Dropoff Date</label>
-                  <input
-                    type="date"
-                    min={pickupDate || today}
-                    value={dropoffDate}
-                    onChange={(e) => setDropoffDate(e.target.value)}
-                    className={inputBase}
+                  <DatePicker
+                    value={dropoffDate ? new Date(dropoffDate) : undefined}
+                    minDate={pickupDate ? new Date(pickupDate) : new Date()}
+                    onChange={(date) =>
+                      setDropoffDate(
+                        date ? date.toISOString().split("T")[0] : ""
+                      )
+                    }
                   />
                 </div>
 
+                {/* Dropoff Time (unchanged) */}
                 <div>
                   <label className={fieldLabel}>Dropoff Time</label>
                   <input
@@ -379,60 +396,86 @@ export default function BookingPage() {
                 </div>
               </div>
             </div>
-
             {/* Add-ons */}
             <div className={card}>
+              {/* HEADER (TOGGLE) */}
+              {/* HEADER WITH TOGGLE */}
               <div className="flex items-center justify-between mb-4">
-                <p className="font-semibold text-dark-base">Add-ons</p>
-                <p className="text-xs text-grey">
-                  {addonsTotal > 0
-                    ? `AED ${formatMoney(addonsTotal)}`
-                    : "Optional"}
-                </p>
+                <div>
+                  <p className="font-semibold text-dark-base">Add-ons</p>
+                  <p className="text-xs text-grey">
+                    {addonsTotal > 0
+                      ? `AED ${formatMoney(addonsTotal)}`
+                      : "Optional"}
+                  </p>
+                </div>
+
+                {/* TOGGLE SWITCH */}
+                <button
+                  type="button"
+                  onClick={() => setAddonsOpen((prev) => !prev)}
+                  className={`
+      relative w-11 h-6 rounded-full transition-colors
+      ${addonsOpen ? "bg-site-accent" : "bg-gray-300"}
+    `}
+                >
+                  <span
+                    className={`
+        absolute top-0.5 left-0.5
+        h-5 w-5 rounded-full bg-white shadow-sm
+        transition-transform
+        ${addonsOpen ? "translate-x-5" : ""}
+      `}
+                  />
+                </button>
               </div>
 
-              <div className="space-y-2">
-                {Object.entries(ADDONS).map(([key, item]) => {
-                  type AddonKey = keyof typeof ADDONS;
+              {/* BODY */}
+              {addonsOpen && (
+                <div className="space-y-2">
+                  {Object.entries(ADDONS).map(([key, item]) => {
+                    type AddonKey = keyof typeof ADDONS;
 
-                  const map: Record<
-                    AddonKey,
-                    [boolean, React.Dispatch<React.SetStateAction<boolean>>]
-                  > = {
-                    childSeat: [childSeat, setChildSeat],
-                    babySeat: [babySeat, setBabySeat],
-                    gps: [gps, setGps],
-                    additionalDriver: [additionalDriver, setAdditionalDriver],
-                  };
+                    const map: Record<
+                      AddonKey,
+                      [boolean, React.Dispatch<React.SetStateAction<boolean>>]
+                    > = {
+                      childSeat: [childSeat, setChildSeat],
+                      babySeat: [babySeat, setBabySeat],
+                      gps: [gps, setGps],
+                      additionalDriver: [additionalDriver, setAdditionalDriver],
+                    };
 
-                  const [checked, setter] = map[key];
+                    const [checked, setter] = map[key as AddonKey];
 
-                  return (
-                    <label
-                      key={key}
-                      className={`flex justify-between items-center rounded-2xl p-4 transition cursor-pointer ${
-                        checked
-                          ? "bg-site-accent/5"
-                          : "bg-soft-grey/30 hover:bg-soft-grey/45"
-                      }`}
-                    >
-                      <div>
-                        <p className="font-medium text-sm text-dark-base">
-                          {item.label}
-                        </p>
-                        <p className="text-xs text-grey">AED {item.price}</p>
-                      </div>
+                    return (
+                      <label
+                        key={key}
+                        className={`flex justify-between items-center rounded-2xl p-4 transition cursor-pointer ${
+                          checked
+                            ? "bg-site-accent/5"
+                            : "bg-soft-grey/30 hover:bg-soft-grey/45"
+                        }`}
+                      >
+                        <div>
+                          <p className="font-medium text-sm text-dark-base">
+                            {item.label}
+                          </p>
+                          <p className="text-xs text-grey">AED {item.price}</p>
+                        </div>
 
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={(e) => setter(e.target.checked)}
-                        className="h-5 w-5 accent-[var(--site-accent)]"
-                      />
-                    </label>
-                  );
-                })}
-              </div>
+                        {/* CHECKBOX (UNCHANGED) */}
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) => setter(e.target.checked)}
+                          className="h-5 w-5 accent-[var(--site-accent)]"
+                        />
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Your details */}
@@ -622,13 +665,15 @@ export default function BookingPage() {
 
                 {/* Pay Now */}
                 <div className="flex justify-between text-site-accent font-bold">
-                  <span>Pay Now ({calc?.prepaymentPercent || 0}%)</span>
+                  <span>To Book Pay Now</span>
                   <span>AED {formatMoney(frontendPayNow)}</span>
                 </div>
 
                 {/* Pay Later */}
                 <div className="flex justify-between text-xs">
-                  <span className="text-grey">Pay Later</span>
+                  <span className="text-grey">
+                    Pay This at the time of handover
+                  </span>
                   <span className="font-semibold">
                     AED {formatMoney(frontendPayLater)}
                   </span>
@@ -638,17 +683,17 @@ export default function BookingPage() {
                 <div className="flex gap-2 text-xs text-grey pt-3">
                   <CheckCircle2 className="text-site-accent w-4 h-4 mt-0.5" />
                   <p>
-                    You’ll pay only the partial amount now. Remaining will be
-                    handled after vendor approval.
+                    You’ll pay only the booking amount now. Remaining will be
+                    paid at the time of delivery/pickup.
                   </p>
                 </div>
               </div>
 
-              {!calc && (
+              {/* {!calc && (
                 <p className="text-xs text-grey text-center mt-4">
                   Calculate price to see full summary
                 </p>
-              )}
+              )} */}
             </div>
           </div>
         </div>
