@@ -3,7 +3,7 @@
 @import "swiper/css";
 @import "swiper/css/navigation";
 @import "swiper/css/pagination";
-
+@import "react-datepicker/dist/react-datepicker.css";
 @config "../../tailwind.config.ts";
 
 /* @custom-variant dark (&:is(.dark *));
@@ -251,4 +251,55 @@ button,
   top: 0;
   left: 0;
   z-index: 9999;
+}
+.react-datepicker {
+  border-radius: 16px;
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.15);
+  font-family: inherit;
+  border: none;
+  overflow: hidden;
+  z-index: 9999;
+}
+
+/* Header background */
+.react-datepicker__header {
+  background: linear-gradient(to right, #0f766dc4, #2564ebb4);
+  border-bottom: none;
+}
+
+/* Month & day names */
+.react-datepicker__current-month,
+.react-datepicker__day-name {
+  color: white;
+  font-weight: 600;
+}
+
+/* Navigation arrows */
+.react-datepicker__navigation-icon::before {
+  border-color: white;
+}
+
+/* Normal day */
+.react-datepicker__day {
+  border-radius: 8px;
+  transition: 0.2s;
+}
+
+/* Hover */
+.react-datepicker__day:hover {
+  background-color: rgba(37, 99, 235, 0.15);
+}
+
+/* Selected day */
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+  background-color: linear-gradient(to right, #0f766dc4, #2564ebb4);
+  color: white;
+  border-radius: 10px;
+}
+
+/* Today */
+.react-datepicker__day--today {
+  font-weight: bold;
+  color: linear-gradient(to right, #59787c, #2564eb);
 }
