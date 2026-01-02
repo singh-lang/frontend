@@ -10,6 +10,7 @@ import {
   useCalculateBookingMutation,
   useCreateBookingMutation,
 } from "@/lib/api/booking";
+import { useCalculatePickupReturnMutation } from "@/lib/api/pickupReturnApi";
 
 /* ================= TYPES ================= */
 
@@ -56,8 +57,19 @@ export default function BookingPage() {
   const [guestName, setGuestName] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
 
-  const [deliveryRequired, setDeliveryRequired] = useState(false);
   const [address, setAddress] = useState("");
+
+  // NEW – Pickup / Return (Yango style)
+  const [pickupType, setPickupType] = useState<"PICKUP" | "DELIVERY">("PICKUP");
+
+  const [returnType, setReturnType] = useState<"DROPOFF" | "RETURN">("DROPOFF");
+
+  const [emirateId, setEmirateId] = useState<string>("");
+
+  const [pickupReturnCharges, setPickupReturnCharges] = useState({
+    pickup: 0,
+    return: 0,
+  });
 
   /* ---------------- ADDONS ---------------- */
   const [childSeat, setChildSeat] = useState(false);
@@ -67,6 +79,7 @@ export default function BookingPage() {
 
   /* ---------------- BACKEND ---------------- */
   const [calc, setCalc] = useState<BookingCalculation | null>(null);
+  const [calculatePickupReturn] = useCalculatePickupReturnMutation();
 
   const [calculateBooking, { isLoading: calcLoading }] =
     useCalculateBookingMutation();
@@ -80,7 +93,25 @@ export default function BookingPage() {
     Number.isFinite(n) ? Math.round(n).toLocaleString() : "0";
 
   const hhmmValid = (t: string) => /^\d{2}:\d{2}$/.test(t);
+  const loadPickupReturnCharges = async () => {
+    if (!carId || !emirateId) return;
 
+    try {
+      const res = await calculatePickupReturn({
+        carId,
+        emirateId,
+        pickupType,
+        returnType,
+      }).unwrap();
+
+      setPickupReturnCharges({
+        pickup: res.pickupCharge || 0,
+        return: res.returnCharge || 0,
+      });
+    } catch (err) {
+      console.error("Pickup/Return pricing failed", err);
+    }
+  };
   const validateForm = (): string | null => {
     if (!pickupDate) return "Pickup date is required";
     if (!dropoffDate) return "Dropoff date is required";
@@ -88,11 +119,17 @@ export default function BookingPage() {
       return "Pickup time must be HH:mm";
     if (!dropoffTime || !hhmmValid(dropoffTime))
       return "Dropoff time must be HH:mm";
-    if (deliveryRequired && !address.trim())
+
+    if (pickupType === "DELIVERY" && !address.trim())
       return "Delivery address is required";
+
+    if ((pickupType === "DELIVERY" || returnType === "RETURN") && !emirateId)
+      return "Please select emirate for delivery/return pricing";
+
     if (!guestName.trim()) return "Full name is required";
     if (!guestPhone.trim()) return "Phone number is required";
     if (!guestEmail.trim()) return "Email address is required";
+
     return null;
   };
 
@@ -106,29 +143,45 @@ export default function BookingPage() {
     return total;
   }, [childSeat, babySeat, gps, additionalDriver]);
 
-  const baseAmount = calc?.totalAmount ?? 0;
-  const deliveryFee = calc?.deliveryCharges ?? 0;
+  const rentalAmount = calc?.totalAmount ?? 0;
+  const pickupFee = pickupReturnCharges.pickup;
+  const returnFee = pickupReturnCharges.return;
 
-  // Pay-now eligible amount
-  const payableNowBase = baseAmount + deliveryFee;
+  // ✅ FULL TOTAL (rental + delivery + addons)
+  const frontendTotal = rentalAmount + pickupFee + returnFee + addonsTotal;
 
-  // Full booking total
-  const frontendTotal = payableNowBase + addonsTotal;
-
-  // Pay now (NO add-ons)
+  // ✅ PAY NOW = RENTAL ONLY
   const frontendPayNow = calc
-    ? Math.round((payableNowBase * calc.prepaymentPercent) / 100)
+    ? Math.round((rentalAmount * calc.prepaymentPercent) / 100)
     : 0;
 
-  // Pay later (includes add-ons)
+  // ✅ PAY LATER = EVERYTHING ELSE
   const frontendPayLater = frontendTotal - frontendPayNow;
 
+  useEffect(() => {
+    loadPickupReturnCharges();
+  }, [pickupType, returnType, emirateId]);
   /* ---------------- ACTIONS ---------------- */
   const handleCalculate = async () => {
     const err = validateForm();
     if (err) return toast.error(err);
 
     try {
+      // ✅ STEP 1: Get pickup/return charges FIRST
+      const pricing = await calculatePickupReturn({
+        carId,
+        emirateId,
+        pickupType,
+        returnType,
+      }).unwrap();
+
+      // ✅ STEP 2: Set charges synchronously
+      setPickupReturnCharges({
+        pickup: pricing.pickupCharge || 0,
+        return: pricing.returnCharge || 0,
+      });
+
+      // ✅ STEP 3: Calculate rental (rent ONLY)
       const res = await calculateBooking({
         carId,
         pickupDate,
@@ -136,8 +189,8 @@ export default function BookingPage() {
         dropoffDate,
         dropoffTime,
         priceType,
-        deliveryRequired,
-        address: deliveryRequired ? address : undefined,
+        deliveryRequired: pickupType === "DELIVERY" || returnType === "RETURN",
+        address: pickupType === "DELIVERY" ? address : undefined,
       }).unwrap();
 
       setCalc(res?.data ?? null);
@@ -162,16 +215,19 @@ export default function BookingPage() {
         dropoffDate,
         dropoffTime,
         priceType,
-        deliveryRequired,
-        address: deliveryRequired ? address : undefined,
+        pickupType,
+        returnType,
+        emirateId,
+        deliveryRequired: pickupType === "DELIVERY" || returnType === "RETURN",
+        address: pickupType === "DELIVERY" ? address : undefined,
         guestName,
         guestPhone,
         guestEmail,
-        totalAmount: frontendTotal,
+        totalAmount: calc.totalAmount,
         prepaymentPercent: calc.prepaymentPercent,
         prepaymentAmount: frontendPayNow,
         remainingAmount: frontendPayLater,
-      }).unwrap();
+      }).unwrap(); // ✅ REQUIRED
 
       const bookingId = res?.data?._id;
       if (!bookingId) return toast.error("Booking created but ID missing");
@@ -187,15 +243,8 @@ export default function BookingPage() {
   useEffect(() => {
     setCalc(null);
     setCanPay(false);
-  }, [
-    pickupDate,
-    pickupTime,
-    dropoffDate,
-    dropoffTime,
-    priceType,
-    deliveryRequired,
-    address,
-  ]);
+    setPickupReturnCharges({ pickup: 0, return: 0 }); // ✅ ADD THIS
+  }, [pickupDate, pickupTime, dropoffDate, dropoffTime, priceType, address]);
 
   // Premium UI tokens
   const card = "bg-white rounded-2xl p-5 shadow-[0_10px_40px_rgba(0,0,0,0.05)]";
@@ -248,26 +297,52 @@ export default function BookingPage() {
                 ))}
               </div>
             </div>
+            {/* Emirate */}
+            {(pickupType === "DELIVERY" || returnType === "RETURN") && (
+              <div className={card}>
+                <p className={sectionTitle}>Emirate</p>
 
-            {/* Pickup / Delivery */}
+                <select
+                  className={inputBase}
+                  value={emirateId}
+                  onChange={(e) => setEmirateId(e.target.value)}
+                >
+                  <option value="">Select Emirate</option>
+
+                  <option value="6953ce30ad7fb6b0b43ee72c">Dubai</option>
+                  <option value="6953ce30ad7fb6b0b43ee729">Abu Dhabi</option>
+                  <option value="6953ce31ad7fb6b0b43ee72f">Sharjah</option>
+                  <option value="6953ce31ad7fb6b0b43ee732">Ajman</option>
+                  <option value="6953ce32ad7fb6b0b43ee735">
+                    Umm Al Quwain
+                  </option>
+                  <option value="6953ce32ad7fb6b0b43ee738">
+                    Ras Al Khaimah
+                  </option>
+                  <option value="6953ce33ad7fb6b0b43ee73b">Fujairah</option>
+                </select>
+              </div>
+            )}
+
+            {/* Pickup */}
             <div className={card}>
-              <p className={sectionTitle}>Pickup Method</p>
+              <p className={sectionTitle}>Pickup</p>
 
               <div className="grid grid-cols-2 gap-4">
-                {/* Pickup */}
+                {/* PICKUP – FREE */}
                 <button
                   type="button"
-                  onClick={() => setDeliveryRequired(false)}
+                  onClick={() => setPickupType("PICKUP")}
                   className={`relative rounded-2xl p-4 text-left transition ${
-                    !deliveryRequired
+                    pickupType === "PICKUP"
                       ? "bg-site-accent/5"
                       : "bg-soft-grey/30 hover:bg-soft-grey/45"
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <div
-                      className={`flex h-11 w-11 items-center justify-center rounded-full transition ${
-                        !deliveryRequired
+                      className={`flex h-11 w-11 items-center justify-center rounded-full ${
+                        pickupType === "PICKUP"
                           ? "bg-site-accent text-white"
                           : "bg-white text-dark-base shadow-sm"
                       }`}
@@ -276,33 +351,31 @@ export default function BookingPage() {
                     </div>
                     <div>
                       <p className="font-semibold text-sm text-dark-base">
-                        Pickup
+                        Pickup from vendor
                       </p>
-                      <p className="text-xs text-grey">
-                        Collect from vendor location
-                      </p>
+                      <p className="text-xs text-grey">Free</p>
                     </div>
                   </div>
 
-                  {!deliveryRequired && (
+                  {pickupType === "PICKUP" && (
                     <div className="absolute right-3 top-3 h-2.5 w-2.5 rounded-full bg-site-accent" />
                   )}
                 </button>
 
-                {/* Delivery */}
+                {/* DELIVERY – PAID */}
                 <button
                   type="button"
-                  onClick={() => setDeliveryRequired(true)}
+                  onClick={() => setPickupType("DELIVERY")}
                   className={`relative rounded-2xl p-4 text-left transition ${
-                    deliveryRequired
+                    pickupType === "DELIVERY"
                       ? "bg-site-accent/5"
                       : "bg-soft-grey/30 hover:bg-soft-grey/45"
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <div
-                      className={`flex h-11 w-11 items-center justify-center rounded-full transition ${
-                        deliveryRequired
+                      className={`flex h-11 w-11 items-center justify-center rounded-full ${
+                        pickupType === "DELIVERY"
                           ? "bg-site-accent text-white"
                           : "bg-white text-dark-base shadow-sm"
                       }`}
@@ -311,21 +384,20 @@ export default function BookingPage() {
                     </div>
                     <div>
                       <p className="font-semibold text-sm text-dark-base">
-                        Delivery
+                        Delivery to address
                       </p>
-                      <p className="text-xs text-grey">
-                        Delivered to your address
-                      </p>
+                      <p className="text-xs text-grey">Paid (by emirate)</p>
                     </div>
                   </div>
 
-                  {deliveryRequired && (
+                  {pickupType === "DELIVERY" && (
                     <div className="absolute right-3 top-3 h-2.5 w-2.5 rounded-full bg-site-accent" />
                   )}
                 </button>
               </div>
 
-              {deliveryRequired && (
+              {/* ADDRESS ONLY WHEN DELIVERY */}
+              {pickupType === "DELIVERY" && (
                 <div className="mt-4">
                   <label className={fieldLabel}>Delivery Address</label>
                   <textarea
@@ -337,6 +409,53 @@ export default function BookingPage() {
                   />
                 </div>
               )}
+            </div>
+
+            {/* Return */}
+            <div className={card}>
+              <p className={sectionTitle}>Return</p>
+
+              <div className="grid grid-cols-2 gap-4">
+                {/* DROPOFF – FREE */}
+                <button
+                  type="button"
+                  onClick={() => setReturnType("DROPOFF")}
+                  className={`relative rounded-2xl p-4 text-left transition ${
+                    returnType === "DROPOFF"
+                      ? "bg-site-accent/5"
+                      : "bg-soft-grey/30 hover:bg-soft-grey/45"
+                  }`}
+                >
+                  <p className="font-semibold text-sm text-dark-base">
+                    Dropoff to vendor
+                  </p>
+                  <p className="text-xs text-grey">Free</p>
+
+                  {returnType === "DROPOFF" && (
+                    <div className="absolute right-3 top-3 h-2.5 w-2.5 rounded-full bg-site-accent" />
+                  )}
+                </button>
+
+                {/* RETURN – PAID */}
+                <button
+                  type="button"
+                  onClick={() => setReturnType("RETURN")}
+                  className={`relative rounded-2xl p-4 text-left transition ${
+                    returnType === "RETURN"
+                      ? "bg-site-accent/5"
+                      : "bg-soft-grey/30 hover:bg-soft-grey/45"
+                  }`}
+                >
+                  <p className="font-semibold text-sm text-dark-base">
+                    Vendor collects car
+                  </p>
+                  <p className="text-xs text-grey">Paid (by emirate)</p>
+
+                  {returnType === "RETURN" && (
+                    <div className="absolute right-3 top-3 h-2.5 w-2.5 rounded-full bg-site-accent" />
+                  )}
+                </button>
+              </div>
             </div>
 
             {/* Dates & Time */}
@@ -620,11 +739,17 @@ export default function BookingPage() {
                 <div className="flex justify-between">
                   <span className="text-grey">Method</span>
                   <span className="font-semibold">
-                    {deliveryRequired ? "Delivery" : "Pickup"}
+                    {pickupType === "DELIVERY" && returnType === "RETURN"
+                      ? "Delivery + Return"
+                      : pickupType === "DELIVERY"
+                      ? "Delivery"
+                      : returnType === "RETURN"
+                      ? "Pickup + Return"
+                      : "Pickup"}
                   </span>
                 </div>
 
-                {deliveryRequired && address && (
+                {pickupType === "DELIVERY" && address && (
                   <div className="text-xs text-grey bg-soft-grey/30 rounded-xl p-2">
                     {address}
                   </div>
@@ -638,11 +763,20 @@ export default function BookingPage() {
                       AED {formatMoney(calc?.totalAmount || 0)}
                     </span>
                   </div>
-                  {(calc?.deliveryCharges ?? 0) > 0 && (
+                  {pickupReturnCharges.pickup > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-grey">Delivery Fee</span>
+                      <span className="text-grey">Pickup charge</span>
                       <span className="font-semibold">
-                        AED {formatMoney(calc?.deliveryCharges ?? 0)}
+                        AED {formatMoney(pickupReturnCharges.pickup)}
+                      </span>
+                    </div>
+                  )}
+
+                  {pickupReturnCharges.return > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-grey">Return charge</span>
+                      <span className="font-semibold">
+                        AED {formatMoney(pickupReturnCharges.return)}
                       </span>
                     </div>
                   )}
