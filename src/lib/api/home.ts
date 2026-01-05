@@ -5,14 +5,14 @@ export const fetchCategoryListings = async () => {
     const res = await fetch(
       `${process.env.NEXT_PUBLIC_BASE_URL}/home-page/categoryListings`,
       {
-        next: { revalidate: 480 },
+        cache: "no-store", // ✅ IMPORTANT
       }
     );
-    if (res.status === 404) {
-    }
+
     if (!res.ok) {
       throw new Error(`Failed to fetch listings. Status: ${res.status}`);
     }
+
     return res.json();
   } catch (err) {
     console.error("Fetch error:", err);
