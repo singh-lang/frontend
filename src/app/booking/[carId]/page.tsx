@@ -5,14 +5,13 @@ import { useParams, useRouter } from "next/navigation";
 import { CheckCircle2, Truck, Store } from "lucide-react";
 import { toast } from "sonner";
 import DatePicker from "@/components/ui/datePicker";
-
 import {
   useCalculateBookingMutation,
   useCreateBookingMutation,
 } from "@/lib/api/booking";
+import  ImportantInfo from "@/app/booking/[carId]/info";
 import { useCalculatePickupReturnMutation } from "@/lib/api/pickupReturnApi";
-
-/* ================= TYPES ================= */
+import CatalogHeader from "@/components/catalogue/CatalogHeader";
 
 type PriceType = "daily" | "weekly" | "monthly";
 
@@ -28,7 +27,6 @@ interface ApiError {
   };
 }
 
-/* ---------------- DUMMY ADD-ONS (FRONTEND ONLY) ---------------- */
 const ADDONS = {
   childSeat: { label: "Child Seat", price: 50 },
   babySeat: { label: "Baby Seat", price: 50 },
@@ -42,12 +40,11 @@ export default function BookingPage() {
   const params = useParams();
   const router = useRouter();
   const carId = (params?.carId as string) || "";
-
-  /* ---------------- FORM STATE ---------------- */
+  const [showDeliveryPolicy, setShowDeliveryPolicy] = useState<boolean>(false);
   const [priceType, setPriceType] = useState<PriceType>("daily");
   const [canPay, setCanPay] = useState(false);
   const [addonsOpen, setAddonsOpen] = useState(false);
-
+  const [selectedOption, setSelectedOption] = useState("delivery"); 
   const [pickupDate, setPickupDate] = useState("");
   const [pickupTime, setPickupTime] = useState("10:00");
   const [dropoffDate, setDropoffDate] = useState("");
@@ -58,8 +55,7 @@ export default function BookingPage() {
   const [guestPhone, setGuestPhone] = useState("");
 
   const [address, setAddress] = useState("");
-
-  // NEW – Pickup / Return (Yango style)
+  const [infoOpen, setInfoOpen] = useState<boolean>(false);
   const [pickupType, setPickupType] = useState<"PICKUP" | "DELIVERY">("PICKUP");
 
   const [returnType, setReturnType] = useState<"DROPOFF" | "RETURN">("DROPOFF");
@@ -71,13 +67,11 @@ export default function BookingPage() {
     return: 0,
   });
 
-  /* ---------------- ADDONS ---------------- */
   const [childSeat, setChildSeat] = useState(false);
   const [babySeat, setBabySeat] = useState(false);
   const [gps, setGps] = useState(false);
   const [additionalDriver, setAdditionalDriver] = useState(false);
 
-  /* ---------------- BACKEND ---------------- */
   const [calc, setCalc] = useState<BookingCalculation | null>(null);
   const [calculatePickupReturn] = useCalculatePickupReturnMutation();
 
@@ -87,8 +81,6 @@ export default function BookingPage() {
     useCreateBookingMutation();
 
   const today = useMemo(() => new Date().toISOString().split("T")[0], []);
-
-  /* ---------------- HELPERS ---------------- */
   const formatMoney = (n: number) =>
     Number.isFinite(n) ? Math.round(n).toLocaleString() : "0";
 
@@ -132,8 +124,6 @@ export default function BookingPage() {
 
     return null;
   };
-
-  /* ---------------- ADDONS TOTAL ---------------- */
   const addonsTotal = useMemo(() => {
     let total = 0;
     if (childSeat) total += ADDONS.childSeat.price;
@@ -239,6 +229,7 @@ export default function BookingPage() {
       toast.error(e?.data?.message || "Booking failed");
     }
   };
+ // REQUIRED
 
   useEffect(() => {
     setCalc(null);
@@ -263,6 +254,7 @@ export default function BookingPage() {
     additionalDriver: [additionalDriver, setAdditionalDriver],
   };
 
+
   return (
     <div className="min-h-screen bg-[#f7f8fa]">
       <div className="mx-auto max-w-6xl px-4 py-8">
@@ -274,9 +266,7 @@ export default function BookingPage() {
         </p>
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-6">
-          {/* LEFT */}
           <div className="space-y-6">
-            {/* Rental plan */}
             <div className={card}>
               <p className={sectionTitle}>Rental Plan</p>
 
@@ -297,170 +287,7 @@ export default function BookingPage() {
                 ))}
               </div>
             </div>
-            {/* Emirate */}
-
-            {/* Pickup */}
-            <div className={card}>
-              <p className={sectionTitle}>Pickup</p>
-
-              <div className="grid grid-cols-2 gap-4">
-                {/* PICKUP – FREE */}
-                <button
-                  type="button"
-                  onClick={() => setPickupType("PICKUP")}
-                  className={`relative rounded-2xl p-4 text-left transition ${
-                    pickupType === "PICKUP"
-                      ? "bg-site-accent/5"
-                      : "bg-soft-grey/30 hover:bg-soft-grey/45"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`flex h-11 w-11 items-center justify-center rounded-full ${
-                        pickupType === "PICKUP"
-                          ? "bg-site-accent text-white"
-                          : "bg-white text-dark-base shadow-sm"
-                      }`}
-                    >
-                      <Store size={18} />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-sm text-dark-base">
-                        Pickup from vendor
-                      </p>
-                      <p className="text-xs text-grey">Free</p>
-                    </div>
-                  </div>
-
-                  {pickupType === "PICKUP" && (
-                    <div className="absolute right-3 top-3 h-2.5 w-2.5 rounded-full bg-site-accent" />
-                  )}
-                </button>
-
-                {/* DELIVERY – PAID */}
-                <button
-                  type="button"
-                  onClick={() => setPickupType("DELIVERY")}
-                  className={`relative rounded-2xl p-4 text-left transition ${
-                    pickupType === "DELIVERY"
-                      ? "bg-site-accent/5"
-                      : "bg-soft-grey/30 hover:bg-soft-grey/45"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`flex h-11 w-11 items-center justify-center rounded-full ${
-                        pickupType === "DELIVERY"
-                          ? "bg-site-accent text-white"
-                          : "bg-white text-dark-base shadow-sm"
-                      }`}
-                    >
-                      <Truck size={18} />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-sm text-dark-base">
-                        Delivery to address
-                      </p>
-                      <p className="text-xs text-grey">Paid (by emirate)</p>
-                    </div>
-                  </div>
-
-                  {pickupType === "DELIVERY" && (
-                    <div className="absolute right-3 top-3 h-2.5 w-2.5 rounded-full bg-site-accent" />
-                  )}
-                </button>
-              </div>
-              {(pickupType === "DELIVERY" || returnType === "RETURN") && (
-                <div className={card}>
-                  <p className={sectionTitle}>Emirate</p>
-
-                  <select
-                    className={inputBase}
-                    value={emirateId}
-                    onChange={(e) => setEmirateId(e.target.value)}
-                  >
-                    <option value="">Select Emirate</option>
-
-                    <option value="6953ce30ad7fb6b0b43ee72c">Dubai</option>
-                    <option value="6953ce30ad7fb6b0b43ee729">Abu Dhabi</option>
-                    <option value="6953ce31ad7fb6b0b43ee72f">Sharjah</option>
-                    <option value="6953ce31ad7fb6b0b43ee732">Ajman</option>
-                    <option value="6953ce32ad7fb6b0b43ee735">
-                      Umm Al Quwain
-                    </option>
-                    <option value="6953ce32ad7fb6b0b43ee738">
-                      Ras Al Khaimah
-                    </option>
-                    <option value="6953ce33ad7fb6b0b43ee73b">Fujairah</option>
-                  </select>
-                </div>
-              )}
-
-              {/* ADDRESS ONLY WHEN DELIVERY */}
-              {pickupType === "DELIVERY" && (
-                <div className="mt-4">
-                  <label className={fieldLabel}>Delivery Address</label>
-                  <textarea
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="Building, street, area, city"
-                    rows={3}
-                    className={inputBase}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Return */}
-            <div className={card}>
-              <p className={sectionTitle}>Return</p>
-
-              <div className="grid grid-cols-2 gap-4">
-                {/* DROPOFF – FREE */}
-                <button
-                  type="button"
-                  onClick={() => setReturnType("DROPOFF")}
-                  className={`relative rounded-2xl p-4 text-left transition ${
-                    returnType === "DROPOFF"
-                      ? "bg-site-accent/5"
-                      : "bg-soft-grey/30 hover:bg-soft-grey/45"
-                  }`}
-                >
-                  <p className="font-semibold text-sm text-dark-base">
-                    Dropoff to vendor
-                  </p>
-                  <p className="text-xs text-grey">Free</p>
-
-                  {returnType === "DROPOFF" && (
-                    <div className="absolute right-3 top-3 h-2.5 w-2.5 rounded-full bg-site-accent" />
-                  )}
-                </button>
-
-                {/* RETURN – PAID */}
-                <button
-                  type="button"
-                  onClick={() => setReturnType("RETURN")}
-                  className={`relative rounded-2xl p-4 text-left transition ${
-                    returnType === "RETURN"
-                      ? "bg-site-accent/5"
-                      : "bg-soft-grey/30 hover:bg-soft-grey/45"
-                  }`}
-                >
-                  <p className="font-semibold text-sm text-dark-base">
-                    Vendor collects car
-                  </p>
-                  <p className="text-xs text-grey">Paid (by emirate)</p>
-
-                  {returnType === "RETURN" && (
-                    <div className="absolute right-3 top-3 h-2.5 w-2.5 rounded-full bg-site-accent" />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Dates & Time */}
-            {/* Dates & Time */}
-            <div className={card}>
+              <div className={card}>
               <p className={sectionTitle}>Dates & Time</p>
 
               <div className="grid grid-cols-2 gap-3">
@@ -515,7 +342,223 @@ export default function BookingPage() {
                 </div>
               </div>
             </div>
-            {/* Add-ons */}
+
+          <div className={card}>
+  {/* TOP ROW */}
+  <div className="flex items-center justify-between mb-2">
+    {/* LEFT */}
+    <p className="font-semibold text-dark-base">Pickup</p>
+
+    {/* RIGHT OPTION */}
+    <div className="flex items-center gap-2">
+     
+
+      <p
+        className="px-3 py-1.5 rounded-lg text-dark-base  text-base font-semibold cursor-pointer underline"
+        onClick={(e) => {
+          e.stopPropagation();
+          setShowDeliveryPolicy(true);
+        }}
+      >
+        Pickup Delivery Policy
+      </p>
+    </div>
+  </div>
+{showDeliveryPolicy && (
+  <div className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center">
+    <div className="bg-white w-full h-[400px] sm:max-w-lg rounded p-6 flex flex-col">
+
+      {/* CONTENT */}
+      <div className="flex-1">
+        <p className="text-base text-center font-medium">
+          Pickup & Delivery Policy
+        </p>
+      </div>
+
+      {/* CLOSE BUTTON */}
+      <button
+        onClick={() => setShowDeliveryPolicy(false)}
+        className="mt-4 w-full rounded-2xl
+                   bg-gradient-to-r from-site-accent to-slate-teal
+                   shadow-[0_12px_28px_rgba(0,0,0,0.12)]
+                   py-3 font-medium text-white"
+      >
+        Close
+      </button>
+
+    </div>
+  </div>
+)}
+
+
+               <div className="relative flex bg-soft-grey/30 rounded-2xl p-1 mb-5">
+                <div
+              className={`absolute top-1 left-1 h-[calc(100%-0.5rem)] w-1/2 rounded-xl 
+                bg-white shadow-sm transition-transform duration-300
+                ${pickupType === "DELIVERY" ? "translate-x-full" : ""}
+              `}
+            />
+               <button
+              type="button"
+              onClick={() => setPickupType("PICKUP")}
+            className="relative z-10 flex-1 flex items-center gap-3 px-4 py-3 rounded-xl text-left"
+            >
+              <div
+                className={`flex h-10 w-10 items-center justify-center rounded-full transition
+                  ${
+                    pickupType === "PICKUP"
+                      ? "bg-site-accent text-white"
+                      : "bg-soft-grey/40 text-dark-base"
+                  }
+                `}
+              >
+            <Store size={18} />
+          </div>
+       <div>
+      <p className="font-semibold text-sm">Pickup from vendor</p>
+      <p className="text-xs text-grey">Free</p>
+    </div>
+                </button>
+              <button
+    type="button"
+    onClick={() => setPickupType("DELIVERY")}
+      className="relative z-10 flex-1 flex items-center gap-3 px-4 py-3 rounded-xl text-left"
+  >
+    <div
+      className={`flex h-10 w-10 items-center justify-center rounded-full transition
+        ${
+          pickupType === "DELIVERY"
+            ? "bg-site-accent text-white"
+            : "bg-soft-grey/40 text-dark-base"
+        }
+      `}
+    >
+      <Truck size={18} />
+    </div>
+
+    <div>
+      <p className="font-semibold text-sm">Delivery to address</p>
+      <p className="text-xs text-grey">Paid (by emirate)</p>
+    </div>
+
+
+                 
+                </button>
+              </div>
+              {(pickupType === "DELIVERY" || returnType === "RETURN") && (
+                <div>
+                  <p className={sectionTitle}>Emirate</p>
+
+                  <select
+                    className={inputBase}
+                    value={emirateId}
+                    onChange={(e) => setEmirateId(e.target.value)}
+                  >
+                    <option value="">Select Emirate</option>
+
+                    <option value="6953ce30ad7fb6b0b43ee72c">Dubai</option>
+                    <option value="6953ce30ad7fb6b0b43ee729">Abu Dhabi</option>
+                    <option value="6953ce31ad7fb6b0b43ee72f">Sharjah</option>
+                    <option value="6953ce31ad7fb6b0b43ee732">Ajman</option>
+                    <option value="6953ce32ad7fb6b0b43ee735">
+                      Umm Al Quwain
+                    </option>
+                    <option value="6953ce32ad7fb6b0b43ee738">
+                      Ras Al Khaimah
+                    </option>
+                    <option value="6953ce33ad7fb6b0b43ee73b">Fujairah</option>
+                  </select>
+                </div>
+              )}
+
+              {/* ADDRESS ONLY WHEN DELIVERY */}
+              {pickupType === "DELIVERY" && (
+                <div className="mt-4">
+                  <label className={fieldLabel}>Delivery Address</label>
+                  <textarea
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder="Building, street, area, city"
+                    rows={3}
+                    className={inputBase}
+                  />
+                </div>
+              )}
+              <p className={sectionTitle}>Return</p>
+
+<div className="relative flex bg-soft-grey/30 rounded-2xl p-1 mb-5">
+  {/* SLIDER */}
+  <div
+    className={`absolute top-1 left-1 h-[calc(100%-0.5rem)] w-1/2 rounded-xl 
+      bg-white shadow-sm transition-transform duration-300
+      ${returnType === "RETURN" ? "translate-x-full" : ""}
+    `}
+  />
+
+  {/* DROPOFF */}
+  <button
+    type="button"
+    onClick={() => setReturnType("DROPOFF")}
+    className="relative z-10 flex-1 flex items-center gap-3 px-4 py-3 rounded-xl text-left pl-5"
+  >
+    <div>
+      <p className="font-semibold text-sm text-dark-base">
+        Dropoff to vendor
+      </p>
+      <p className="text-xs text-grey">Free</p>
+    </div>
+  </button>
+
+  {/* RETURN */}
+  <button
+    type="button"
+    onClick={() => setReturnType("RETURN")}
+    className="relative z-10 flex-1 flex items-center gap-3 px-4 py-3 rounded-xl text-left pl-5"
+  >
+    <div>
+      <p className="font-semibold text-sm text-dark-base">
+        Vendor collects car
+      </p>
+      <p className="text-xs text-grey">Paid (by emirate)</p>
+    </div>
+    {returnType === "RETURN" && ( <div className="absolute right-3 top-3 h-2.5 w-2.5 rounded-full bg-site-accent" /> )}
+  </button>
+</div>
+  </div>
+          
+            <div className={card}>
+  <div className="flex items-center justify-between mb-4">
+    <div>
+      <p className="font-semibold text-dark-base">Important Info</p>
+      <p className="text-xs text-grey">Optional</p>
+      </div>
+
+    <button
+      type="button"
+      onClick={() => setInfoOpen((prev) => !prev)}
+      className={`
+        relative w-11 h-6 rounded-full transition-colors
+        ${infoOpen ? "bg-site-accent" : "bg-gray-300"}
+      `}
+    >
+      <span
+        className={`
+          absolute top-0.5 left-0.5
+          h-5 w-5 rounded-full bg-white shadow-sm
+          transition-transform
+          ${infoOpen ? "translate-x-5" : ""}
+        `}
+      />
+    </button>
+  </div>
+
+  {infoOpen && (
+    <div className="mt-4 animate-in fade-in slide-in-from-top-2">
+      <ImportantInfo />
+    </div>
+  )}
+</div>
+         
             <div className={card}>
               {/* HEADER (TOGGLE) */}
               {/* HEADER WITH TOGGLE */}
@@ -534,17 +577,17 @@ export default function BookingPage() {
                   type="button"
                   onClick={() => setAddonsOpen((prev) => !prev)}
                   className={`
-      relative w-11 h-6 rounded-full transition-colors
-      ${addonsOpen ? "bg-site-accent" : "bg-gray-300"}
-    `}
+                  relative w-11 h-6 rounded-full transition-colors
+                  ${addonsOpen ? "bg-site-accent" : "bg-gray-300"}
+                `}
                 >
                   <span
                     className={`
-        absolute top-0.5 left-0.5
-        h-5 w-5 rounded-full bg-white shadow-sm
-        transition-transform
-        ${addonsOpen ? "translate-x-5" : ""}
-      `}
+                    absolute top-0.5 left-0.5
+                    h-5 w-5 rounded-full bg-white shadow-sm
+                    transition-transform
+                    ${addonsOpen ? "translate-x-5" : ""}
+                  `}
                   />
                 </button>
               </div>
@@ -704,14 +747,7 @@ export default function BookingPage() {
               <p className="font-bold mb-4 text-dark-base">Booking Summary</p>
 
               <div className="space-y-4 text-sm">
-                {/* Vehicle */}
-                <div className="flex justify-between">
-                  <span className="text-grey">Vehicle</span>
-                  <span className="font-semibold text-dark-base">
-                    Selected Car
-                  </span>
-                </div>
-
+             
                 {/* Pickup / Dropoff */}
                 <div className="rounded-xl bg-soft-grey/30 p-3">
                   <p className="text-xs text-grey mb-1">Pickup</p>
