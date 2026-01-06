@@ -9,7 +9,7 @@ import {
   useCalculateBookingMutation,
   useCreateBookingMutation,
 } from "@/lib/api/booking";
-import  ImportantInfo from "@/app/booking/[carId]/info";
+import ImportantInfo from "@/app/booking/[carId]/info";
 import { useCalculatePickupReturnMutation } from "@/lib/api/pickupReturnApi";
 import CatalogHeader from "@/components/catalogue/CatalogHeader";
 
@@ -44,7 +44,7 @@ export default function BookingPage() {
   const [priceType, setPriceType] = useState<PriceType>("daily");
   const [canPay, setCanPay] = useState(false);
   const [addonsOpen, setAddonsOpen] = useState(false);
-  const [selectedOption, setSelectedOption] = useState("delivery"); 
+  const [selectedOption, setSelectedOption] = useState("delivery");
   const [pickupDate, setPickupDate] = useState("");
   const [pickupTime, setPickupTime] = useState("10:00");
   const [dropoffDate, setDropoffDate] = useState("");
@@ -200,6 +200,8 @@ export default function BookingPage() {
     try {
       const res = await createBooking({
         carId,
+        isGuest: true, // ✅ ADD THIS
+
         pickupDate,
         pickupTime,
         dropoffDate,
@@ -229,7 +231,7 @@ export default function BookingPage() {
       toast.error(e?.data?.message || "Booking failed");
     }
   };
- // REQUIRED
+  // REQUIRED
 
   useEffect(() => {
     setCalc(null);
@@ -253,7 +255,6 @@ export default function BookingPage() {
     gps: [gps, setGps],
     additionalDriver: [additionalDriver, setAdditionalDriver],
   };
-
 
   return (
     <div className="min-h-screen bg-[#f7f8fa]">
@@ -287,7 +288,7 @@ export default function BookingPage() {
                 ))}
               </div>
             </div>
-              <div className={card}>
+            <div className={card}>
               <p className={sectionTitle}>Dates & Time</p>
 
               <div className="grid grid-cols-2 gap-3">
@@ -343,106 +344,98 @@ export default function BookingPage() {
               </div>
             </div>
 
-          <div className={card}>
-  {/* TOP ROW */}
-  <div className="flex items-center justify-between mb-2">
-    {/* LEFT */}
-    <p className="font-semibold text-dark-base">Pickup</p>
+            <div className={card}>
+              {/* TOP ROW */}
+              <div className="flex items-center justify-between mb-2">
+                {/* LEFT */}
+                <p className="font-semibold text-dark-base">Pickup</p>
 
-    {/* RIGHT OPTION */}
-    <div className="flex items-center gap-2">
-     
+                {/* RIGHT OPTION */}
+                <div className="flex items-center gap-2">
+                  <p
+                    className="px-3 py-1.5 rounded-lg text-dark-base  text-base font-semibold cursor-pointer underline"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowDeliveryPolicy(true);
+                    }}
+                  >
+                    Pickup Delivery Policy
+                  </p>
+                </div>
+              </div>
+              {showDeliveryPolicy && (
+                <div className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center">
+                  <div className="bg-white w-full h-[400px] sm:max-w-lg rounded p-6 flex flex-col">
+                    {/* CONTENT */}
+                    <div className="flex-1">
+                      <p className="text-base text-center font-medium">
+                        Pickup & Delivery Policy
+                      </p>
+                    </div>
 
-      <p
-        className="px-3 py-1.5 rounded-lg text-dark-base  text-base font-semibold cursor-pointer underline"
-        onClick={(e) => {
-          e.stopPropagation();
-          setShowDeliveryPolicy(true);
-        }}
-      >
-        Pickup Delivery Policy
-      </p>
-    </div>
-  </div>
-{showDeliveryPolicy && (
-  <div className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center">
-    <div className="bg-white w-full h-[400px] sm:max-w-lg rounded p-6 flex flex-col">
-
-      {/* CONTENT */}
-      <div className="flex-1">
-        <p className="text-base text-center font-medium">
-          Pickup & Delivery Policy
-        </p>
-      </div>
-
-      {/* CLOSE BUTTON */}
-      <button
-        onClick={() => setShowDeliveryPolicy(false)}
-        className="mt-4 w-full rounded-2xl
+                    {/* CLOSE BUTTON */}
+                    <button
+                      onClick={() => setShowDeliveryPolicy(false)}
+                      className="mt-4 w-full rounded-2xl
                    bg-gradient-to-r from-site-accent to-slate-teal
                    shadow-[0_12px_28px_rgba(0,0,0,0.12)]
                    py-3 font-medium text-white"
-      >
-        Close
-      </button>
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              )}
 
-    </div>
-  </div>
-)}
-
-
-               <div className="relative flex bg-soft-grey/30 rounded-2xl p-1 mb-5">
+              <div className="relative flex bg-soft-grey/30 rounded-2xl p-1 mb-5">
                 <div
-              className={`absolute top-1 left-1 h-[calc(100%-0.5rem)] w-1/2 rounded-xl 
+                  className={`absolute top-1 left-1 h-[calc(100%-0.5rem)] w-1/2 rounded-xl 
                 bg-white shadow-sm transition-transform duration-300
                 ${pickupType === "DELIVERY" ? "translate-x-full" : ""}
               `}
-            />
-               <button
-              type="button"
-              onClick={() => setPickupType("PICKUP")}
-            className="relative z-10 flex-1 flex items-center gap-3 px-4 py-3 rounded-xl text-left"
-            >
-              <div
-                className={`flex h-10 w-10 items-center justify-center rounded-full transition
+                />
+                <button
+                  type="button"
+                  onClick={() => setPickupType("PICKUP")}
+                  className="relative z-10 flex-1 flex items-center gap-3 px-4 py-3 rounded-xl text-left"
+                >
+                  <div
+                    className={`flex h-10 w-10 items-center justify-center rounded-full transition
                   ${
                     pickupType === "PICKUP"
                       ? "bg-site-accent text-white"
                       : "bg-soft-grey/40 text-dark-base"
                   }
                 `}
-              >
-            <Store size={18} />
-          </div>
-       <div>
-      <p className="font-semibold text-sm">Pickup from vendor</p>
-      <p className="text-xs text-grey">Free</p>
-    </div>
+                  >
+                    <Store size={18} />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm">Pickup from vendor</p>
+                    <p className="text-xs text-grey">Free</p>
+                  </div>
                 </button>
-              <button
-    type="button"
-    onClick={() => setPickupType("DELIVERY")}
-      className="relative z-10 flex-1 flex items-center gap-3 px-4 py-3 rounded-xl text-left"
-  >
-    <div
-      className={`flex h-10 w-10 items-center justify-center rounded-full transition
+                <button
+                  type="button"
+                  onClick={() => setPickupType("DELIVERY")}
+                  className="relative z-10 flex-1 flex items-center gap-3 px-4 py-3 rounded-xl text-left"
+                >
+                  <div
+                    className={`flex h-10 w-10 items-center justify-center rounded-full transition
         ${
           pickupType === "DELIVERY"
             ? "bg-site-accent text-white"
             : "bg-soft-grey/40 text-dark-base"
         }
       `}
-    >
-      <Truck size={18} />
-    </div>
+                  >
+                    <Truck size={18} />
+                  </div>
 
-    <div>
-      <p className="font-semibold text-sm">Delivery to address</p>
-      <p className="text-xs text-grey">Paid (by emirate)</p>
-    </div>
-
-
-                 
+                  <div>
+                    <p className="font-semibold text-sm">Delivery to address</p>
+                    <p className="text-xs text-grey">Paid (by emirate)</p>
+                  </div>
                 </button>
               </div>
               {(pickupType === "DELIVERY" || returnType === "RETURN") && (
@@ -486,79 +479,81 @@ export default function BookingPage() {
               )}
               <p className={sectionTitle}>Return</p>
 
-<div className="relative flex bg-soft-grey/30 rounded-2xl p-1 mb-5">
-  {/* SLIDER */}
-  <div
-    className={`absolute top-1 left-1 h-[calc(100%-0.5rem)] w-1/2 rounded-xl 
+              <div className="relative flex bg-soft-grey/30 rounded-2xl p-1 mb-5">
+                {/* SLIDER */}
+                <div
+                  className={`absolute top-1 left-1 h-[calc(100%-0.5rem)] w-1/2 rounded-xl 
       bg-white shadow-sm transition-transform duration-300
       ${returnType === "RETURN" ? "translate-x-full" : ""}
     `}
-  />
+                />
 
-  {/* DROPOFF */}
-  <button
-    type="button"
-    onClick={() => setReturnType("DROPOFF")}
-    className="relative z-10 flex-1 flex items-center gap-3 px-4 py-3 rounded-xl text-left pl-5"
-  >
-    <div>
-      <p className="font-semibold text-sm text-dark-base">
-        Dropoff to vendor
-      </p>
-      <p className="text-xs text-grey">Free</p>
-    </div>
-  </button>
+                {/* DROPOFF */}
+                <button
+                  type="button"
+                  onClick={() => setReturnType("DROPOFF")}
+                  className="relative z-10 flex-1 flex items-center gap-3 px-4 py-3 rounded-xl text-left pl-5"
+                >
+                  <div>
+                    <p className="font-semibold text-sm text-dark-base">
+                      Dropoff to vendor
+                    </p>
+                    <p className="text-xs text-grey">Free</p>
+                  </div>
+                </button>
 
-  {/* RETURN */}
-  <button
-    type="button"
-    onClick={() => setReturnType("RETURN")}
-    className="relative z-10 flex-1 flex items-center gap-3 px-4 py-3 rounded-xl text-left pl-5"
-  >
-    <div>
-      <p className="font-semibold text-sm text-dark-base">
-        Vendor collects car
-      </p>
-      <p className="text-xs text-grey">Paid (by emirate)</p>
-    </div>
-    {returnType === "RETURN" && ( <div className="absolute right-3 top-3 h-2.5 w-2.5 rounded-full bg-site-accent" /> )}
-  </button>
-</div>
-  </div>
-          
+                {/* RETURN */}
+                <button
+                  type="button"
+                  onClick={() => setReturnType("RETURN")}
+                  className="relative z-10 flex-1 flex items-center gap-3 px-4 py-3 rounded-xl text-left pl-5"
+                >
+                  <div>
+                    <p className="font-semibold text-sm text-dark-base">
+                      Vendor collects car
+                    </p>
+                    <p className="text-xs text-grey">Paid (by emirate)</p>
+                  </div>
+                  {returnType === "RETURN" && (
+                    <div className="absolute right-3 top-3 h-2.5 w-2.5 rounded-full bg-site-accent" />
+                  )}
+                </button>
+              </div>
+            </div>
+
             <div className={card}>
-  <div className="flex items-center justify-between mb-4">
-    <div>
-      <p className="font-semibold text-dark-base">Important Info</p>
-      <p className="text-xs text-grey">Optional</p>
-      </div>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="font-semibold text-dark-base">Important Info</p>
+                  <p className="text-xs text-grey">Optional</p>
+                </div>
 
-    <button
-      type="button"
-      onClick={() => setInfoOpen((prev) => !prev)}
-      className={`
+                <button
+                  type="button"
+                  onClick={() => setInfoOpen((prev) => !prev)}
+                  className={`
         relative w-11 h-6 rounded-full transition-colors
         ${infoOpen ? "bg-site-accent" : "bg-gray-300"}
       `}
-    >
-      <span
-        className={`
+                >
+                  <span
+                    className={`
           absolute top-0.5 left-0.5
           h-5 w-5 rounded-full bg-white shadow-sm
           transition-transform
           ${infoOpen ? "translate-x-5" : ""}
         `}
-      />
-    </button>
-  </div>
+                  />
+                </button>
+              </div>
 
-  {infoOpen && (
-    <div className="mt-4 animate-in fade-in slide-in-from-top-2">
-      <ImportantInfo />
-    </div>
-  )}
-</div>
-         
+              {infoOpen && (
+                <div className="mt-4 animate-in fade-in slide-in-from-top-2">
+                  <ImportantInfo />
+                </div>
+              )}
+            </div>
+
             <div className={card}>
               {/* HEADER (TOGGLE) */}
               {/* HEADER WITH TOGGLE */}
@@ -747,7 +742,6 @@ export default function BookingPage() {
               <p className="font-bold mb-4 text-dark-base">Booking Summary</p>
 
               <div className="space-y-4 text-sm">
-             
                 {/* Pickup / Dropoff */}
                 <div className="rounded-xl bg-soft-grey/30 p-3">
                   <p className="text-xs text-grey mb-1">Pickup</p>

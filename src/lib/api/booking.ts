@@ -10,11 +10,15 @@ const bookingApi = baseApi.injectEndpoints({
         body,
       }),
     }),
+
     createBooking: builder.mutation({
       query: (body) => ({
         url: "/booking/create",
         method: "POST",
-        body,
+        body: {
+          ...body,
+          isGuest: true, // ✅ FORCE GUEST FLAG HERE
+        },
       }),
     }),
   }),
