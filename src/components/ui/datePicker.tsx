@@ -1,7 +1,13 @@
 import React, { forwardRef } from "react";
 import { CalendarDays } from "lucide-react";
 
-export const DateInput = forwardRef<HTMLInputElement, any>(
+interface DateInputProps {
+  value?: string;
+  placeholder?: string;
+  onClick?: React.MouseEventHandler<HTMLDivElement>;
+}
+
+export const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
   ({ value, onClick, placeholder }, ref) => (
     <div
       onClick={onClick}
