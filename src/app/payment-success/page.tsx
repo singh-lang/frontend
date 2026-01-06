@@ -334,4 +334,3 @@ function TimelineStep({
     </div>
   );
 }
-
