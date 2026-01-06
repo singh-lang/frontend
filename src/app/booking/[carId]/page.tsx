@@ -10,7 +10,7 @@ import {
   useCalculateBookingMutation,
   useCreateBookingMutation,
 } from "@/lib/api/booking";
-import  ImportantInfo from "@/app/booking/[carId]/info";
+import ImportantInfo from "@/app/booking/[carId]/info";
 import { useCalculatePickupReturnMutation } from "@/lib/api/pickupReturnApi";
 import CatalogHeader from "@/components/catalogue/CatalogHeader";
 import { getCar } from "@/lib/api/car";
@@ -58,7 +58,7 @@ export default function BookingPage() {
   const [priceType, setPriceType] = useState<PriceType>("daily");
   const [canPay, setCanPay] = useState(false);
   const [addonsOpen, setAddonsOpen] = useState(false);
-  const [selectedOption, setSelectedOption] = useState("delivery"); 
+  const [selectedOption, setSelectedOption] = useState("delivery");
   const [pickupDate, setPickupDate] = useState("");
   const [pickupTime, setPickupTime] = useState("10:00");
   const [dropoffDate, setDropoffDate] = useState("");
@@ -209,6 +209,8 @@ const [paused, setPaused] = useState(false);
     try {
       const res = await createBooking({
         carId,
+        isGuest: true, // ✅ ADD THIS
+
         pickupDate,
         pickupTime,
         dropoffDate,
@@ -239,6 +241,7 @@ const [paused, setPaused] = useState(false);
       toast.error(e?.data?.message || "Booking failed");
     }
   };
+ // REQUIRED
 
   useEffect(() => {
     setCalc(null);
@@ -262,68 +265,6 @@ const [paused, setPaused] = useState(false);
     additionalDriver: [additionalDriver, setAdditionalDriver],
   };
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "";
-
-const carImages = useMemo(() => {
-  if (!carData?.car) return [];
-
-  const images: string[] = [];
-
-  if (carData.car.coverImage?.url) {
-    images.push(
-      carData.car.coverImage.url.startsWith("http")
-        ? carData.car.coverImage.url
-        : `${BASE_URL}${carData.car.coverImage.url}`
-    );
-  }
-  if (Array.isArray(carData.car.images)) {
-    carData.car.images.forEach((img) => {
-      if (img?.url) {
-        images.push(
-          img.url.startsWith("http")
-            ? img.url
-            : `${BASE_URL}${img.url}`
-        );
-      }
-    });
-  }
-  return images;
-}, [carData]);
-useEffect(() => {
-  if (!carId) return;
-  
-
-  const fetchCar = async () => {
-    try {
-      setCarLoading(true);
-      const res = await getCar(carId);
-      setCarData(res?.data || null);
-    } catch (err) {
-      console.error("Failed to fetch car", err);
-    } finally {
-      setCarLoading(false);
-    }
-  };
-
-  fetchCar();
-}, [carId]);
-const carouselImages = useMemo(() => {
-  if (carImages.length === 0) return [];
-  return [...carImages, carImages[0]]; // clone first
-}, [carImages]);
-
-useEffect(() => {
-  if (paused || carouselImages.length <= 1) return;
-
-  const interval = setInterval(() => {
-    setActiveIndex((prev) => prev + 1);
-  }, 3000);
-
-  return () => clearInterval(interval);
-}, [paused, carouselImages.length]);
-
-const isLastClone = activeIndex === carouselImages.length - 1;
-const [isResetting, setIsResetting] = useState(false);
 
   return (
     <div className="min-h-screen bg-[#f7f8fa]">
@@ -357,7 +298,7 @@ const [isResetting, setIsResetting] = useState(false);
                 ))}
               </div>
             </div>
-              <div className={card}>
+            <div className={card}>
               <p className={sectionTitle}>Dates & Time</p>
 
               <div className="grid grid-cols-2 gap-3">
@@ -414,9 +355,12 @@ const [isResetting, setIsResetting] = useState(false);
             </div>
 
           <div className={card}>
+  {/* TOP ROW */}
   <div className="flex items-center justify-between mb-2">
+    {/* LEFT */}
     <p className="font-semibold text-dark-base">Pickup</p>
 
+    {/* RIGHT OPTION */}
     <div className="flex items-center gap-2">
      
 
@@ -434,40 +378,42 @@ const [isResetting, setIsResetting] = useState(false);
 {showDeliveryPolicy && (
   <div className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center">
     <div className="bg-white w-full h-[400px] sm:max-w-lg rounded p-6 flex flex-col">
+
+      {/* CONTENT */}
       <div className="flex-1">
         <p className="text-base text-center font-medium">
           Pickup & Delivery Policy
         </p>
       </div>
+
+      {/* CLOSE BUTTON */}
       <button
         onClick={() => setShowDeliveryPolicy(false)}
         className="mt-4 w-full rounded-2xl
                    bg-gradient-to-r from-site-accent to-slate-teal
                    shadow-[0_12px_28px_rgba(0,0,0,0.12)]
                    py-3 font-medium text-white"
-      >
-        Close
-      </button>
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              )}
 
-    </div>
-  </div>
-)}
-
-
-               <div className="relative flex bg-soft-grey/30 rounded-2xl p-1 mb-5">
+              <div className="relative flex bg-soft-grey/30 rounded-2xl p-1 mb-5">
                 <div
-              className={`absolute top-1 left-1 h-[calc(100%-0.5rem)] w-1/2 rounded-xl 
+                  className={`absolute top-1 left-1 h-[calc(100%-0.5rem)] w-1/2 rounded-xl 
                 bg-white shadow-sm transition-transform duration-300
                 ${pickupType === "DELIVERY" ? "translate-x-full" : ""}
               `}
-            />
-               <button
-              type="button"
-              onClick={() => setPickupType("PICKUP")}
-            className="relative z-10 flex-1 flex items-center gap-3 px-4 py-3 rounded-xl text-left"
-            >
-              <div
-                className={`flex h-10 w-10 items-center justify-center rounded-full transition
+                />
+                <button
+                  type="button"
+                  onClick={() => setPickupType("PICKUP")}
+                  className="relative z-10 flex-1 flex items-center gap-3 px-4 py-3 rounded-xl text-left"
+                >
+                  <div
+                    className={`flex h-10 w-10 items-center justify-center rounded-full transition
                   ${
                     pickupType === "PICKUP"
                       ? "bg-site-accent text-white"
@@ -481,12 +427,12 @@ const [isResetting, setIsResetting] = useState(false);
       <p className="font-semibold text-sm">Pickup from vendor</p>
       <p className="text-xs text-grey">Free</p>
     </div>
-     </button>
-      <button
+                </button>
+              <button
     type="button"
     onClick={() => setPickupType("DELIVERY")}
       className="relative z-10 flex-1 flex items-center gap-3 px-4 py-3 rounded-xl text-left"
-      >
+  >
     <div
       className={`flex h-10 w-10 items-center justify-center rounded-full transition
         ${
@@ -495,14 +441,17 @@ const [isResetting, setIsResetting] = useState(false);
             : "bg-soft-grey/40 text-dark-base"
         }
       `}
-       >
+    >
       <Truck size={18} />
     </div>
 
     <div>
       <p className="font-semibold text-sm">Delivery to address</p>
       <p className="text-xs text-grey">Paid (by emirate)</p>
-    </div>     
+    </div>
+
+
+                 
                 </button>
               </div>
               {(pickupType === "DELIVERY" || returnType === "RETURN") && (
@@ -544,13 +493,16 @@ const [isResetting, setIsResetting] = useState(false);
               )}
               <p className={sectionTitle}>Return</p>
 
-          <div className="relative flex bg-soft-grey/30 rounded-2xl p-1 mb-5">
-            <div
-              className={`absolute top-1 left-1 h-[calc(100%-0.5rem)] w-1/2 rounded-xl 
-                bg-white shadow-sm transition-transform duration-300
-                ${returnType === "RETURN" ? "translate-x-full" : ""}
-              `}
-            />
+<div className="relative flex bg-soft-grey/30 rounded-2xl p-1 mb-5">
+  {/* SLIDER */}
+  <div
+    className={`absolute top-1 left-1 h-[calc(100%-0.5rem)] w-1/2 rounded-xl 
+      bg-white shadow-sm transition-transform duration-300
+      ${returnType === "RETURN" ? "translate-x-full" : ""}
+    `}
+  />
+
+  {/* DROPOFF */}
   <button
     type="button"
     onClick={() => setReturnType("DROPOFF")}
@@ -563,6 +515,8 @@ const [isResetting, setIsResetting] = useState(false);
       <p className="text-xs text-grey">Free</p>
     </div>
   </button>
+
+  {/* RETURN */}
   <button
     type="button"
     onClick={() => setReturnType("RETURN")}
@@ -579,31 +533,31 @@ const [isResetting, setIsResetting] = useState(false);
 </div>
   </div>
           
-  <div className={card}>
+            <div className={card}>
   <div className="flex items-center justify-between mb-4">
     <div>
       <p className="font-semibold text-dark-base">Important Info</p>
       <p className="text-xs text-grey">Optional</p>
       </div>
 
-    <button
-      type="button"
-      onClick={() => setInfoOpen((prev) => !prev)}
-      className={`
+                <button
+                  type="button"
+                  onClick={() => setInfoOpen((prev) => !prev)}
+                  className={`
         relative w-11 h-6 rounded-full transition-colors
         ${infoOpen ? "bg-site-accent" : "bg-gray-300"}
       `}
-    >
-      <span
-        className={`
+                >
+                  <span
+                    className={`
           absolute top-0.5 left-0.5
           h-5 w-5 rounded-full bg-white shadow-sm
           transition-transform
           ${infoOpen ? "translate-x-5" : ""}
         `}
-      />
-    </button>
-  </div>
+                  />
+                </button>
+              </div>
 
   {infoOpen && (
     <div className="mt-4 animate-in fade-in slide-in-from-top-2">
@@ -611,56 +565,7 @@ const [isResetting, setIsResetting] = useState(false);
     </div>
   )}
 </div>
-<div className={card}>
-      
-      {/* TOP SECTION */}
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="font-semibold text-gray-900">
-            Enjoy a deposit-free ride for AED {depositFree}
-          </p>
-          <p className="text-sm text-gray-600 p-2">
-            You can rent a car without any deposit by including the additional
-            service fee<br /> in your rental price
-          </p>
-        </div>
-        <button
-          onClick={() => setDepositFree(!depositFree)}
-          className={`relative w-12 h-6 rounded-full transition-colors ${
-            depositFree ? "bg-site-accent" : "bg-gray-300"
-          }`}
-        >
-          <span
-            className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-              depositFree ? "translate-x-6" : ""
-            }`}
-          />
-        </button>
-      </div>
-
-      <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between ">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
-            💳
-          </div>
-
-          <div>
-            <p className="font-medium text-gray-900">Deposit</p>
-            <p className="text-xs text-gray-500">
-              Refunded within 21 days after you return the car
-            </p>
-          </div>
-        </div>
-        <p
-          className={`text-lg font-semibold ${
-            depositFree ? "text-site-accent" : "text-gray-900"
-          }`}
-        >
-          AED {depositFree ? "0" : DEPOSIT_AMOUNT.toLocaleString()}
-        </p>
-      </div>
-    </div>
-       
+         
             <div className={card}>
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -815,56 +720,16 @@ const [isResetting, setIsResetting] = useState(false);
               </button>
             </div>
           </div>
-<div className="lg:sticky lg:top-6 h-fit">
-<div className="bg-white rounded-2xl p-5 shadow-[0_10px_40px_rgba(0,0,0,0.05)]">
-  <p className="font-bold mb-4 text-dark-base">Booking Summary</p>
-  <div className="space-y-4 text-sm">
-    
-  {carImages.length > 0 && (
-    <div
-      className="relative w-full overflow-hidden rounded-2xl"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-    >
-<div
-  className={`flex ${
-    isResetting
-      ? "transition-none"
-      : "transition-transform duration-500 ease-in-out"
-  }`}
-  style={{
-    transform: `translateX(-${activeIndex * 100}%)`,
-  }}
-  onTransitionEnd={() => {
-    if (activeIndex === carouselImages.length - 1) {
-      setIsResetting(true);
-      setActiveIndex(0);
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setIsResetting(false);
-        });
-      });
-    }
-  }}
->
 
-      {carouselImages.map((img, index) => (
-  <img
-    key={index}
-    src={img}
-    alt={`Car image ${index + 1}`}
-    className="w-full h-[200px] object-cover flex-shrink-0"
-  />
-))}
-      </div>
-    </div>
-  )}
-  
-</div>
+          {/* RIGHT SUMMARY */}
+          {/* RIGHT SUMMARY */}
+          <div className="lg:sticky lg:top-6 h-fit">
+            <div className="bg-white rounded-2xl p-5 shadow-[0_10px_40px_rgba(0,0,0,0.05)]">
+              <p className="font-bold mb-4 text-dark-base">Booking Summary</p>
 
-
-              <div className="space-y-4 text-sm pt-4">
+              <div className="space-y-4 text-sm">
              
+                {/* Pickup / Dropoff */}
                 <div className="rounded-xl bg-soft-grey/30 p-3">
                   <p className="text-xs text-grey mb-1">Pickup</p>
                   <p className="font-semibold text-dark-base">
