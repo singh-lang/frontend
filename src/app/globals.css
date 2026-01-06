@@ -304,3 +304,43 @@ background: linear-gradient(to right, #0f766dc4, #2564ebb4);
   font-weight: bold;
   color: linear-gradient(to right, #59787c, #2564eb);
 }
+.react-datepicker-popper {
+  z-index: 9999 !important;
+}
+
+.react-datepicker {
+  z-index: 9999 !important;
+}
+@keyframes scaleIn {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-scaleIn {
+  animation: scaleIn 0.5s ease-out forwards;
+}
+
+.animate-pop {
+  animation: pop 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+

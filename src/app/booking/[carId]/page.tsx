@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { CheckCircle2, Truck, Store } from "lucide-react";
 import { toast } from "sonner";
-import DatePicker from "@/components/ui/datePicker";
+import DatePicker from "react-datepicker";
+import {DateInput} from "@/components/ui/datePicker";
 import {
   useCalculateBookingMutation,
   useCreateBookingMutation,
@@ -12,6 +13,9 @@ import {
 import  ImportantInfo from "@/app/booking/[carId]/info";
 import { useCalculatePickupReturnMutation } from "@/lib/api/pickupReturnApi";
 import CatalogHeader from "@/components/catalogue/CatalogHeader";
+import { getCar } from "@/lib/api/car";
+import { type CarTypes } from "@/types/homePageTypes";
+import Image from "next/image";
 
 type PriceType = "daily" | "weekly" | "monthly";
 
@@ -26,7 +30,12 @@ interface ApiError {
     message?: string;
   };
 }
+interface CarFetchProp {
+  _id: string;
+  data: CarTypes;
+}
 
+  
 const ADDONS = {
   childSeat: { label: "Child Seat", price: 50 },
   babySeat: { label: "Baby Seat", price: 50 },
@@ -34,12 +43,17 @@ const ADDONS = {
   additionalDriver: { label: "Additional Driver", price: 100 },
 };
 
+const DEPOSIT_AMOUNT = 2000;
+const DEPOSIT_FREE_FEE = 210;
+
 type AddonKey = keyof typeof ADDONS;
 
 export default function BookingPage() {
   const params = useParams();
   const router = useRouter();
+ 
   const carId = (params?.carId as string) || "";
+
   const [showDeliveryPolicy, setShowDeliveryPolicy] = useState<boolean>(false);
   const [priceType, setPriceType] = useState<PriceType>("daily");
   const [canPay, setCanPay] = useState(false);
@@ -49,10 +63,12 @@ export default function BookingPage() {
   const [pickupTime, setPickupTime] = useState("10:00");
   const [dropoffDate, setDropoffDate] = useState("");
   const [dropoffTime, setDropoffTime] = useState("10:00");
+const [carLoading, setCarLoading] = useState(true);
 
   const [guestEmail, setGuestEmail] = useState("");
   const [guestName, setGuestName] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
+const [carData, setCarData] = useState<CarTypes | null>(null);
 
   const [address, setAddress] = useState("");
   const [infoOpen, setInfoOpen] = useState<boolean>(false);
@@ -66,12 +82,12 @@ export default function BookingPage() {
     pickup: 0,
     return: 0,
   });
-
   const [childSeat, setChildSeat] = useState(false);
   const [babySeat, setBabySeat] = useState(false);
   const [gps, setGps] = useState(false);
   const [additionalDriver, setAdditionalDriver] = useState(false);
-
+const [paused, setPaused] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
   const [calc, setCalc] = useState<BookingCalculation | null>(null);
   const [calculatePickupReturn] = useCalculatePickupReturnMutation();
 
@@ -136,28 +152,23 @@ export default function BookingPage() {
   const rentalAmount = calc?.totalAmount ?? 0;
   const pickupFee = pickupReturnCharges.pickup;
   const returnFee = pickupReturnCharges.return;
-
-  // ✅ FULL TOTAL (rental + delivery + addons)
+  const [depositFree, setDepositFree] = useState(false);
   const frontendTotal = rentalAmount + pickupFee + returnFee + addonsTotal;
 
-  // ✅ PAY NOW = RENTAL ONLY
   const frontendPayNow = calc
     ? Math.round((rentalAmount * calc.prepaymentPercent) / 100)
     : 0;
 
-  // ✅ PAY LATER = EVERYTHING ELSE
   const frontendPayLater = frontendTotal - frontendPayNow;
 
   useEffect(() => {
     loadPickupReturnCharges();
   }, [pickupType, returnType, emirateId]);
-  /* ---------------- ACTIONS ---------------- */
   const handleCalculate = async () => {
     const err = validateForm();
     if (err) return toast.error(err);
 
     try {
-      // ✅ STEP 1: Get pickup/return charges FIRST
       const pricing = await calculatePickupReturn({
         carId,
         emirateId,
@@ -165,13 +176,11 @@ export default function BookingPage() {
         returnType,
       }).unwrap();
 
-      // ✅ STEP 2: Set charges synchronously
       setPickupReturnCharges({
         pickup: pricing.pickupCharge || 0,
         return: pricing.returnCharge || 0,
       });
 
-      // ✅ STEP 3: Calculate rental (rent ONLY)
       const res = await calculateBooking({
         carId,
         pickupDate,
@@ -218,6 +227,7 @@ export default function BookingPage() {
         prepaymentAmount: frontendPayNow,
         remainingAmount: frontendPayLater,
       }).unwrap(); // ✅ REQUIRED
+  
 
       const bookingId = res?.data?._id;
       if (!bookingId) return toast.error("Booking created but ID missing");
@@ -229,7 +239,6 @@ export default function BookingPage() {
       toast.error(e?.data?.message || "Booking failed");
     }
   };
- // REQUIRED
 
   useEffect(() => {
     setCalc(null);
@@ -237,7 +246,6 @@ export default function BookingPage() {
     setPickupReturnCharges({ pickup: 0, return: 0 }); // ✅ ADD THIS
   }, [pickupDate, pickupTime, dropoffDate, dropoffTime, priceType, address]);
 
-  // Premium UI tokens
   const card = "bg-white rounded-2xl p-5 shadow-[0_10px_40px_rgba(0,0,0,0.05)]";
   const sectionTitle = "font-semibold text-dark-base mb-4";
   const inputBase =
@@ -254,6 +262,68 @@ export default function BookingPage() {
     additionalDriver: [additionalDriver, setAdditionalDriver],
   };
 
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "";
+
+const carImages = useMemo(() => {
+  if (!carData?.car) return [];
+
+  const images: string[] = [];
+
+  if (carData.car.coverImage?.url) {
+    images.push(
+      carData.car.coverImage.url.startsWith("http")
+        ? carData.car.coverImage.url
+        : `${BASE_URL}${carData.car.coverImage.url}`
+    );
+  }
+  if (Array.isArray(carData.car.images)) {
+    carData.car.images.forEach((img) => {
+      if (img?.url) {
+        images.push(
+          img.url.startsWith("http")
+            ? img.url
+            : `${BASE_URL}${img.url}`
+        );
+      }
+    });
+  }
+  return images;
+}, [carData]);
+useEffect(() => {
+  if (!carId) return;
+  
+
+  const fetchCar = async () => {
+    try {
+      setCarLoading(true);
+      const res = await getCar(carId);
+      setCarData(res?.data || null);
+    } catch (err) {
+      console.error("Failed to fetch car", err);
+    } finally {
+      setCarLoading(false);
+    }
+  };
+
+  fetchCar();
+}, [carId]);
+const carouselImages = useMemo(() => {
+  if (carImages.length === 0) return [];
+  return [...carImages, carImages[0]]; // clone first
+}, [carImages]);
+
+useEffect(() => {
+  if (paused || carouselImages.length <= 1) return;
+
+  const interval = setInterval(() => {
+    setActiveIndex((prev) => prev + 1);
+  }, 3000);
+
+  return () => clearInterval(interval);
+}, [paused, carouselImages.length]);
+
+const isLastClone = activeIndex === carouselImages.length - 1;
+const [isResetting, setIsResetting] = useState(false);
 
   return (
     <div className="min-h-screen bg-[#f7f8fa]">
@@ -291,21 +361,21 @@ export default function BookingPage() {
               <p className={sectionTitle}>Dates & Time</p>
 
               <div className="grid grid-cols-2 gap-3">
-                {/* Pickup Date */}
                 <div>
                   <label className={fieldLabel}>Pickup Date</label>
-                  <DatePicker
-                    value={pickupDate ? new Date(pickupDate) : undefined}
-                    minDate={new Date()}
-                    onChange={(date) =>
-                      setPickupDate(
-                        date ? date.toISOString().split("T")[0] : ""
-                      )
-                    }
-                  />
+                   <DatePicker
+                  selected={pickupDate ? new Date(pickupDate) : null}
+                  onChange={(date: Date | null) =>
+                    setPickupDate(date ? date.toISOString().split("T")[0] : "")
+                  }
+                  minDate={new Date()}
+                  placeholderText="dd-mm-yyyy"
+                  dateFormat="dd-MM-yyyy"
+                  customInput={<DateInput />}
+                />
+
                 </div>
 
-                {/* Pickup Time (unchanged) */}
                 <div>
                   <label className={fieldLabel}>Pickup Time</label>
                   <input
@@ -316,21 +386,21 @@ export default function BookingPage() {
                   />
                 </div>
 
-                {/* Dropoff Date */}
                 <div>
                   <label className={fieldLabel}>Dropoff Date</label>
-                  <DatePicker
-                    value={dropoffDate ? new Date(dropoffDate) : undefined}
-                    minDate={pickupDate ? new Date(pickupDate) : new Date()}
-                    onChange={(date) =>
-                      setDropoffDate(
-                        date ? date.toISOString().split("T")[0] : ""
-                      )
+                 <DatePicker
+                    selected={dropoffDate ? new Date(dropoffDate) : null}
+                    onChange={(date: Date | null) =>
+                      setDropoffDate(date ? date.toISOString().split("T")[0] : "")
                     }
+                    minDate={pickupDate ? new Date(pickupDate) : new Date()}
+                    placeholderText="dd-mm-yyyy"
+                    dateFormat="dd-MM-yyyy"
+                      customInput={<DateInput />}
                   />
+
                 </div>
 
-                {/* Dropoff Time (unchanged) */}
                 <div>
                   <label className={fieldLabel}>Dropoff Time</label>
                   <input
@@ -344,12 +414,9 @@ export default function BookingPage() {
             </div>
 
           <div className={card}>
-  {/* TOP ROW */}
   <div className="flex items-center justify-between mb-2">
-    {/* LEFT */}
     <p className="font-semibold text-dark-base">Pickup</p>
 
-    {/* RIGHT OPTION */}
     <div className="flex items-center gap-2">
      
 
@@ -367,15 +434,11 @@ export default function BookingPage() {
 {showDeliveryPolicy && (
   <div className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center">
     <div className="bg-white w-full h-[400px] sm:max-w-lg rounded p-6 flex flex-col">
-
-      {/* CONTENT */}
       <div className="flex-1">
         <p className="text-base text-center font-medium">
           Pickup & Delivery Policy
         </p>
       </div>
-
-      {/* CLOSE BUTTON */}
       <button
         onClick={() => setShowDeliveryPolicy(false)}
         className="mt-4 w-full rounded-2xl
@@ -418,12 +481,12 @@ export default function BookingPage() {
       <p className="font-semibold text-sm">Pickup from vendor</p>
       <p className="text-xs text-grey">Free</p>
     </div>
-                </button>
-              <button
+     </button>
+      <button
     type="button"
     onClick={() => setPickupType("DELIVERY")}
       className="relative z-10 flex-1 flex items-center gap-3 px-4 py-3 rounded-xl text-left"
-  >
+      >
     <div
       className={`flex h-10 w-10 items-center justify-center rounded-full transition
         ${
@@ -432,17 +495,14 @@ export default function BookingPage() {
             : "bg-soft-grey/40 text-dark-base"
         }
       `}
-    >
+       >
       <Truck size={18} />
     </div>
 
     <div>
       <p className="font-semibold text-sm">Delivery to address</p>
       <p className="text-xs text-grey">Paid (by emirate)</p>
-    </div>
-
-
-                 
+    </div>     
                 </button>
               </div>
               {(pickupType === "DELIVERY" || returnType === "RETURN") && (
@@ -470,8 +530,6 @@ export default function BookingPage() {
                   </select>
                 </div>
               )}
-
-              {/* ADDRESS ONLY WHEN DELIVERY */}
               {pickupType === "DELIVERY" && (
                 <div className="mt-4">
                   <label className={fieldLabel}>Delivery Address</label>
@@ -486,16 +544,13 @@ export default function BookingPage() {
               )}
               <p className={sectionTitle}>Return</p>
 
-<div className="relative flex bg-soft-grey/30 rounded-2xl p-1 mb-5">
-  {/* SLIDER */}
-  <div
-    className={`absolute top-1 left-1 h-[calc(100%-0.5rem)] w-1/2 rounded-xl 
-      bg-white shadow-sm transition-transform duration-300
-      ${returnType === "RETURN" ? "translate-x-full" : ""}
-    `}
-  />
-
-  {/* DROPOFF */}
+          <div className="relative flex bg-soft-grey/30 rounded-2xl p-1 mb-5">
+            <div
+              className={`absolute top-1 left-1 h-[calc(100%-0.5rem)] w-1/2 rounded-xl 
+                bg-white shadow-sm transition-transform duration-300
+                ${returnType === "RETURN" ? "translate-x-full" : ""}
+              `}
+            />
   <button
     type="button"
     onClick={() => setReturnType("DROPOFF")}
@@ -508,8 +563,6 @@ export default function BookingPage() {
       <p className="text-xs text-grey">Free</p>
     </div>
   </button>
-
-  {/* RETURN */}
   <button
     type="button"
     onClick={() => setReturnType("RETURN")}
@@ -526,7 +579,7 @@ export default function BookingPage() {
 </div>
   </div>
           
-            <div className={card}>
+  <div className={card}>
   <div className="flex items-center justify-between mb-4">
     <div>
       <p className="font-semibold text-dark-base">Important Info</p>
@@ -558,10 +611,57 @@ export default function BookingPage() {
     </div>
   )}
 </div>
-         
+<div className={card}>
+      
+      {/* TOP SECTION */}
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="font-semibold text-gray-900">
+            Enjoy a deposit-free ride for AED {depositFree}
+          </p>
+          <p className="text-sm text-gray-600 p-2">
+            You can rent a car without any deposit by including the additional
+            service fee<br /> in your rental price
+          </p>
+        </div>
+        <button
+          onClick={() => setDepositFree(!depositFree)}
+          className={`relative w-12 h-6 rounded-full transition-colors ${
+            depositFree ? "bg-site-accent" : "bg-gray-300"
+          }`}
+        >
+          <span
+            className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+              depositFree ? "translate-x-6" : ""
+            }`}
+          />
+        </button>
+      </div>
+
+      <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between ">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
+            💳
+          </div>
+
+          <div>
+            <p className="font-medium text-gray-900">Deposit</p>
+            <p className="text-xs text-gray-500">
+              Refunded within 21 days after you return the car
+            </p>
+          </div>
+        </div>
+        <p
+          className={`text-lg font-semibold ${
+            depositFree ? "text-site-accent" : "text-gray-900"
+          }`}
+        >
+          AED {depositFree ? "0" : DEPOSIT_AMOUNT.toLocaleString()}
+        </p>
+      </div>
+    </div>
+       
             <div className={card}>
-              {/* HEADER (TOGGLE) */}
-              {/* HEADER WITH TOGGLE */}
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <p className="font-semibold text-dark-base">Add-ons</p>
@@ -571,8 +671,6 @@ export default function BookingPage() {
                       : "Optional"}
                   </p>
                 </div>
-
-                {/* TOGGLE SWITCH */}
                 <button
                   type="button"
                   onClick={() => setAddonsOpen((prev) => !prev)}
@@ -591,8 +689,6 @@ export default function BookingPage() {
                   />
                 </button>
               </div>
-
-              {/* BODY */}
               {addonsOpen && (
                 <div className="space-y-2">
                   {Object.entries(ADDONS).map(([key, item]) => {
@@ -626,7 +722,6 @@ export default function BookingPage() {
                           <p className="text-xs text-grey">AED {item.price}</p>
                         </div>
 
-                        {/* CHECKBOX (UNCHANGED) */}
                         <input
                           type="checkbox"
                           checked={checked}
@@ -691,11 +786,8 @@ export default function BookingPage() {
               </div>
             </div>
 
-            {/* Actions */}
             <div className="space-y-4">
-              {/* ACTION BUTTONS */}
               <div className="flex gap-3">
-                {/* CONTINUE */}
                 {!canPay && (
                   <button
                     onClick={handleCalculate}
@@ -704,25 +796,9 @@ export default function BookingPage() {
                   >
                     {calcLoading ? "Calculating..." : "Continue"}
                   </button>
-                )}
-
-                {/* PAY NOW */}
-                <button
-                  onClick={handleCreateBooking}
-                  disabled={!canPay || createLoading}
-                  className={`flex-1 rounded-2xl py-3 font-semibold text-white transition
-        ${
-          canPay
-            ? "bg-gradient-to-r from-site-accent to-slate-teal shadow-[0_12px_28px_rgba(0,0,0,0.12)]"
-            : "bg-gray-300 cursor-not-allowed"
-        }
-      `}
-                >
-                  {createLoading ? "Redirecting..." : "Pay Now"}
-                </button>
+                )}     
               </div>
 
-              {/* BACK TO CAR */}
               <button
                 onClick={() => router.push(`/car/${carId}`)}
                 className="
@@ -739,16 +815,56 @@ export default function BookingPage() {
               </button>
             </div>
           </div>
+<div className="lg:sticky lg:top-6 h-fit">
+<div className="bg-white rounded-2xl p-5 shadow-[0_10px_40px_rgba(0,0,0,0.05)]">
+  <p className="font-bold mb-4 text-dark-base">Booking Summary</p>
+  <div className="space-y-4 text-sm">
+    
+  {carImages.length > 0 && (
+    <div
+      className="relative w-full overflow-hidden rounded-2xl"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
+<div
+  className={`flex ${
+    isResetting
+      ? "transition-none"
+      : "transition-transform duration-500 ease-in-out"
+  }`}
+  style={{
+    transform: `translateX(-${activeIndex * 100}%)`,
+  }}
+  onTransitionEnd={() => {
+    if (activeIndex === carouselImages.length - 1) {
+      setIsResetting(true);
+      setActiveIndex(0);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsResetting(false);
+        });
+      });
+    }
+  }}
+>
 
-          {/* RIGHT SUMMARY */}
-          {/* RIGHT SUMMARY */}
-          <div className="lg:sticky lg:top-6 h-fit">
-            <div className="bg-white rounded-2xl p-5 shadow-[0_10px_40px_rgba(0,0,0,0.05)]">
-              <p className="font-bold mb-4 text-dark-base">Booking Summary</p>
+      {carouselImages.map((img, index) => (
+  <img
+    key={index}
+    src={img}
+    alt={`Car image ${index + 1}`}
+    className="w-full h-[200px] object-cover flex-shrink-0"
+  />
+))}
+      </div>
+    </div>
+  )}
+  
+</div>
 
-              <div className="space-y-4 text-sm">
+
+              <div className="space-y-4 text-sm pt-4">
              
-                {/* Pickup / Dropoff */}
                 <div className="rounded-xl bg-soft-grey/30 p-3">
                   <p className="text-xs text-grey mb-1">Pickup</p>
                   <p className="font-semibold text-dark-base">
@@ -760,8 +876,6 @@ export default function BookingPage() {
                     {dropoffDate || "—"} • {dropoffTime}
                   </p>
                 </div>
-
-                {/* Rental Plan */}
                 {calc && (
                   <div className="flex justify-between">
                     <span className="text-grey">Rental Plan</span>
@@ -770,8 +884,6 @@ export default function BookingPage() {
                     </span>
                   </div>
                 )}
-
-                {/* Method */}
                 <div className="flex justify-between">
                   <span className="text-grey">Method</span>
                   <span className="font-semibold">
@@ -790,8 +902,6 @@ export default function BookingPage() {
                     {address}
                   </div>
                 )}
-
-                {/* Pricing */}
                 <div className="pt-3 border-t border-soft-grey/40 space-y-2">
                   <div className="flex justify-between">
                     <span className="text-grey">Base Rental</span>
@@ -826,20 +936,15 @@ export default function BookingPage() {
                     </div>
                   )}
                 </div>
-
-                {/* Total */}
                 <div className="pt-3 border-t border-soft-grey/60 flex justify-between font-bold text-base">
                   <span>Total</span>
                   <span>AED {formatMoney(frontendTotal)}</span>
                 </div>
-
-                {/* Pay Now */}
                 <div className="flex justify-between text-site-accent font-bold">
                   <span>To Book Pay Now</span>
                   <span>AED {formatMoney(frontendPayNow)}</span>
                 </div>
 
-                {/* Pay Later */}
                 <div className="flex justify-between text-xs">
                   <span className="text-grey">
                     Pay This at the time of handover
@@ -848,8 +953,19 @@ export default function BookingPage() {
                     AED {formatMoney(frontendPayLater)}
                   </span>
                 </div>
-
-                {/* Info */}
+                   <button
+                  onClick={handleCreateBooking}
+                  disabled={!canPay || createLoading}
+                  className={`flex-1 w-[380px]  rounded-2xl py-3 font-semibold text-white transition
+        ${
+          canPay
+            ? "bg-gradient-to-r from-site-accent to-slate-teal shadow-[0_12px_28px_rgba(0,0,0,0.12)]"
+            : "bg-gray-300 cursor-not-allowed"
+        }
+      `}
+                >
+                  {createLoading ? "Redirecting..." : "Pay Now"}
+                </button>
                 <div className="flex gap-2 text-xs text-grey pt-3">
                   <CheckCircle2 className="text-site-accent w-4 h-4 mt-0.5" />
                   <p>
@@ -858,12 +974,6 @@ export default function BookingPage() {
                   </p>
                 </div>
               </div>
-
-              {/* {!calc && (
-                <p className="text-xs text-grey text-center mt-4">
-                  Calculate price to see full summary
-                </p>
-              )} */}
             </div>
           </div>
         </div>
