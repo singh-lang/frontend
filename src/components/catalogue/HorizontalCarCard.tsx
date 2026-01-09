@@ -35,7 +35,8 @@ interface HorizontalCarCardProps {
 const HorizontalCarCard = ({ car }: HorizontalCarCardProps) => {
   const [imgSrc, setImgSrc] = useState("/assets/car_placeholder.png");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [, setIsHovering] = useState(false);
+  const [isHovering, setIsHovering] = useState(false);
+
   const [selectedPeriod, setSelectedPeriod] = useState<
     "daily" | "weekly" | "monthly"
   >("daily");
@@ -168,19 +169,23 @@ const HorizontalCarCard = ({ car }: HorizontalCarCardProps) => {
         {/* IMAGE SECTION */}
         <div
           ref={imageContainerRef}
-          className="md:w-[40%] h-full relative overflow-hidden bg-gray-100 select-none"
+          className="md:w-[40%] relative overflow-hidden bg-gray-100 select-none isolate"
+          style={{ height: 390 }}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
           onMouseMove={handlePointerMove}
           onTouchMove={handlePointerMove}
         >
           <Image
-            width={1280}
-            height={960}
             src={imgSrc}
             alt={`${car?.car?.carBrand?.name} image`}
+            fill
+            priority={false}
+            sizes="(max-width: 768px) 100vw, 40vw"
+            className={`object-cover transition-transform duration-500 ${
+              isHovering ? "scale-[1.05]" : "scale-100"
+            }`}
             onError={() => setImgSrc("/assets/car_placeholder.jpg")}
-            className="w-full h-[390px] object-cover transition-transform duration-700 group-hover:scale-105"
           />
 
           {/* Compare Button */}

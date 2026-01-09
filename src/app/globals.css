@@ -129,6 +129,12 @@
       transform: translateY(0);
     }
   }
+  html {
+    scrollbar-gutter: stable;
+  }
+  html {
+    overflow-y: scroll;
+  }
 
   @keyframes fadeInUp {
     from {
@@ -261,10 +267,9 @@ button,
   z-index: 9999;
 }
 
-
 /* Header background */
 .react-datepicker__header {
-background: linear-gradient(to right, #0f766dc4, #2564ebb4);
+  background: linear-gradient(to right, #0f766dc4, #2564ebb4);
   border-bottom: none;
 }
 
@@ -343,4 +348,12 @@ background: linear-gradient(to right, #0f766dc4, #2564ebb4);
 .animate-pop {
   animation: pop 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
 }
+/* Hide scrollbar but allow scrolling */
+.scrollbar-hide {
+  -ms-overflow-style: none; /* IE & Edge */
+  scrollbar-width: none; /* Firefox */
+}
 
+.scrollbar-hide::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}

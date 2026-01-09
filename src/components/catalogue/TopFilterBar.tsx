@@ -109,17 +109,22 @@ export default function TopFiltersBar({ data }) {
         <div
           ref={dropdownRef}
           className="
-            bg-white 
-            rounded-3xl 
-            border border-gray-200 
-            shadow-sm 
-            py-4 px-6 
-            flex items-center 
-            gap-8 
-            ...
-flex items-center 
+    bg-white
+    rounded-3xl
+    border border-gray-200
+    shadow-sm
+    py-4 px-6
 
-          "
+    flex flex-nowrap items-center gap-8
+    max-w-full
+
+    overflow-x-auto
+    overflow-y-hidden
+    whitespace-nowrap
+    touch-pan-x
+
+    scrollbar-hide
+  "
         >
           {/* =============== DEPOSIT =============== */}
           <div className="relative shrink-0">
