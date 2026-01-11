@@ -5,18 +5,20 @@ import { useParams, useRouter } from "next/navigation";
 import { CheckCircle2, Truck, Store } from "lucide-react";
 import { toast } from "sonner";
 import DatePicker from "react-datepicker";
-import {DateInput} from "@/components/ui/datePicker";
+import { useGetDepositFreePricingFrontendQuery } from "@/lib/api/depositFreeFrontendApi";
+
+import { DateInput } from "@/components/ui/datePicker";
 import {
   useCalculateBookingMutation,
   useCreateBookingMutation,
 } from "@/lib/api/booking";
-import  ImportantInfo from "@/app/booking/[carId]/info";
+import ImportantInfo from "@/app/booking/[carId]/info";
 import { useCalculatePickupReturnMutation } from "@/lib/api/pickupReturnApi";
 import CatalogHeader from "@/components/catalogue/CatalogHeader";
 import { getCar } from "@/lib/api/car";
 import { type CarTypes } from "@/types/homePageTypes";
 import Image from "next/image";
-
+import { useGetAddonsByCarQuery } from "@/lib/api/carAddonsApi";
 type PriceType = "daily" | "weekly" | "monthly";
 
 interface BookingCalculation {
@@ -35,40 +37,68 @@ interface CarFetchProp {
   data: CarTypes;
 }
 
-  
-const ADDONS = {
-  childSeat: { label: "Child Seat", price: 50 },
-  babySeat: { label: "Baby Seat", price: 50 },
-  gps: { label: "GPS Navigation", price: 30 },
-  additionalDriver: { label: "Additional Driver", price: 100 },
-};
-
 const DEPOSIT_AMOUNT = 2000;
-const DEPOSIT_FREE_FEE = 210;
-
-type AddonKey = keyof typeof ADDONS;
-
+// const DEPOSIT_FREE_FEE = 210;
 export default function BookingPage() {
   const params = useParams();
   const router = useRouter();
- 
+
   const carId = (params?.carId as string) || "";
+  // 1️⃣ API HOOK
+
+  const { data: addonRes, isLoading: addonsLoading } = useGetAddonsByCarQuery(
+    carId,
+    {
+      skip: !carId,
+    }
+  );
+
+  const vendorAddons = addonRes?.data || [];
+  const { data: depositFreeRes } = useGetDepositFreePricingFrontendQuery(
+    carId,
+    {
+      skip: !carId,
+    }
+  );
+
+  const depositFreeDailyFee = depositFreeRes?.data?.daily || 0;
+
+  // 2️⃣ STATE
+  const [selectedAddons, setSelectedAddons] = useState<Record<string, boolean>>(
+    {}
+  );
+  useEffect(() => {
+    if (!vendorAddons.length) return;
+
+    const map: Record<string, boolean> = {};
+    vendorAddons.forEach((a) => {
+      map[a._id] = false; // ✅ default unchecked
+    });
+
+    setSelectedAddons(map);
+  }, [vendorAddons]);
 
   const [showDeliveryPolicy, setShowDeliveryPolicy] = useState<boolean>(false);
   const [priceType, setPriceType] = useState<PriceType>("daily");
   const [canPay, setCanPay] = useState(false);
   const [addonsOpen, setAddonsOpen] = useState(false);
-  const [selectedOption, setSelectedOption] = useState("delivery"); 
+  const [selectedOption, setSelectedOption] = useState("delivery");
   const [pickupDate, setPickupDate] = useState("");
   const [pickupTime, setPickupTime] = useState("10:00");
   const [dropoffDate, setDropoffDate] = useState("");
   const [dropoffTime, setDropoffTime] = useState("10:00");
-const [carLoading, setCarLoading] = useState(true);
+  const [carLoading, setCarLoading] = useState(true);
 
   const [guestEmail, setGuestEmail] = useState("");
   const [guestName, setGuestName] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
-const [carData, setCarData] = useState<CarTypes | null>(null);
+  const [carData, setCarData] = useState<CarTypes | null>(null);
+  const hasSecurityDeposit =
+    !!carData?.depositRequired && (carData?.securityDeposit ?? 0) > 0;
+
+  const securityDeposit = hasSecurityDeposit
+    ? carData?.securityDeposit ?? 0
+    : 0;
 
   const [address, setAddress] = useState("");
   const [infoOpen, setInfoOpen] = useState<boolean>(false);
@@ -82,11 +112,8 @@ const [carData, setCarData] = useState<CarTypes | null>(null);
     pickup: 0,
     return: 0,
   });
-  const [childSeat, setChildSeat] = useState(false);
-  const [babySeat, setBabySeat] = useState(false);
-  const [gps, setGps] = useState(false);
-  const [additionalDriver, setAdditionalDriver] = useState(false);
-const [paused, setPaused] = useState(false);
+
+  const [paused, setPaused] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [calc, setCalc] = useState<BookingCalculation | null>(null);
   const [calculatePickupReturn] = useCalculatePickupReturnMutation();
@@ -141,19 +168,37 @@ const [paused, setPaused] = useState(false);
     return null;
   };
   const addonsTotal = useMemo(() => {
-    let total = 0;
-    if (childSeat) total += ADDONS.childSeat.price;
-    if (babySeat) total += ADDONS.babySeat.price;
-    if (gps) total += ADDONS.gps.price;
-    if (additionalDriver) total += ADDONS.additionalDriver.price;
-    return total;
-  }, [childSeat, babySeat, gps, additionalDriver]);
+    return vendorAddons.reduce((sum, addon) => {
+      if (!selectedAddons[addon._id]) return sum;
+
+      switch (addon.priceType) {
+        case "per_day":
+          return sum + addon.price;
+        case "per_week":
+          return sum + addon.price;
+        case "per_month":
+          return sum + addon.price;
+        case "per_booking":
+        default:
+          return sum + addon.price;
+      }
+    }, 0);
+  }, [vendorAddons, selectedAddons]);
+  const toggleAddon = (id: string) => {
+    setSelectedAddons((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
 
   const rentalAmount = calc?.totalAmount ?? 0;
   const pickupFee = pickupReturnCharges.pickup;
   const returnFee = pickupReturnCharges.return;
   const [depositFree, setDepositFree] = useState(false);
-  const frontendTotal = rentalAmount + pickupFee + returnFee + addonsTotal;
+  const depositFreeFee = depositFree ? depositFreeDailyFee : 0;
+
+  const frontendTotal =
+    rentalAmount + pickupFee + returnFee + addonsTotal + depositFreeFee;
 
   const frontendPayNow = calc
     ? Math.round((rentalAmount * calc.prepaymentPercent) / 100)
@@ -227,7 +272,6 @@ const [paused, setPaused] = useState(false);
         prepaymentAmount: frontendPayNow,
         remainingAmount: frontendPayLater,
       }).unwrap(); // ✅ REQUIRED
-  
 
       const bookingId = res?.data?._id;
       if (!bookingId) return toast.error("Booking created but ID missing");
@@ -252,78 +296,65 @@ const [paused, setPaused] = useState(false);
     "w-full rounded-xl bg-soft-grey/30 p-3 text-sm outline-none transition focus:bg-white focus:shadow-sm";
   const fieldLabel = "text-xs font-medium text-grey mb-1 block";
 
-  const addonMap: Record<
-    AddonKey,
-    [boolean, React.Dispatch<React.SetStateAction<boolean>>]
-  > = {
-    childSeat: [childSeat, setChildSeat],
-    babySeat: [babySeat, setBabySeat],
-    gps: [gps, setGps],
-    additionalDriver: [additionalDriver, setAdditionalDriver],
-  };
+  const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "";
 
-const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "";
+  const carImages = useMemo(() => {
+    if (!carData?.car) return [];
 
-const carImages = useMemo(() => {
-  if (!carData?.car) return [];
+    const images: string[] = [];
 
-  const images: string[] = [];
-
-  if (carData.car.coverImage?.url) {
-    images.push(
-      carData.car.coverImage.url.startsWith("http")
-        ? carData.car.coverImage.url
-        : `${BASE_URL}${carData.car.coverImage.url}`
-    );
-  }
-  if (Array.isArray(carData.car.images)) {
-    carData.car.images.forEach((img) => {
-      if (img?.url) {
-        images.push(
-          img.url.startsWith("http")
-            ? img.url
-            : `${BASE_URL}${img.url}`
-        );
-      }
-    });
-  }
-  return images;
-}, [carData]);
-useEffect(() => {
-  if (!carId) return;
-  
-
-  const fetchCar = async () => {
-    try {
-      setCarLoading(true);
-      const res = await getCar(carId);
-      setCarData(res?.data || null);
-    } catch (err) {
-      console.error("Failed to fetch car", err);
-    } finally {
-      setCarLoading(false);
+    if (carData.car.coverImage?.url) {
+      images.push(
+        carData.car.coverImage.url.startsWith("http")
+          ? carData.car.coverImage.url
+          : `${BASE_URL}${carData.car.coverImage.url}`
+      );
     }
-  };
+    if (Array.isArray(carData.car.images)) {
+      carData.car.images.forEach((img) => {
+        if (img?.url) {
+          images.push(
+            img.url.startsWith("http") ? img.url : `${BASE_URL}${img.url}`
+          );
+        }
+      });
+    }
+    return images;
+  }, [carData]);
+  useEffect(() => {
+    if (!carId) return;
 
-  fetchCar();
-}, [carId]);
-const carouselImages = useMemo(() => {
-  if (carImages.length === 0) return [];
-  return [...carImages, carImages[0]]; // clone first
-}, [carImages]);
+    const fetchCar = async () => {
+      try {
+        setCarLoading(true);
+        const res = await getCar(carId);
+        setCarData(res?.data || null);
+      } catch (err) {
+        console.error("Failed to fetch car", err);
+      } finally {
+        setCarLoading(false);
+      }
+    };
 
-useEffect(() => {
-  if (paused || carouselImages.length <= 1) return;
+    fetchCar();
+  }, [carId]);
+  const carouselImages = useMemo(() => {
+    if (carImages.length === 0) return [];
+    return [...carImages, carImages[0]]; // clone first
+  }, [carImages]);
 
-  const interval = setInterval(() => {
-    setActiveIndex((prev) => prev + 1);
-  }, 3000);
+  useEffect(() => {
+    if (paused || carouselImages.length <= 1) return;
 
-  return () => clearInterval(interval);
-}, [paused, carouselImages.length]);
+    const interval = setInterval(() => {
+      setActiveIndex((prev) => prev + 1);
+    }, 3000);
 
-const isLastClone = activeIndex === carouselImages.length - 1;
-const [isResetting, setIsResetting] = useState(false);
+    return () => clearInterval(interval);
+  }, [paused, carouselImages.length]);
+
+  const isLastClone = activeIndex === carouselImages.length - 1;
+  const [isResetting, setIsResetting] = useState(false);
 
   return (
     <div className="min-h-screen bg-[#f7f8fa]">
@@ -357,23 +388,24 @@ const [isResetting, setIsResetting] = useState(false);
                 ))}
               </div>
             </div>
-              <div className={card}>
+            <div className={card}>
               <p className={sectionTitle}>Dates & Time</p>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className={fieldLabel}>Pickup Date</label>
-                   <DatePicker
-                  selected={pickupDate ? new Date(pickupDate) : null}
-                  onChange={(date: Date | null) =>
-                    setPickupDate(date ? date.toISOString().split("T")[0] : "")
-                  }
-                  minDate={new Date()}
-                  placeholderText="dd-mm-yyyy"
-                  dateFormat="dd-MM-yyyy"
-                  customInput={<DateInput />}
-                />
-
+                  <DatePicker
+                    selected={pickupDate ? new Date(pickupDate) : null}
+                    onChange={(date: Date | null) =>
+                      setPickupDate(
+                        date ? date.toISOString().split("T")[0] : ""
+                      )
+                    }
+                    minDate={new Date()}
+                    placeholderText="dd-mm-yyyy"
+                    dateFormat="dd-MM-yyyy"
+                    customInput={<DateInput />}
+                  />
                 </div>
 
                 <div>
@@ -388,17 +420,18 @@ const [isResetting, setIsResetting] = useState(false);
 
                 <div>
                   <label className={fieldLabel}>Dropoff Date</label>
-                 <DatePicker
+                  <DatePicker
                     selected={dropoffDate ? new Date(dropoffDate) : null}
                     onChange={(date: Date | null) =>
-                      setDropoffDate(date ? date.toISOString().split("T")[0] : "")
+                      setDropoffDate(
+                        date ? date.toISOString().split("T")[0] : ""
+                      )
                     }
                     minDate={pickupDate ? new Date(pickupDate) : new Date()}
                     placeholderText="dd-mm-yyyy"
                     dateFormat="dd-MM-yyyy"
-                      customInput={<DateInput />}
+                    customInput={<DateInput />}
                   />
-
                 </div>
 
                 <div>
@@ -413,96 +446,92 @@ const [isResetting, setIsResetting] = useState(false);
               </div>
             </div>
 
-          <div className={card}>
-  <div className="flex items-center justify-between mb-2">
-    <p className="font-semibold text-dark-base">Pickup</p>
+            <div className={card}>
+              <div className="flex items-center justify-between mb-2">
+                <p className="font-semibold text-dark-base">Pickup</p>
 
-    <div className="flex items-center gap-2">
-     
-
-      <p
-        className="px-3 py-1.5 rounded-lg text-dark-base  text-base font-semibold cursor-pointer underline"
-        onClick={(e) => {
-          e.stopPropagation();
-          setShowDeliveryPolicy(true);
-        }}
-      >
-        Pickup Delivery Policy
-      </p>
-    </div>
-  </div>
-{showDeliveryPolicy && (
-  <div className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center">
-    <div className="bg-white w-full h-[400px] sm:max-w-lg rounded p-6 flex flex-col">
-      <div className="flex-1">
-        <p className="text-base text-center font-medium">
-          Pickup & Delivery Policy
-        </p>
-      </div>
-      <button
-        onClick={() => setShowDeliveryPolicy(false)}
-        className="mt-4 w-full rounded-2xl
+                <div className="flex items-center gap-2">
+                  <p
+                    className="px-3 py-1.5 rounded-lg text-dark-base  text-base font-semibold cursor-pointer underline"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowDeliveryPolicy(true);
+                    }}
+                  >
+                    Pickup Delivery Policy
+                  </p>
+                </div>
+              </div>
+              {showDeliveryPolicy && (
+                <div className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center">
+                  <div className="bg-white w-full h-[400px] sm:max-w-lg rounded p-6 flex flex-col">
+                    <div className="flex-1">
+                      <p className="text-base text-center font-medium">
+                        Pickup & Delivery Policy
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setShowDeliveryPolicy(false)}
+                      className="mt-4 w-full rounded-2xl
                    bg-gradient-to-r from-site-accent to-slate-teal
                    shadow-[0_12px_28px_rgba(0,0,0,0.12)]
                    py-3 font-medium text-white"
-      >
-        Close
-      </button>
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              )}
 
-    </div>
-  </div>
-)}
-
-
-               <div className="relative flex bg-soft-grey/30 rounded-2xl p-1 mb-5">
+              <div className="relative flex bg-soft-grey/30 rounded-2xl p-1 mb-5">
                 <div
-              className={`absolute top-1 left-1 h-[calc(100%-0.5rem)] w-1/2 rounded-xl 
+                  className={`absolute top-1 left-1 h-[calc(100%-0.5rem)] w-1/2 rounded-xl 
                 bg-white shadow-sm transition-transform duration-300
                 ${pickupType === "DELIVERY" ? "translate-x-full" : ""}
               `}
-            />
-               <button
-              type="button"
-              onClick={() => setPickupType("PICKUP")}
-            className="relative z-10 flex-1 flex items-center gap-3 px-4 py-3 rounded-xl text-left"
-            >
-              <div
-                className={`flex h-10 w-10 items-center justify-center rounded-full transition
+                />
+                <button
+                  type="button"
+                  onClick={() => setPickupType("PICKUP")}
+                  className="relative z-10 flex-1 flex items-center gap-3 px-4 py-3 rounded-xl text-left"
+                >
+                  <div
+                    className={`flex h-10 w-10 items-center justify-center rounded-full transition
                   ${
                     pickupType === "PICKUP"
                       ? "bg-site-accent text-white"
                       : "bg-soft-grey/40 text-dark-base"
                   }
                 `}
-              >
-            <Store size={18} />
-          </div>
-       <div>
-      <p className="font-semibold text-sm">Pickup from vendor</p>
-      <p className="text-xs text-grey">Free</p>
-    </div>
-     </button>
-      <button
-    type="button"
-    onClick={() => setPickupType("DELIVERY")}
-      className="relative z-10 flex-1 flex items-center gap-3 px-4 py-3 rounded-xl text-left"
-      >
-    <div
-      className={`flex h-10 w-10 items-center justify-center rounded-full transition
+                  >
+                    <Store size={18} />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm">Pickup from vendor</p>
+                    <p className="text-xs text-grey">Free</p>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPickupType("DELIVERY")}
+                  className="relative z-10 flex-1 flex items-center gap-3 px-4 py-3 rounded-xl text-left"
+                >
+                  <div
+                    className={`flex h-10 w-10 items-center justify-center rounded-full transition
         ${
           pickupType === "DELIVERY"
             ? "bg-site-accent text-white"
             : "bg-soft-grey/40 text-dark-base"
         }
       `}
-       >
-      <Truck size={18} />
-    </div>
+                  >
+                    <Truck size={18} />
+                  </div>
 
-    <div>
-      <p className="font-semibold text-sm">Delivery to address</p>
-      <p className="text-xs text-grey">Paid (by emirate)</p>
-    </div>     
+                  <div>
+                    <p className="font-semibold text-sm">Delivery to address</p>
+                    <p className="text-xs text-grey">Paid (by emirate)</p>
+                  </div>
                 </button>
               </div>
               {(pickupType === "DELIVERY" || returnType === "RETURN") && (
@@ -544,123 +573,126 @@ const [isResetting, setIsResetting] = useState(false);
               )}
               <p className={sectionTitle}>Return</p>
 
-          <div className="relative flex bg-soft-grey/30 rounded-2xl p-1 mb-5">
-            <div
-              className={`absolute top-1 left-1 h-[calc(100%-0.5rem)] w-1/2 rounded-xl 
+              <div className="relative flex bg-soft-grey/30 rounded-2xl p-1 mb-5">
+                <div
+                  className={`absolute top-1 left-1 h-[calc(100%-0.5rem)] w-1/2 rounded-xl 
                 bg-white shadow-sm transition-transform duration-300
                 ${returnType === "RETURN" ? "translate-x-full" : ""}
               `}
-            />
-  <button
-    type="button"
-    onClick={() => setReturnType("DROPOFF")}
-    className="relative z-10 flex-1 flex items-center gap-3 px-4 py-3 rounded-xl text-left pl-5"
-  >
-    <div>
-      <p className="font-semibold text-sm text-dark-base">
-        Dropoff to vendor
-      </p>
-      <p className="text-xs text-grey">Free</p>
-    </div>
-  </button>
-  <button
-    type="button"
-    onClick={() => setReturnType("RETURN")}
-    className="relative z-10 flex-1 flex items-center gap-3 px-4 py-3 rounded-xl text-left pl-5"
-  >
-    <div>
-      <p className="font-semibold text-sm text-dark-base">
-        Vendor collects car
-      </p>
-      <p className="text-xs text-grey">Paid (by emirate)</p>
-    </div>
-    {returnType === "RETURN" && ( <div className="absolute right-3 top-3 h-2.5 w-2.5 rounded-full bg-site-accent" /> )}
-  </button>
-</div>
-  </div>
-          
-  <div className={card}>
-  <div className="flex items-center justify-between mb-4">
-    <div>
-      <p className="font-semibold text-dark-base">Important Info</p>
-      <p className="text-xs text-grey">Optional</p>
-      </div>
+                />
+                <button
+                  type="button"
+                  onClick={() => setReturnType("DROPOFF")}
+                  className="relative z-10 flex-1 flex items-center gap-3 px-4 py-3 rounded-xl text-left pl-5"
+                >
+                  <div>
+                    <p className="font-semibold text-sm text-dark-base">
+                      Dropoff to vendor
+                    </p>
+                    <p className="text-xs text-grey">Free</p>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReturnType("RETURN")}
+                  className="relative z-10 flex-1 flex items-center gap-3 px-4 py-3 rounded-xl text-left pl-5"
+                >
+                  <div>
+                    <p className="font-semibold text-sm text-dark-base">
+                      Vendor collects car
+                    </p>
+                    <p className="text-xs text-grey">Paid (by emirate)</p>
+                  </div>
+                  {returnType === "RETURN" && (
+                    <div className="absolute right-3 top-3 h-2.5 w-2.5 rounded-full bg-site-accent" />
+                  )}
+                </button>
+              </div>
+            </div>
 
-    <button
-      type="button"
-      onClick={() => setInfoOpen((prev) => !prev)}
-      className={`
+            <div className={card}>
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <p className="font-semibold text-dark-base">Important Info</p>
+                  <p className="text-xs text-grey">Optional</p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setInfoOpen((prev) => !prev)}
+                  className={`
         relative w-11 h-6 rounded-full transition-colors
         ${infoOpen ? "bg-site-accent" : "bg-gray-300"}
       `}
-    >
-      <span
-        className={`
+                >
+                  <span
+                    className={`
           absolute top-0.5 left-0.5
           h-5 w-5 rounded-full bg-white shadow-sm
           transition-transform
           ${infoOpen ? "translate-x-5" : ""}
         `}
-      />
-    </button>
-  </div>
+                  />
+                </button>
+              </div>
 
-  {infoOpen && (
-    <div className="mt-4 animate-in fade-in slide-in-from-top-2">
-      <ImportantInfo />
-    </div>
-  )}
-</div>
-<div className={card}>
-      
-      {/* TOP SECTION */}
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="font-semibold text-gray-900">
-            Enjoy a deposit-free ride for AED {depositFree}
-          </p>
-          <p className="text-sm text-gray-600 p-2">
-            You can rent a car without any deposit by including the additional
-            service fee<br /> in your rental price
-          </p>
-        </div>
-        <button
-          onClick={() => setDepositFree(!depositFree)}
-          className={`relative w-12 h-6 rounded-full transition-colors ${
-            depositFree ? "bg-site-accent" : "bg-gray-300"
-          }`}
-        >
-          <span
-            className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-              depositFree ? "translate-x-6" : ""
-            }`}
-          />
-        </button>
-      </div>
+              {infoOpen && (
+                <div className="mt-4 animate-in fade-in slide-in-from-top-2">
+                  <ImportantInfo />
+                </div>
+              )}
+            </div>
+            <div className={card}>
+              {/* TOP SECTION */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-semibold text-gray-900">
+                    Enjoy a deposit-free ride for AED {depositFreeDailyFee}
+                  </p>
 
-      <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between ">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
-            💳
-          </div>
+                  <p className="text-sm text-gray-600 p-2">
+                    You can rent a car without any deposit by including the
+                    additional service fee
+                    <br /> in your rental price
+                  </p>
+                </div>
+                <button
+                  onClick={() => setDepositFree(!depositFree)}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${
+                    depositFree ? "bg-site-accent" : "bg-gray-300"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                      depositFree ? "translate-x-6" : ""
+                    }`}
+                  />
+                </button>
+              </div>
 
-          <div>
-            <p className="font-medium text-gray-900">Deposit</p>
-            <p className="text-xs text-gray-500">
-              Refunded within 21 days after you return the car
-            </p>
-          </div>
-        </div>
-        <p
-          className={`text-lg font-semibold ${
-            depositFree ? "text-site-accent" : "text-gray-900"
-          }`}
-        >
-          AED {depositFree ? "0" : DEPOSIT_AMOUNT.toLocaleString()}
-        </p>
-      </div>
-    </div>
-       
+              <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between ">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
+                    💳
+                  </div>
+
+                  <div>
+                    <p className="font-medium text-gray-900">Deposit</p>
+                    <p className="text-xs text-gray-500">
+                      Refunded within 21 days after you return the car
+                    </p>
+                  </div>
+                </div>
+                <p
+                  className={`text-lg font-semibold ${
+                    depositFree ? "text-site-accent" : "text-gray-900"
+                  }`}
+                >
+                  AED {depositFree ? "0" : securityDeposit.toLocaleString()}
+                </p>
+              </div>
+            </div>
+
             <div className={card}>
               <div className="flex items-center justify-between mb-4">
                 <div>
@@ -671,45 +703,31 @@ const [isResetting, setIsResetting] = useState(false);
                       : "Optional"}
                   </p>
                 </div>
+
                 <button
                   type="button"
                   onClick={() => setAddonsOpen((prev) => !prev)}
-                  className={`
-                  relative w-11 h-6 rounded-full transition-colors
-                  ${addonsOpen ? "bg-site-accent" : "bg-gray-300"}
-                `}
+                  className={`relative w-11 h-6 rounded-full transition-colors ${
+                    addonsOpen ? "bg-site-accent" : "bg-gray-300"
+                  }`}
                 >
                   <span
-                    className={`
-                    absolute top-0.5 left-0.5
-                    h-5 w-5 rounded-full bg-white shadow-sm
-                    transition-transform
-                    ${addonsOpen ? "translate-x-5" : ""}
-                  `}
+                    className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                      addonsOpen ? "translate-x-5" : ""
+                    }`}
                   />
                 </button>
               </div>
+
               {addonsOpen && (
                 <div className="space-y-2">
-                  {Object.entries(ADDONS).map(([key, item]) => {
-                    type AddonKey = keyof typeof ADDONS;
-
-                    const map: Record<
-                      AddonKey,
-                      [boolean, React.Dispatch<React.SetStateAction<boolean>>]
-                    > = {
-                      childSeat: [childSeat, setChildSeat],
-                      babySeat: [babySeat, setBabySeat],
-                      gps: [gps, setGps],
-                      additionalDriver: [additionalDriver, setAdditionalDriver],
-                    };
-
-                    const [checked, setter] = map[key as AddonKey];
+                  {vendorAddons.map((addon) => {
+                    const checked = !!selectedAddons[addon._id];
 
                     return (
                       <label
-                        key={key}
-                        className={`flex justify-between items-center rounded-2xl p-4 transition cursor-pointer ${
+                        key={addon._id}
+                        className={`flex justify-between items-center rounded-2xl p-4 cursor-pointer transition ${
                           checked
                             ? "bg-site-accent/5"
                             : "bg-soft-grey/30 hover:bg-soft-grey/45"
@@ -717,15 +735,20 @@ const [isResetting, setIsResetting] = useState(false);
                       >
                         <div>
                           <p className="font-medium text-sm text-dark-base">
-                            {item.label}
+                            {addon.name}
                           </p>
-                          <p className="text-xs text-grey">AED {item.price}</p>
+                          <p className="text-xs text-grey">
+                            AED {addon.price}{" "}
+                            {addon.priceType === "per_day" && "/ day"}
+                            {addon.priceType === "per_week" && "/ week"}
+                            {addon.priceType === "per_month" && "/ month"}
+                          </p>
                         </div>
 
                         <input
                           type="checkbox"
                           checked={checked}
-                          onChange={(e) => setter(e.target.checked)}
+                          onChange={() => toggleAddon(addon._id)}
                           className="h-5 w-5 accent-[var(--site-accent)]"
                         />
                       </label>
@@ -796,7 +819,7 @@ const [isResetting, setIsResetting] = useState(false);
                   >
                     {calcLoading ? "Calculating..." : "Continue"}
                   </button>
-                )}     
+                )}
               </div>
 
               <button
@@ -815,56 +838,51 @@ const [isResetting, setIsResetting] = useState(false);
               </button>
             </div>
           </div>
-<div className="lg:sticky lg:top-6 h-fit">
-<div className="bg-white rounded-2xl p-5 shadow-[0_10px_40px_rgba(0,0,0,0.05)]">
-  <p className="font-bold mb-4 text-dark-base">Booking Summary</p>
-  <div className="space-y-4 text-sm">
-    
-  {carImages.length > 0 && (
-    <div
-      className="relative w-full overflow-hidden rounded-2xl"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-    >
-<div
-  className={`flex ${
-    isResetting
-      ? "transition-none"
-      : "transition-transform duration-500 ease-in-out"
-  }`}
-  style={{
-    transform: `translateX(-${activeIndex * 100}%)`,
-  }}
-  onTransitionEnd={() => {
-    if (activeIndex === carouselImages.length - 1) {
-      setIsResetting(true);
-      setActiveIndex(0);
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          setIsResetting(false);
-        });
-      });
-    }
-  }}
->
-
-      {carouselImages.map((img, index) => (
-  <img
-    key={index}
-    src={img}
-    alt={`Car image ${index + 1}`}
-    className="w-full h-[200px] object-cover flex-shrink-0"
-  />
-))}
-      </div>
-    </div>
-  )}
-  
-</div>
-
+          <div className="lg:sticky lg:top-6 h-fit">
+            <div className="bg-white rounded-2xl p-5 shadow-[0_10px_40px_rgba(0,0,0,0.05)]">
+              <p className="font-bold mb-4 text-dark-base">Booking Summary</p>
+              <div className="space-y-4 text-sm">
+                {carImages.length > 0 && (
+                  <div
+                    className="relative w-full overflow-hidden rounded-2xl"
+                    onMouseEnter={() => setPaused(true)}
+                    onMouseLeave={() => setPaused(false)}
+                  >
+                    <div
+                      className={`flex ${
+                        isResetting
+                          ? "transition-none"
+                          : "transition-transform duration-500 ease-in-out"
+                      }`}
+                      style={{
+                        transform: `translateX(-${activeIndex * 100}%)`,
+                      }}
+                      onTransitionEnd={() => {
+                        if (activeIndex === carouselImages.length - 1) {
+                          setIsResetting(true);
+                          setActiveIndex(0);
+                          requestAnimationFrame(() => {
+                            requestAnimationFrame(() => {
+                              setIsResetting(false);
+                            });
+                          });
+                        }
+                      }}
+                    >
+                      {carouselImages.map((img, index) => (
+                        <img
+                          key={index}
+                          src={img}
+                          alt={`Car image ${index + 1}`}
+                          className="w-full h-[200px] object-cover flex-shrink-0"
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <div className="space-y-4 text-sm pt-4">
-             
                 <div className="rounded-xl bg-soft-grey/30 p-3">
                   <p className="text-xs text-grey mb-1">Pickup</p>
                   <p className="font-semibold text-dark-base">
@@ -936,6 +954,14 @@ const [isResetting, setIsResetting] = useState(false);
                     </div>
                   )}
                 </div>
+                {depositFree && depositFreeDailyFee > 0 && (
+                  <div className="flex justify-between">
+                    <span className="text-grey">Deposit-Free Fee</span>
+                    <span className="font-semibold">
+                      AED {formatMoney(depositFreeDailyFee)}
+                    </span>
+                  </div>
+                )}
                 <div className="pt-3 border-t border-soft-grey/60 flex justify-between font-bold text-base">
                   <span>Total</span>
                   <span>AED {formatMoney(frontendTotal)}</span>
@@ -953,7 +979,7 @@ const [isResetting, setIsResetting] = useState(false);
                     AED {formatMoney(frontendPayLater)}
                   </span>
                 </div>
-                   <button
+                <button
                   onClick={handleCreateBooking}
                   disabled={!canPay || createLoading}
                   className={`flex-1 w-[380px]  rounded-2xl py-3 font-semibold text-white transition
