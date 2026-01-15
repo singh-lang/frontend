@@ -4,6 +4,7 @@ import Script from "next/script";
 import "./globals.css";
 import Providers from "./providers";
 import JsonLd from "@/components/JsonLd";
+import { Toaster } from "sonner";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -17,7 +18,11 @@ export const metadata: Metadata = {
   icons: { icon: "/fav.png" },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const GA_ID = process.env.NEXT_PUBLIC_GA_ID;
   const META_PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID;
   const SNAP_PIXEL_ID = process.env.NEXT_PUBLIC_SNAP_PIXEL_ID;
@@ -31,36 +36,46 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     {
       "@context": "https://schema.org",
       "@type": "CarRental",
-      "name": "TheDriveHub Dubai",
-      "url": "https://thedrivehub.com/",
-      "image": ["https://thedrivehub.com/og-image.jpg"],
-      "priceRange": "AED 500 - AED 5000",
-      "telephone": "+971564727007",
-      "address": {
+      name: "TheDriveHub Dubai",
+      url: "https://thedrivehub.com/",
+      image: ["https://thedrivehub.com/og-image.jpg"],
+      priceRange: "AED 500 - AED 5000",
+      telephone: "+971564727007",
+      address: {
         "@type": "PostalAddress",
-        "addressLocality": "Dubai",
-        "addressRegion": "Dubai",
-        "addressCountry": "AE"
+        addressLocality: "Dubai",
+        addressRegion: "Dubai",
+        addressCountry: "AE",
       },
-      "areaServed": ["Dubai","Abu Dhabi","Sharjah","Ajman","Ras Al Khaimah"],
-      "openingHoursSpecification": [{
-        "@type": "OpeningHoursSpecification",
-        "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
-        "opens": "00:00",
-        "closes": "23:59"
-      }]
+      areaServed: ["Dubai", "Abu Dhabi", "Sharjah", "Ajman", "Ras Al Khaimah"],
+      openingHoursSpecification: [
+        {
+          "@type": "OpeningHoursSpecification",
+          dayOfWeek: [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+            "Sunday",
+          ],
+          opens: "00:00",
+          closes: "23:59",
+        },
+      ],
     },
     {
       "@context": "https://schema.org",
       "@type": "WebSite",
-      "name": "The Drive Hub",
-      "url": "https://thedrivehub.com/",
-      "potentialAction": {
+      name: "The Drive Hub",
+      url: "https://thedrivehub.com/",
+      potentialAction: {
         "@type": "SearchAction",
-        "target": "https://thedrivehub.com/search?q={search_term_string}",
-        "query-input": "required name=search_term_string"
-      }
-    }
+        target: "https://thedrivehub.com/search?q={search_term_string}",
+        "query-input": "required name=search_term_string",
+      },
+    },
   ];
 
   return (
@@ -69,7 +84,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* === Your existing pixels (GA / Meta / Snap / TikTok) === */}
         {GA_ID && (
           <>
-            <Script async src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} strategy="afterInteractive" />
+            <Script
+              async
+              src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
+              strategy="afterInteractive"
+            />
             <Script id="google-analytics" strategy="afterInteractive">
               {`
                 window.dataLayer = window.dataLayer || [];
@@ -142,6 +161,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
       <body className={`${poppins.className} !bg-off-white mx-auto`}>
         <Providers>{children}</Providers>
+        {/* ✅ REQUIRED FOR SONNER TOASTS */}
+        <Toaster position="top-center" richColors closeButton />
       </body>
     </html>
   );

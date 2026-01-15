@@ -37,7 +37,7 @@ interface CarFetchProp {
   data: CarTypes;
 }
 
-const DEPOSIT_AMOUNT = 2000;
+// const DEPOSIT_AMOUNT = 2000;
 // const DEPOSIT_FREE_FEE = 210;
 export default function BookingPage() {
   const params = useParams();
@@ -67,6 +67,8 @@ export default function BookingPage() {
   const [selectedAddons, setSelectedAddons] = useState<Record<string, boolean>>(
     {}
   );
+  const [incompleteToastShown, setIncompleteToastShown] = useState(false);
+
   useEffect(() => {
     if (!vendorAddons.length) return;
 
@@ -99,6 +101,16 @@ export default function BookingPage() {
   const securityDeposit = hasSecurityDeposit
     ? carData?.securityDeposit ?? 0
     : 0;
+  const notifyIncomplete = () => {
+    if (incompleteToastShown) return;
+
+    toast.message("✨ Almost there!", {
+      description: "Please fill all required details to see your final price.",
+      duration: 2200,
+    });
+
+    setIncompleteToastShown(true);
+  };
 
   const [address, setAddress] = useState("");
   const [infoOpen, setInfoOpen] = useState<boolean>(false);
@@ -167,51 +179,11 @@ export default function BookingPage() {
 
     return null;
   };
-  const addonsTotal = useMemo(() => {
-    return vendorAddons.reduce((sum, addon) => {
-      if (!selectedAddons[addon._id]) return sum;
-
-      switch (addon.priceType) {
-        case "per_day":
-          return sum + addon.price;
-        case "per_week":
-          return sum + addon.price;
-        case "per_month":
-          return sum + addon.price;
-        case "per_booking":
-        default:
-          return sum + addon.price;
-      }
-    }, 0);
-  }, [vendorAddons, selectedAddons]);
-  const toggleAddon = (id: string) => {
-    setSelectedAddons((prev) => ({
-      ...prev,
-      [id]: !prev[id],
-    }));
-  };
-
-  const rentalAmount = calc?.totalAmount ?? 0;
-  const pickupFee = pickupReturnCharges.pickup;
-  const returnFee = pickupReturnCharges.return;
-  const [depositFree, setDepositFree] = useState(false);
-  const depositFreeFee = depositFree ? depositFreeDailyFee : 0;
-
-  const frontendTotal =
-    rentalAmount + pickupFee + returnFee + addonsTotal + depositFreeFee;
-
-  const frontendPayNow = calc
-    ? Math.round((rentalAmount * calc.prepaymentPercent) / 100)
-    : 0;
-
-  const frontendPayLater = frontendTotal - frontendPayNow;
-
-  useEffect(() => {
-    loadPickupReturnCharges();
-  }, [pickupType, returnType, emirateId]);
-  const handleCalculate = async () => {
+  const autoCalculate = async () => {
     const err = validateForm();
-    if (err) return toast.error(err);
+    if (err) {
+      return;
+    }
 
     try {
       const pricing = await calculatePickupReturn({
@@ -239,18 +211,109 @@ export default function BookingPage() {
 
       setCalc(res?.data ?? null);
       setCanPay(true);
-      toast.success("Price calculated");
-    } catch (error: unknown) {
-      const e = error as ApiError;
-      toast.error(e?.data?.message || "Calculation failed");
+      setIncompleteToastShown(false); // ✅ REQUIRED
+    } catch {
+      setCalc(null);
+      setCanPay(false);
     }
   };
+
+  const rentalDays = useMemo(() => {
+    if (!pickupDate || !dropoffDate) return 0;
+
+    const start = new Date(pickupDate);
+    const end = new Date(dropoffDate);
+
+    const diffDays = Math.ceil(
+      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    return Math.max(diffDays, 1);
+  }, [pickupDate, dropoffDate]);
+
+  const addonsTotal = useMemo(() => {
+    return vendorAddons.reduce((sum, addon) => {
+      if (!selectedAddons[addon._id]) return sum;
+
+      if (addon.priceType === "per_day") {
+        return sum + addon.price * rentalDays;
+      }
+
+      // per_booking
+      return sum + addon.price;
+    }, 0);
+  }, [vendorAddons, selectedAddons, rentalDays]);
+
+  const toggleAddon = (id: string) => {
+    setSelectedAddons((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
+  const rentalAmount = calc?.totalAmount ?? 0;
+  const pickupFee = pickupReturnCharges.pickup;
+  const returnFee = pickupReturnCharges.return;
+  const [depositFree, setDepositFree] = useState(false);
+  const depositFreeFee = depositFree ? depositFreeDailyFee * rentalDays : 0;
+
+  const frontendTotal =
+    rentalAmount + pickupFee + returnFee + addonsTotal + depositFreeFee;
+
+  const frontendPayNow = calc
+    ? Math.round((rentalAmount * calc.prepaymentPercent) / 100)
+    : 0;
+
+  const frontendPayLater = frontendTotal - frontendPayNow;
+
+  useEffect(() => {
+    loadPickupReturnCharges();
+  }, [pickupType, returnType, emirateId]);
+  // const handleCalculate = async () => {
+  //   const err = validateForm();
+  //   if (err) return toast.error(err);
+
+  //   try {
+  //     const pricing = await calculatePickupReturn({
+  //       carId,
+  //       emirateId,
+  //       pickupType,
+  //       returnType,
+  //     }).unwrap();
+
+  //     setPickupReturnCharges({
+  //       pickup: pricing.pickupCharge || 0,
+  //       return: pricing.returnCharge || 0,
+  //     });
+
+  //     const res = await calculateBooking({
+  //       carId,
+  //       pickupDate,
+  //       pickupTime,
+  //       dropoffDate,
+  //       dropoffTime,
+  //       priceType,
+  //       deliveryRequired: pickupType === "DELIVERY" || returnType === "RETURN",
+  //       address: pickupType === "DELIVERY" ? address : undefined,
+  //     }).unwrap();
+
+  //     setCalc(res?.data ?? null);
+  //     setCanPay(true);
+  //     toast.success("Price calculated");
+  //   } catch (error: unknown) {
+  //     const e = error as ApiError;
+  //     toast.error(e?.data?.message || "Calculation failed");
+  //   }
+  // };
 
   const handleCreateBooking = async () => {
     const err = validateForm();
     if (err) return toast.error(err);
-    if (!calc) return toast.error("Please calculate price first");
-
+    // if (!calc) return toast.error("Please calculate price first");
+    // ✅ HARD TYPE GUARD
+    if (!calc || !canPay) {
+      return toast.error("Please complete booking details first");
+    }
     try {
       const res = await createBooking({
         carId,
@@ -289,6 +352,19 @@ export default function BookingPage() {
     setCanPay(false);
     setPickupReturnCharges({ pickup: 0, return: 0 }); // ✅ ADD THIS
   }, [pickupDate, pickupTime, dropoffDate, dropoffTime, priceType, address]);
+  useEffect(() => {
+    autoCalculate();
+  }, [
+    pickupDate,
+    pickupTime,
+    dropoffDate,
+    dropoffTime,
+    priceType,
+    pickupType,
+    returnType,
+    emirateId,
+    address,
+  ]);
 
   const card = "bg-white rounded-2xl p-5 shadow-[0_10px_40px_rgba(0,0,0,0.05)]";
   const sectionTitle = "font-semibold text-dark-base mb-4";
@@ -396,11 +472,14 @@ export default function BookingPage() {
                   <label className={fieldLabel}>Pickup Date</label>
                   <DatePicker
                     selected={pickupDate ? new Date(pickupDate) : null}
-                    onChange={(date: Date | null) =>
+                    onChange={(date: Date | null) => {
                       setPickupDate(
                         date ? date.toISOString().split("T")[0] : ""
-                      )
-                    }
+                      );
+
+                      const err = validateForm();
+                      if (err) notifyIncomplete();
+                    }}
                     minDate={new Date()}
                     placeholderText="dd-mm-yyyy"
                     dateFormat="dd-MM-yyyy"
@@ -422,11 +501,14 @@ export default function BookingPage() {
                   <label className={fieldLabel}>Dropoff Date</label>
                   <DatePicker
                     selected={dropoffDate ? new Date(dropoffDate) : null}
-                    onChange={(date: Date | null) =>
+                    onChange={(date: Date | null) => {
                       setDropoffDate(
                         date ? date.toISOString().split("T")[0] : ""
-                      )
-                    }
+                      );
+
+                      const err = validateForm();
+                      if (err) notifyIncomplete();
+                    }}
                     minDate={pickupDate ? new Date(pickupDate) : new Date()}
                     placeholderText="dd-mm-yyyy"
                     dateFormat="dd-MM-yyyy"
@@ -541,7 +623,9 @@ export default function BookingPage() {
                   <select
                     className={inputBase}
                     value={emirateId}
-                    onChange={(e) => setEmirateId(e.target.value)}
+                    onChange={(e) => {
+                      setEmirateId(e.target.value);
+                    }}
                   >
                     <option value="">Select Emirate</option>
 
@@ -647,7 +731,8 @@ export default function BookingPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-semibold text-gray-900">
-                    Enjoy a deposit-free ride for AED {depositFreeDailyFee}
+                    Enjoy a deposit-free ride for AED {depositFreeDailyFee} Per
+                    day
                   </p>
 
                   <p className="text-sm text-gray-600 p-2">
@@ -739,9 +824,9 @@ export default function BookingPage() {
                           </p>
                           <p className="text-xs text-grey">
                             AED {addon.price}{" "}
-                            {addon.priceType === "per_day" && "/ day"}
-                            {addon.priceType === "per_week" && "/ week"}
-                            {addon.priceType === "per_month" && "/ month"}
+                            {addon.priceType === "per_day"
+                              ? "/ day"
+                              : "per booking"}
                           </p>
                         </div>
 
@@ -811,7 +896,7 @@ export default function BookingPage() {
 
             <div className="space-y-4">
               <div className="flex gap-3">
-                {!canPay && (
+                {/* {!canPay && (
                   <button
                     onClick={handleCalculate}
                     disabled={calcLoading}
@@ -819,7 +904,7 @@ export default function BookingPage() {
                   >
                     {calcLoading ? "Calculating..." : "Continue"}
                   </button>
-                )}
+                )} */}
               </div>
 
               <button
@@ -954,14 +1039,17 @@ export default function BookingPage() {
                     </div>
                   )}
                 </div>
-                {depositFree && depositFreeDailyFee > 0 && (
+                {depositFree && depositFreeFee > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-grey">Deposit-Free Fee</span>
+                    <span className="text-grey">
+                      Deposit-Free Fee ({rentalDays} days)
+                    </span>
                     <span className="font-semibold">
-                      AED {formatMoney(depositFreeDailyFee)}
+                      AED {formatMoney(depositFreeFee)}
                     </span>
                   </div>
                 )}
+
                 <div className="pt-3 border-t border-soft-grey/60 flex justify-between font-bold text-base">
                   <span>Total</span>
                   <span>AED {formatMoney(frontendTotal)}</span>

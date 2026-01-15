@@ -3,7 +3,6 @@ export const revalidate = 0;
 
 import type { Metadata } from "next";
 import CatalogHeader from "@/components/catalogue/CatalogHeader";
-import FiltersPanel from "@/components/catalogue/FilterPanel";
 import SortingBar from "@/components/catalogue/SortingBar";
 import CarCards from "@/components/catalogue/CarCards";
 import CatalogSearchBox from "@/components/catalogue/CatalogSearchBox";
@@ -84,10 +83,9 @@ export default async function Page({ params, searchParams }: PageProps) {
       <div className="max-w-[1920px]  mx-auto px-4 sm:px-6 py-8">
         <div className="w-full block sm:flex sm:gap-6">
           {/* LEFT FILTERS */}
-          <FiltersPanel data={masterData} />
 
           {/* RIGHT CONTENT */}
-          <div className="w-full">
+          <div className="max-w-7xl mx-auto px-4 -mt-8 pb-20 space-y-8">
             {/* <CatalogSearchBox /> */}
             {/* <SortingBar categories={masterData?.categories || []} /> */}
             <CarCards data={data} />

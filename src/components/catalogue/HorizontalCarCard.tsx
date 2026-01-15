@@ -20,11 +20,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { CarTypes } from "@/types/homePageTypes";
 import DirhamSymbol from "../shared/DirhamSymbol";
-
-// ✅ Comparison context
 import { useComparison } from "@/contexts/ComparisionContext";
-
-// ✅ Click tracking + WhatsApp helpers (same as other components)
 import { useCreateClickMutation } from "@/lib/api/car";
 import { buildWhatsAppMessage, buildWhatsAppUrl } from "@/util/watsapp";
 
@@ -159,11 +155,32 @@ const HorizontalCarCard = ({ car }: HorizontalCarCardProps) => {
 
   const callNumber =
     car?.vendor?.vendorDetails?.contact?.mobileNum || "+971501234567";
-
+  const specs = [
+    {
+      icon: <Calendar className="w-4 h-4" />,
+      value: car?.car?.modelYear,
+      label: "Year",
+    },
+    {
+      icon: <Users className="w-4 h-4" />,
+      value: `${car?.car?.seatingCapacity} Seats`,
+      label: "Seats",
+    },
+    {
+      icon: <Gauge className="w-4 h-4" />,
+      value: getTransmissionSubstring(),
+      label: "Trans",
+    },
+    {
+      icon: <Fuel className="w-4 h-4" />,
+      value: car?.car?.fuelType,
+      label: "Fuel",
+    },
+  ];
   return (
     <div
       onClick={handleCardClick}
-      className="cursor-pointer w-full bg-gradient-to-br from-white to-gray-50 border border-gray-100 rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 group mb-6"
+      className="cursor-pointer  w-full lg:w-[1200px] bg-gradient-to-br from-white to-gray-100 border border-gray-100 rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 group mb-6"
     >
       <div className="flex flex-col md:flex-row">
         {/* IMAGE SECTION */}
@@ -230,22 +247,19 @@ const HorizontalCarCard = ({ car }: HorizontalCarCardProps) => {
             </div>
           )}
         </div>
-
-        {/* DETAILS SECTION */}
         <div className="p-6 w-full md:w-[60%] flex flex-col justify-between">
-          {/* Brand + Vendor */}
           <div className="flex items-start justify-between mb-3">
             <div>
-              <p className="text-site-accent font-semibold text-sm mb-1">
+              <p className="text-site-accent font-semibold  text-sm mb-1">
                 {car?.car?.carBrand?.name}
               </p>
               <h3
-                className="text-xl font-bold text-primary mb-1"
+                className="text-xl font-bold text-primary mb-1 "
                 style={{ fontFamily: "Stretch Pro, sans-serif" }}
               >
                 {car?.title}
               </h3>
-              <p className="text-site-secondary text-xs">
+              <p className="text-site-secondary text-xs font-semibold">
                 {car?.car?.modelYear} Model
               </p>
             </div>
@@ -261,13 +275,13 @@ const HorizontalCarCard = ({ car }: HorizontalCarCardProps) => {
               className="w-12 h-12 rounded-xl object-contain bg-white border border-gray-200"
             />
           </div>
-
-          {/* Vendor Info */}
           <div
-            className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-100"
+            className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-300"
             onClick={(e) => e.stopPropagation()}
           >
-            <span className="text-xs text-site-secondary">Provided by</span>
+            <span className="text-xs text-site-secondary font-medium">
+              Provided by
+            </span>
             <Link
               href={`/catalog/vendor-cars/${car?.vendor?._id}`}
               className="text-sm font-semibold text-primary"
@@ -276,49 +290,37 @@ const HorizontalCarCard = ({ car }: HorizontalCarCardProps) => {
             </Link>
             <VerifiedBadge className="w-5 h-5" />
           </div>
-
-          {/* Car Specs */}
-          <div className="grid grid-cols-4 gap-1.5 mb-2 p-1.5 rounded-lg bg-gradient-to-br from-off-white/50 to-transparent border border-soft-grey/40">
-            {[
-              {
-                icon: <Calendar className="w-2.5 h-2.5 text-site-accent" />,
-                label: "Year",
-                value: car?.car?.modelYear,
-              },
-              {
-                icon: <Users className="w-2.5 h-2.5 text-site-accent" />,
-                label: "Seats",
-                value: car?.car?.seatingCapacity,
-              },
-              {
-                icon: <Gauge className="w-2.5 h-2.5 text-site-accent" />,
-                label: "Trans.",
-                value: getTransmissionSubstring(),
-              },
-              {
-                icon: <Fuel className="w-2.5 h-2.5 text-site-accent" />,
-                label: "Fuel",
-                value: car?.car?.fuelType,
-              },
-            ].map((item, i) => (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {specs.map((item, i) => (
               <div
                 key={i}
-                className="flex flex-col items-center gap-0.5 text-center"
+                className="
+                  flex items-center gap-3
+                  rounded-2xl border border-gray-200 bg-white
+                  px-4 py-3
+                  shadow-sm hover:shadow-md transition
+                "
               >
-                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-accent/10 to-slate-teal/10 flex items-center justify-center">
+                <div
+                  className="
+                  w-10 h-10 rounded-full
+                  bg-site-accent/10
+                  flex items-center justify-center
+                "
+                >
                   {item.icon}
                 </div>
-                <span className="text-[9px] md:text-[10px] text-site-grey font-medium leading-tight">
-                  {item.label}
-                </span>
-                <span className="text-[10px] md:text-xs font-bold text-site-primary truncate max-w-full">
-                  {item.value}
-                </span>
+                <div className="leading-tight">
+                  <p className="text-[11px] text-gray-500 font-semibold">
+                    {item.label}
+                  </p>
+                  <p className="text-sm font-extrabold text-gray-900 truncate">
+                    {item.value}
+                  </p>
+                </div>
               </div>
             ))}
           </div>
-
-          {/* Pricing + Actions */}
           <div className="flex flex-col sm:flex-row justify-between items-center mt-2">
             <div>
               <div
@@ -386,13 +388,10 @@ const HorizontalCarCard = ({ car }: HorizontalCarCardProps) => {
                 </div>
               </div>
             </div>
-
-            {/* Buttons */}
             <div
               className="flex flex-col sm:flex-row items-stretch sm:items-end justify-between sm:justify-end gap-2 mt-4 w-full"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Call — tracked, then opens dialer */}
               <a
                 href={`tel:${callNumber}`}
                 onClick={(e) => {
@@ -411,8 +410,6 @@ const HorizontalCarCard = ({ car }: HorizontalCarCardProps) => {
                 <Phone className="w-5 h-5" />
                 Call
               </a>
-
-              {/* WhatsApp — tracked, opens with prefilled message + warning */}
               <a
                 href={whatsappUrl}
                 onClick={(e) => {

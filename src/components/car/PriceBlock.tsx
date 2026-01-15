@@ -13,9 +13,10 @@ import { useState } from "react";
 
 interface PriceBlockProps {
   data: CarTypes;
+  depositFreeDailyFee?: number; // 👈 add this
 }
 
-const PriceBlock = ({ data }: PriceBlockProps) => {
+const PriceBlock = ({ data, depositFreeDailyFee = 0 }: PriceBlockProps) => {
   const [selectedPeriod, setSelectedPeriod] = useState<
     "daily" | "weekly" | "monthly"
   >("daily");
@@ -34,6 +35,10 @@ const PriceBlock = ({ data }: PriceBlockProps) => {
         return 0;
     }
   };
+  const [useDepositFree, setUseDepositFree] = useState(false);
+
+  // ✅ SAME LOGIC AS BOOKING PAGE
+  const depositFreeFee = useDepositFree ? depositFreeDailyFee : 0;
 
   // ✅ Treat 0 or undefined as NO deposit, even if depositRequired is true
   const hasSecurityDeposit =
@@ -60,6 +65,8 @@ const PriceBlock = ({ data }: PriceBlockProps) => {
   const baseRate = getPriceForPeriod();
   const deliveryFee = data?.deliveryCharges || 0;
   const securityDeposit = getSecurityDeposit();
+  const estimatedTotal =
+    baseRate + deliveryFee + (useDepositFree ? depositFreeDailyFee : 0);
 
   return (
     <>
@@ -106,6 +113,33 @@ const PriceBlock = ({ data }: PriceBlockProps) => {
             <div className="text-xs font-semibold text-dark-base mb-2">
               Price Breakdown
             </div>
+            {/* DEPOSIT-FREE TOGGLE — ADD HERE */}
+            {hasSecurityDeposit && depositFreeDailyFee > 0 && (
+              <div className="mt-4 mb-3 flex items-center justify-between rounded-xl bg-soft-grey/20 p-3">
+                <div>
+                  <p className="text-sm font-semibold text-dark-base">
+                    Deposit-Free Option
+                  </p>
+                  <p className="text-xs text-grey">
+                    Pay AED {depositFreeDailyFee} instead of blocking deposit
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setUseDepositFree((v) => !v)}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${
+                    useDepositFree ? "bg-site-accent" : "bg-gray-300"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                      useDepositFree ? "translate-x-6" : ""
+                    }`}
+                  />
+                </button>
+              </div>
+            )}
+
             <div className="space-y-1.5 text-xs text-grey">
               <div className="flex justify-between">
                 <span>Base Rate</span>
@@ -128,7 +162,7 @@ const PriceBlock = ({ data }: PriceBlockProps) => {
 
               <div className="flex justify-between pt-2 border-t border-soft-grey/20 font-bold text-dark-base">
                 <span>Rental Total</span>
-                <span>AED {(baseRate + deliveryFee).toLocaleString()}</span>
+                <span>AED {estimatedTotal.toLocaleString()}</span>
               </div>
 
               {/* ✅ Only show Security Deposit row if deposit > 0 */}
@@ -137,25 +171,29 @@ const PriceBlock = ({ data }: PriceBlockProps) => {
                   <div className="flex items-center gap-1.5">
                     <Shield className="w-4 h-4 text-warning" />
                     <span className="font-bold text-warning">
-                      Security Deposit{" "}
-                      <span className="text-[10px] font-normal">
-                        (refundable)
-                      </span>
+                      {useDepositFree ? "Deposit-Free Fee" : "Security Deposit"}
+                      {!useDepositFree && (
+                        <span className="text-[10px] font-normal ml-1">
+                          (refundable)
+                        </span>
+                      )}
                     </span>
                   </div>
+
                   <span className="font-bold text-warning text-sm">
-                    AED {securityDeposit.toLocaleString()}
+                    {useDepositFree
+                      ? `AED ${depositFreeDailyFee}`
+                      : `AED ${securityDeposit.toLocaleString()}`}
                   </span>
                 </div>
               )}
 
               <div className="flex justify-between pt-2 border-t-2 border-dark-base/20 bg-slate-teal/5 -mx-5 px-5 py-3 -mb-4 rounded-b-xl">
                 <span className="font-bold text-dark-base text-sm">
-                  Total Due Now
+                  Estimated Rental Cost
                 </span>
                 <span className="font-bold text-dark-base text-base">
-                  AED{" "}
-                  {(baseRate + deliveryFee + securityDeposit).toLocaleString()}
+                  AED {estimatedTotal.toLocaleString()}
                 </span>
               </div>
             </div>

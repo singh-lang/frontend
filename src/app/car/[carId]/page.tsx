@@ -28,6 +28,7 @@ import { getFilterMasterData } from "@/lib/api/catalog";
 // import PDFPreviewModal from "../components/booking/PDFPreviewModal";
 // import BookingSuccessModal from "../components/booking/BookingSuccessModal";
 // import LeaveReview from "../components/shared/LeaveReview";
+import CarDetailClient from "@/app/CarDetailClient";
 
 interface ParamProps {
   params: { carId: string };
@@ -97,8 +98,7 @@ const CarDetail = async ({ params }: ParamProps) => {
             Rental Pricing
           </h3>
 
-          <PriceBlock data={car?.data} />
-          <ButtonsSection car={car?.data} />
+          <CarDetailClient car={car?.data} />
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-12">

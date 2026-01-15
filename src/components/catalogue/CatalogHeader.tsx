@@ -143,7 +143,7 @@ const CatalogHeader = ({ data }: CatalogHeaderProps) => {
             <div className="absolute -bottom-px left-1/4 right-1/4 h-px bg-gradient-to-r from-transparent via-accent/60 via-slate-teal/40 to-transparent"></div>
             <div className="flex items-center gap-12">
               <Link href="/" className="group">
-                <Image
+                <img
                   src="/assets/logoo.svg"
                   alt="The Drive Hub"
                   height={40}
@@ -159,80 +159,6 @@ const CatalogHeader = ({ data }: CatalogHeaderProps) => {
                   role="menuitem"
                 >
                   All Cars
-                </Link>
-
-                <div
-                  className="relative"
-                  onMouseEnter={() => handleMouseEnter("category")}
-                  onMouseLeave={handleMouseLeave}
-                >
-                  <button
-                    className="flex items-center gap-1 px-4 py-2 font-medium hover:text-site-accent hover:bg-white/10 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-site-accent focus:ring-offset-2"
-                    aria-expanded={activeMegaMenu === "category"}
-                    aria-haspopup="true"
-                    role="menuitem"
-                    onKeyDown={(e) => handleKeyDown(e, "category")}
-                    tabIndex={0}
-                  >
-                    By Category
-                    <ChevronDown
-                      className={`w-4 h-4 transition-transform duration-300 ${
-                        activeMegaMenu === "category" ? "rotate-180" : ""
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                <div
-                  className="relative"
-                  onMouseEnter={() => handleMouseEnter("brand")}
-                  onMouseLeave={handleMouseLeave}
-                >
-                  <button
-                    className="flex items-center gap-1 px-4 py-2 font-medium hover:text-site-accent hover:bg-white/10 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-site-accent focus:ring-offset-2"
-                    aria-expanded={activeMegaMenu === "brand"}
-                    aria-haspopup="true"
-                    role="menuitem"
-                    onKeyDown={(e) => handleKeyDown(e, "brand")}
-                    tabIndex={0}
-                  >
-                    By Brand
-                    <ChevronDown
-                      className={`w-4 h-4 transition-transform duration-300 ${
-                        activeMegaMenu === "brand" ? "rotate-180" : ""
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                <div
-                  className="relative"
-                  onMouseEnter={() => handleMouseEnter("budget")}
-                  onMouseLeave={handleMouseLeave}
-                >
-                  <button
-                    className="flex items-center gap-1 px-4 py-2 font-medium hover:text-site-accent hover:bg-white/10 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-site-accent focus:ring-offset-2"
-                    aria-expanded={activeMegaMenu === "budget"}
-                    aria-haspopup="true"
-                    role="menuitem"
-                    onKeyDown={(e) => handleKeyDown(e, "budget")}
-                    tabIndex={0}
-                  >
-                    By Budget
-                    <ChevronDown
-                      className={`w-4 h-4 transition-transform duration-300 ${
-                        activeMegaMenu === "budget" ? "rotate-180" : ""
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                <Link
-                  href="/contact"
-                  className="px-4 py-2 font-medium hover:text-site-accent hover:bg-white/10 rounded-lg transition-all duration-300"
-                  role="menuitem"
-                >
-                  Contact
                 </Link>
               </nav>
             </div>
