@@ -357,3 +357,42 @@ button,
 .scrollbar-hide::-webkit-scrollbar {
   display: none; /* Chrome, Safari */
 }
+/* ===== FIX REACT-DATEPICKER DAY COLORS ===== */
+
+/* Day names (Su Mo Tu We Th Fr Sa) */
+.react-datepicker__day-name {
+  color: #111827 !important; /* gray-900 */
+}
+
+/* Normal days */
+.react-datepicker__day {
+  color: #111827 !important;
+}
+
+/* Disabled days */
+.react-datepicker__day--disabled {
+  color: #9ca3af !important; /* gray-400 */
+}
+
+/* Selected day */
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+  background-color: #0ea5a4 !important; /* your accent */
+  color: #ffffff !important;
+}
+
+/* Today highlight */
+.react-datepicker__day--today {
+  font-weight: 600;
+  border: 1px solid #0ea5a4;
+}
+
+/* Month title */
+.react-datepicker__current-month {
+  color: #111827 !important;
+}
+
+/* Week container fix (sometimes inherits white) */
+.react-datepicker {
+  color: #111827 !important;
+}
