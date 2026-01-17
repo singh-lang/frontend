@@ -33,7 +33,7 @@ const CarCard = ({ car }: CarCardProps) => {
   const [imgSrc, setImgSrc] = useState("/assets/car_placeholder.png");
 
   const [createClick] = useCreateClickMutation();
-
+  const [imgError, setImgError] = useState(false);
   useEffect(() => {
     if (car) {
       setImgSrc(car.car.coverImage?.url || "/assets/car_placeholder.png");
@@ -105,15 +105,18 @@ const CarCard = ({ car }: CarCardProps) => {
     <div className="flex-shrink-0 h-fit w-full sm:w-[340px] bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 ease-out-cubic group border border-soft-grey/30">
       <Link href={`/car/${car._id}`} className="block" prefetch={false}>
         <div className="relative h-40 md:h-44 overflow-hidden bg-gradient-to-br from-slate-teal/5 to-transparent">
-          <Image
-            src={imgSrc}
-            alt={car.title}
-            className="w-full h-full group-hover:scale-110 transition-transform duration-700 ease-out-cubic object-cover"
-            height={960}
-            width={1280}
-            onError={() => setImgSrc("/assets/car_placeholder.jpg")}
-            priority
-          />
+          {!imgError && imgSrc && (
+            <Image
+              src={imgSrc}
+              alt={car.title}
+              className="w-full h-full group-hover:scale-110 transition-transform duration-700 ease-out-cubic object-cover"
+              height={960}
+              width={1280}
+              unoptimized
+              onError={() => setImgError(true)}
+              priority
+            />
+          )}
 
           <div className="absolute top-4 right-4 bg-white/98 backdrop-blur-sm px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
             <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />

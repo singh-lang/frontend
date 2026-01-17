@@ -49,6 +49,7 @@ export default async function Page({ params, searchParams }: PageProps) {
 
   // CHECK ACTIVE FILTERS
   const hasFilters = [
+    sp.search,
     sp.brand,
     sp.bodyType,
     sp.location,
@@ -58,8 +59,15 @@ export default async function Page({ params, searchParams }: PageProps) {
   ].some(Boolean);
 
   /* --------------------- FETCH CARS --------------------- */
+  // const apiRes = hasFilters
+  //   ? await getFilteredData({ ...sp, page: String(currentPage) })
+  //   : await getCatalogData(filterType, filterId, String(currentPage));
   const apiRes = hasFilters
-    ? await getFilteredData({ ...sp, page: String(currentPage) })
+    ? await getFilteredData({
+        ...sp,
+        search: sp.search || undefined,
+        page: String(currentPage),
+      })
     : await getCatalogData(filterType, filterId, String(currentPage));
 
   const rawData = apiRes.data;

@@ -15,7 +15,7 @@ const CatalogSearchBox = () => {
     useLazyGetSearchedCarsQuery();
 
   const handleChange = (searchString: string) => {
-    if (searchString !== "") {
+    if (searchString.trim() !== "") {
       setIsSearch(true);
       triggerSearch(searchString);
     } else {
@@ -23,12 +23,12 @@ const CatalogSearchBox = () => {
     }
   };
 
-  const handleClick = (carId: string) => {
+  /* ✅ CORRECT REDIRECT */
+  const handleClick = (title: string) => {
     setIsSearch(false);
-    router.push(`/car/${carId}`);
+    router.push(`/catalog/all/cars?search=${encodeURIComponent(title)}`);
   };
 
-  /* CLOSE ON OUTSIDE CLICK */
   useEffect(() => {
     const handleOutside = (e: MouseEvent | TouchEvent) => {
       if (
@@ -50,46 +50,43 @@ const CatalogSearchBox = () => {
 
   return (
     <div className="relative w-full mx-auto mb-6" ref={dropdownRef}>
-      {/* Search Box */}
       <div className="flex items-center bg-white/10 backdrop-blur-sm rounded-lg overflow-hidden shadow-sm border border-site-accent/40 hover:border-site-accent/70">
         <input
           type="text"
           placeholder="Search Your Dream Car..."
           onChange={(e) => handleChange(e.target.value)}
-          className="flex bg-transparent text-black placeholder-gray-300 px-4 py-2.5 md:py-3 focus:outline-none text-sm md:text-base"
+          className="w-full bg-transparent text-black placeholder-gray-400 px-4 py-2.5 md:py-3 focus:outline-none text-sm md:text-base"
         />
       </div>
 
-      {/* Dropdown */}
-      {isFetching ? (
+      {isFetching && (
         <div className="absolute left-0 right-0 bg-white border border-gray-200 rounded-lg mt-2 shadow-xl z-[99] p-4 space-y-2 max-h-64 overflow-auto">
-          {Array.from({ length: 10 }).map((_, i) => (
-            <Skeleton key={i} className="h-[16px]" />
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton key={i} height={16} />
           ))}
         </div>
-      ) : isSearch &&
-        searchedCars?.result &&
-        searchedCars?.result?.length > 0 ? (
+      )}
+
+      {!isFetching && isSearch && searchedCars?.result?.length > 0 && (
         <div className="absolute left-0 right-0 bg-white border border-gray-200 rounded-lg mt-2 shadow-xl z-[99] p-1 max-h-64 overflow-auto">
-          {searchedCars?.result?.map((car: { _id: string; title: string }) => (
+          {searchedCars.result.map((car: { _id: string; title: string }) => (
             <div
               key={car._id}
-              onClick={() => handleClick(car._id)}
+              onClick={() => handleClick(car.title)}
               className="px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 cursor-pointer"
             >
               {car.title}
             </div>
           ))}
         </div>
-      ) : (
-        isSearch && (
-          <div className="absolute left-0 right-0 bg-white border border-gray-200 rounded-lg mt-2 shadow-xl z-[99] px-4 py-2 text-sm text-gray-500 max-h-64 overflow-auto">
-            No cars found
-          </div>
-        )
       )}
 
-      {/* Error */}
+      {!isFetching && isSearch && searchedCars?.result?.length === 0 && (
+        <div className="absolute left-0 right-0 bg-white border border-gray-200 rounded-lg mt-2 shadow-xl z-[99] px-4 py-2 text-sm text-gray-500">
+          No cars found
+        </div>
+      )}
+
       {error && (
         <div className="text-red-500 mt-2 text-sm">
           Failed to fetch cars, try again

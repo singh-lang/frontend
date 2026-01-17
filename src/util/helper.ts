@@ -5,6 +5,7 @@ import type { ApiCarResponse, FilterValues } from "@/lib/api/catalog";
  * FILTER STATE (matching backend)
  * ------------------------------------------------------- */
 export interface FilterState {
+  search?: string; // ✅ ADD THIS
   category?: string[];
   brand?: string[];
   bodyType?: string[];
@@ -26,6 +27,7 @@ export interface FilterState {
  * ------------------------------------------------------- */
 export const hasActiveFilters = (f: FilterState): boolean =>
   [
+    f.search, // ✅ ADD THIS
     f.category?.length,
     f.brand?.length,
     f.bodyType?.length,
@@ -46,7 +48,7 @@ export const hasActiveFilters = (f: FilterState): boolean =>
  * ------------------------------------------------------- */
 export const getFilters = (f: FilterState): Record<string, FilterValues> => {
   const out: Record<string, FilterValues> = {};
-
+  if (f.search) out.search = f.search; // ✅ ADD THIS
   if (f.category?.length) out.category = f.category;
   if (f.brand?.length) out.brand = f.brand;
   if (f.bodyType?.length) out.bodyType = f.bodyType;
@@ -87,6 +89,7 @@ export function getUrlSearchParams(
   type: "object" | "string"
 ) {
   const keys = [
+    "search", // ✅ ADD THIS
     "brand",
     "bodyType",
     "location",

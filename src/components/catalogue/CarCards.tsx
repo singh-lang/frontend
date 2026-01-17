@@ -57,6 +57,31 @@ const CarCards = ({ data }: CarCardsProps) => {
   );
 
   /** 🔥 FIRST RENDER = always fetch correct page */
+  // useEffect(() => {
+  //   const urlPage = Number(searchParams.get("page") || 1);
+
+  //   fetchCars({
+  //     getCars,
+  //     getCatalogCars,
+  //     router,
+  //     hasActive: hasActiveFilters(filtersState),
+  //     filters: getFilters({ ...filtersState, page: urlPage }),
+  //     searchFilters,
+  //     setCars: (payload) =>
+  //       dispatch(
+  //         setCatalogCars({
+  //           carsData: payload.docs,
+  //           page: payload.page,
+  //           totalPages: payload.totalPages,
+  //         })
+  //       ),
+  //     filterType,
+  //     filterId,
+  //     page: urlPage,
+  //     sort: filtersState.sort,
+  //     searchParams,
+  //   });
+  // }, []);
   useEffect(() => {
     const urlPage = Number(searchParams.get("page") || 1);
 
@@ -81,7 +106,9 @@ const CarCards = ({ data }: CarCardsProps) => {
       sort: filtersState.sort,
       searchParams,
     });
-  }, []);
+  }, [
+    searchParams.toString(), // ✅ KEY LINE
+  ]);
 
   /** GLOBAL LOADING */
   useEffect(() => {

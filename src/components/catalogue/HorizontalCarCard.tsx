@@ -40,6 +40,7 @@ const HorizontalCarCard = ({ car }: HorizontalCarCardProps) => {
   const router = useRouter();
 
   const [createClick] = useCreateClickMutation();
+  const [imgError, setImgError] = useState(false);
 
   // ✅ Comparison logic
   const {
@@ -193,17 +194,19 @@ const HorizontalCarCard = ({ car }: HorizontalCarCardProps) => {
           onMouseMove={handlePointerMove}
           onTouchMove={handlePointerMove}
         >
-          <Image
-            src={imgSrc}
-            alt={`${car?.car?.carBrand?.name} image`}
-            fill
-            priority={false}
-            sizes="(max-width: 768px) 100vw, 40vw"
-            className={`object-cover transition-transform duration-500 ${
-              isHovering ? "scale-[1.05]" : "scale-100"
-            }`}
-            onError={() => setImgSrc("/assets/car_placeholder.jpg")}
-          />
+          {!imgError && imgSrc && (
+            <Image
+              src={imgSrc}
+              alt={`${car?.car?.carBrand?.name} image`}
+              fill
+              unoptimized
+              sizes="(max-width: 768px) 100vw, 40vw"
+              className={`object-cover transition-transform duration-500 ${
+                isHovering ? "scale-[1.05]" : "scale-100"
+              }`}
+              onError={() => setImgError(true)}
+            />
+          )}
 
           {/* Compare Button */}
           <button
