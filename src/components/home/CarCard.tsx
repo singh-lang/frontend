@@ -33,12 +33,19 @@ const CarCard = ({ car }: CarCardProps) => {
   const [imgSrc, setImgSrc] = useState("/assets/car_placeholder.png");
 
   const [createClick] = useCreateClickMutation();
-  const [imgError, setImgError] = useState(false);
+
   useEffect(() => {
     if (car) {
       setImgSrc(car.car.coverImage?.url || "/assets/car_placeholder.png");
     }
   }, [car]);
+  const handleRentNow = () => {
+    // analytics click
+    createClick({ carId: car._id, body: { type: "rent" } }).catch(() => {});
+
+    // 👉 redirect to booking page
+    router.push(`/booking/${car._id}`);
+  };
 
   /* ===================== PRICE LOGIC (WITH OFFERS) ===================== */
   const getPriceForPeriod = () => {
@@ -90,33 +97,34 @@ const CarCard = ({ car }: CarCardProps) => {
   };
 
   const handleButtonsClick = (type: string, navigateTo: string) => {
-    createClick({ carId: car._id, body: { type } }).catch(() => {});
+    createClick({ carId: car?._id ?? null, body: { type } }).catch(() => {});
     router.push(navigateTo);
   };
 
   const whatsappUrl = buildWhatsAppUrl(
     car?.vendor?.vendorDetails?.contact?.whatsappNum,
     `${buildWhatsAppMessage(
-      car as CarTypes
-    )}\n\n*Any changes made to this message will result in the inquiry not being sent to the dealer.*`
+      car as CarTypes,
+    )}\n\n*Any changes made to this message will result in the inquiry not being sent to the dealer.*`,
   );
 
   return (
-    <div className="flex-shrink-0 h-fit w-full sm:w-[340px] bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 ease-out-cubic group border border-soft-grey/30">
-      <Link href={`/car/${car._id}`} className="block" prefetch={false}>
-        <div className="relative h-40 md:h-44 overflow-hidden bg-gradient-to-br from-slate-teal/5 to-transparent">
-          {!imgError && imgSrc && (
-            <Image
-              src={imgSrc}
-              alt={car.title}
-              className="w-full h-full group-hover:scale-110 transition-transform duration-700 ease-out-cubic object-cover"
-              height={960}
-              width={1280}
-              unoptimized
-              onError={() => setImgError(true)}
-              priority
-            />
-          )}
+    <div className="shrink-0 h-fit w-full sm:w-85 bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 ease-out-cubic group border border-soft-grey/30">
+      <Link
+        href={`/car/${car?._id ?? null}`}
+        className="block"
+        prefetch={false}
+      >
+        <div className="relative h-40 md:h-44 overflow-hidden bg-linear-to-br from-slate-teal/5 to-transparent">
+          <Image
+            src={imgSrc}
+            alt={car.title}
+            className="w-full h-full group-hover:scale-110 transition-transform duration-700 ease-out-cubic object-cover"
+            height={960}
+            width={1280}
+            onError={() => setImgSrc("/assets/car_placeholder.jpg")}
+            priority
+          />
 
           <div className="absolute top-4 right-4 bg-white/98 backdrop-blur-sm px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
             <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
@@ -132,13 +140,14 @@ const CarCard = ({ car }: CarCardProps) => {
       </Link>
 
       <div className="p-3">
-        <div className="flex items-start justify-between mb-2">
-          <div className="flex-1">
+        <div className="flex items-start justify-between gap-3 mb-2">
+          <div className="flex-1 min-w-0">
             <p className="text-[10px] text-slate-teal font-bold uppercase tracking-wide">
               {car.car.carBrand.name}
             </p>
-            <Link href={`/car/${car._id}`} prefetch={false}>
-              <h3 className="text-base font-bold text-dark-base truncate">
+
+            <Link href={`/car/${car?._id ?? ""}`} prefetch={false}>
+              <h3 className="text-sm font-bold text-dark-base leading-snug whitespace-nowrap">
                 {car.title}
               </h3>
             </Link>
@@ -149,10 +158,9 @@ const CarCard = ({ car }: CarCardProps) => {
             alt={car.car.carBrand.name}
             height={40}
             width={40}
-            className="w-8 h-8 rounded-lg object-contain bg-white border p-1"
+            className="w-8 h-8 shrink-0 rounded-lg object-contain bg-white border p-1"
           />
         </div>
-
         {/* PERIOD SWITCH */}
         <div className="flex gap-1 mb-2">
           {(["daily", "weekly", "monthly"] as const).map((p) => (
@@ -237,7 +245,7 @@ const CarCard = ({ car }: CarCardProps) => {
         {/* ACTIONS */}
         <div className="space-y-3">
           <button
-            onClick={() => handleButtonsClick("rent", `/car/${car._id}`)}
+            onClick={handleRentNow}
             className="flex items-center justify-center gap-1 w-full  bg-gradient-to-r from-site-accent to-slate-teal hover:from-site-accent/90 hover:to-slate-teal text-white px-4 py-2 rounded-lg font-bold transition-all duration-300 hover:shadow-lg text-xs group/btn"
           >
             <span>Rent Now</span>
@@ -248,7 +256,7 @@ const CarCard = ({ car }: CarCardProps) => {
               href={`tel:${car.vendor?.vendorDetails?.contact?.landlineNum}`}
               onClick={(e) => {
                 e.preventDefault();
-                createClick({ carId: car._id, body: { type: "call" } })
+                createClick({ carId: car?._id ?? null, body: { type: "call" } })
                   .unwrap()
                   .then((res) => {
                     console.log("CarCard:Click res", res);
@@ -273,7 +281,10 @@ const CarCard = ({ car }: CarCardProps) => {
               href={whatsappUrl}
               onClick={(e) => {
                 e.preventDefault();
-                createClick({ carId: car._id, body: { type: "whatsapp" } })
+                createClick({
+                  carId: car?._id ?? null,
+                  body: { type: "whatsapp" },
+                })
                   .unwrap()
                   .catch((err) => {
                     console.log("CarCard:Click err", err);
