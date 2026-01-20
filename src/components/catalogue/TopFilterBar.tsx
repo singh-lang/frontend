@@ -12,26 +12,26 @@ import { setCatalogCars } from "@/lib/slice/catalogCarsSlice";
 import { useSearchParams, useRouter } from "next/navigation";
 import { getFilters } from "@/util/helper";
 import CatalogSearchBox from "./CatalogSearchBox";
-import FiltersPanelNewDesign from "./FilterPanel"; // ✅ correct import
-import { Select } from "react-day-picker";
+import MobileSearch from "./MobileSearch";
 
 export default function TopFiltersBar({ data }) {
   const dispatch = useAppDispatch();
   const searchParams = useSearchParams();
   const router = useRouter();
+  const [tempBrand, setTempBrand] = useState<string[]>([]);
 
   const filters = useAppSelector((s) => s.catalogFilters);
   const {
     noDeposit,
     priceRange,
-    brand,
-    bodyType,
-    category,
-    regionalSpec,
-    seatingCapacity,
-    transmission,
-    exteriorColor,
-    interiorColor,
+    brand = [],
+    bodyType = [],
+    category = [],
+    regionalSpec = [],
+    seatingCapacity = [],
+    transmission = [],
+    exteriorColor = [],
+    interiorColor = [],
   } = filters;
   const [sort, setSort] = useState("newest");
   const [openDesktop, setOpenDesktop] = useState({
@@ -66,8 +66,8 @@ export default function TopFiltersBar({ data }) {
             carsData: res.data.docs,
             page: res.data.page,
             totalPages: res.data.totalPages,
-          })
-        )
+          }),
+        ),
       );
 
     router.push(`/catalog/all/cars?page=1`, { scroll: false });
@@ -84,8 +84,8 @@ export default function TopFiltersBar({ data }) {
             carsData: res.data.docs,
             page: res.data.page,
             totalPages: res.data.totalPages,
-          })
-        )
+          }),
+        ),
       );
 
     setOpenDesktop({
@@ -160,7 +160,7 @@ export default function TopFiltersBar({ data }) {
       </div>
     );
   };
-  const selectedPrice = Array.isArray(priceRange) ? priceRange[1] ?? 0 : 0;
+  const selectedPrice = Array.isArray(priceRange) ? (priceRange[1] ?? 0) : 0;
 
   const Chip = ({
     active,
@@ -174,11 +174,15 @@ export default function TopFiltersBar({ data }) {
     return (
       <button
         type="button"
-        onClick={onClick}
-        className={`px-3 py-2 rounded-full border text-xs font-semibold transition-all
+        onClick={(e) => {
+          e.preventDefault(); // ✅ stops jumping to top
+          e.stopPropagation(); // ✅ optional (helps inside modal/sheet)
+          onClick();
+        }}
+        className={`px-3 py-2 rounded-full border border-gray-200 text-xs font-semibold transition-all
       ${
         active
-          ? "bg-site-accent text-white border-site-accent shadow-sm"
+          ? "bg-linear-to-r from-site-accent to-slate-teal  text-white border-site-accent shadow-sm"
           : "bg-white border-gray-200 text-gray-700 hover:border-site-accent/40 hover:bg-site-accent/5"
       }`}
       >
@@ -186,6 +190,7 @@ export default function TopFiltersBar({ data }) {
       </button>
     );
   };
+
   const FooterButton = () => {
     return (
       <div className="sticky bottom-0 bg-white pt-4 border-t border-gray-100">
@@ -209,7 +214,7 @@ export default function TopFiltersBar({ data }) {
             onClick={applyFilters}
             className="
             flex-1 h-12 rounded-2xl
-            bg-gradient-to-r from-site-accent to-slate-teal
+            bg-linear-to-r from-site-accent to-slate-teal
             text-white font-semibold
             shadow-md hover:opacity-95 transition
           "
@@ -220,13 +225,12 @@ export default function TopFiltersBar({ data }) {
       </div>
     );
   };
-  const [tempBrand, setTempBrand] = useState<string[]>([]);
 
   useEffect(() => {
     if (openMobile === "brand") {
       setTempBrand(brand);
     }
-  }, [openMobile]);
+  }, [openMobile, brand]);
 
   function MobileBottomSheet({
     title,
@@ -249,14 +253,14 @@ export default function TopFiltersBar({ data }) {
       <div className="md:hidden">
         {/* ✅ Overlay */}
         <div
-          className="fixed inset-0 bg-black/40 z-[9998] pointer-events-auto"
+          className="fixed inset-0 bg-black/40 z-9998 pointer-events-auto"
           onClick={onClose}
         />
 
         {/* ✅ Sheet */}
         <div
           className="
-          fixed bottom-0 left-0 right-0 z-[9999]
+          fixed bottom-0 left-0 right-0 z-9999
           bg-white rounded-t-3xl shadow-2xl
           max-h-[85vh]
           flex flex-col
@@ -265,7 +269,7 @@ export default function TopFiltersBar({ data }) {
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-5 py-4 border-b">
+          <div className="flex items-center justify-between bg-white/90 backdrop-blur-md px-5 py-4  border-b border-gray-600 ">
             <h3 className="text-base font-extrabold text-gray-900">{title}</h3>
 
             <button
@@ -283,7 +287,7 @@ export default function TopFiltersBar({ data }) {
           </div>
 
           {/* Footer */}
-          <div className="px-5 py-4 border-t bg-white pointer-events-auto">
+          <div className="sticky bottom-0 z-20 bg-white/95 backdrop-blur-md px-5 py-4 border-t border-gray-600 shadow-[0_-8px_20px_rgba(0,0,0,0.06)]">
             <div className="flex gap-3">
               <button
                 type="button"
@@ -296,7 +300,7 @@ export default function TopFiltersBar({ data }) {
               <button
                 type="button"
                 onClick={onApply}
-                className="flex-1 h-12 rounded-2xl bg-gradient-to-r from-site-accent to-slate-teal text-white font-semibold"
+                className="flex-1 h-12 rounded-xl bg-linear-to-r from-site-accent to-slate-teal text-white font-semibold"
               >
                 Apply Filters
               </button>
@@ -310,9 +314,9 @@ export default function TopFiltersBar({ data }) {
   const selectedBodyType = Array.isArray(bodyType) ? bodyType : [];
   return (
     <>
-      <div className="sticky top-[70px] z-[30] w-full">
+      <div className=" top-17.5 z-30 w-full">
         <div className="w-full pb-5">
-          <div className="max-w-[1400px] mx-auto px-4 sm:px-6">
+          <div className="max-w-350 mx-auto px-4 sm:px-6">
             <div
               ref={dropdownRef}
               className="
@@ -320,7 +324,7 @@ export default function TopFiltersBar({ data }) {
             border border-gray-200 shadow-sm
             rounded-[28px]
             px-4 py-3
-            flex items-center gap-3
+            flex items-center gap-6
             overflow-x-auto whitespace-nowrap
             scrollbar-hide
             overscroll-x-contain 
@@ -340,7 +344,7 @@ export default function TopFiltersBar({ data }) {
                 </button>
 
                 {openDesktop.deposit && (
-                  <div className=" hidden md:block absolute left-0 top-full mt-3 z-[9999]  bg-white w-56 rounded-2xl shadow-2xl border border-gray-100 p-4">
+                  <div className=" hidden md:block absolute left-0 top-full mt-3 z-9999  bg-white w-56 rounded-2xl shadow-2xl border border-gray-100 p-4">
                     <label className="flex items-center gap-2 py-1 text-sm">
                       <input
                         type="checkbox"
@@ -368,8 +372,8 @@ export default function TopFiltersBar({ data }) {
                                     carsData: res.data.docs,
                                     page: res.data.page,
                                     totalPages: res.data.totalPages,
-                                  })
-                                )
+                                  }),
+                                ),
                               );
 
                             router.push(`/catalog/all/cars?page=1`, {
@@ -400,32 +404,66 @@ export default function TopFiltersBar({ data }) {
                 </button>
 
                 {openDesktop.price && (
-                  <div className="hidden md:block absolute left-0 top-full mt-3 z-[9999] bg-white w-72 shadow-xl rounded-2xl p-4 border border-gray-100">
-                    {/* ✅ Selected value below */}
+                  <div className="hidden md:block absolute left-0 top-full mt-3 z-9999 bg-white w-80 shadow-xl rounded-2xl p-4 border border-gray-100">
                     <p className="text-sm font-semibold text-gray-800 mb-3">
-                      Selected Price: AED{" "}
+                      Selected Max Price: AED{" "}
                       {(priceRange?.[1] ?? 0).toLocaleString()}
                     </p>
 
-                    <input
-                      type="range"
-                      min="0"
-                      max="5000"
-                      step="50"
-                      value={priceRange?.[1] ?? 0}
-                      onChange={(e) =>
-                        dispatch(
-                          setCatalogFilters({
-                            priceRange: [0, Number(e.target.value)],
-                          })
-                        )
-                      }
-                      className="w-full accent-site-primary"
-                    />
+                    <div className="mb-4">
+                      <label className="text-xs font-semibold text-gray-500">
+                        Max Price
+                      </label>
 
-                    <div className="flex justify-between text-xs mt-2 text-gray-500">
-                      <span>AED 0</span>
-                      <span>AED 5000+</span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={20000}
+                        value={priceRange?.[1] === 0 ? "" : priceRange?.[1]}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+
+                          if (raw === "") {
+                            dispatch(setCatalogFilters({ priceRange: [0, 0] }));
+                            return;
+                          }
+
+                          const maxVal = Math.min(
+                            20000,
+                            Math.max(0, Number(raw)),
+                          );
+                          const updatedRange: [number, number] = [0, maxVal];
+
+                          dispatch(
+                            setCatalogFilters({ priceRange: updatedRange }),
+                          );
+
+                          const final = getFilters({
+                            ...filters,
+                            priceRange: updatedRange,
+                            page: 1,
+                            sort,
+                          });
+
+                          getCars(final)
+                            .unwrap()
+                            .then((res) =>
+                              dispatch(
+                                setCatalogCars({
+                                  carsData: res.data.docs,
+                                  page: res.data.page,
+                                  totalPages: res.data.totalPages,
+                                }),
+                              ),
+                            );
+
+                          router.push(`/catalog/all/cars?page=1`, {
+                            scroll: false,
+                          });
+                        }}
+                        className="w-full mt-1 px-3 py-2 rounded-xl border border-gray-200 text-sm outline-none"
+                        placeholder="Enter  price "
+                      />
                     </div>
 
                     <FooterButton />
@@ -452,7 +490,7 @@ export default function TopFiltersBar({ data }) {
                 </button>
 
                 {openDesktop.bodyType && (
-                  <div className="hidden md:block absolute left-0 top-full mt-3 z-[9999] bg-white w-72 shadow-xl rounded-2xl p-4 border border-gray-100 max-h-72 overflow-y-auto">
+                  <div className="hidden md:block absolute left-0 top-full mt-3 z-9999 bg-white w-72 shadow-xl rounded-2xl p-4 border border-gray-100 max-h-72 overflow-y-auto">
                     <p className="text-xs font-semibold text-gray-500 mb-2">
                       Select Body Types
                     </p>
@@ -486,8 +524,8 @@ export default function TopFiltersBar({ data }) {
                                       carsData: res.data.docs,
                                       page: res.data.page,
                                       totalPages: res.data.totalPages,
-                                    })
-                                  )
+                                    }),
+                                  ),
                                 );
 
                               router.push(`/catalog/all/cars?page=1`, {
@@ -505,10 +543,12 @@ export default function TopFiltersBar({ data }) {
                 )}
               </div>
               <Divider />
-              <div className="min-w-[280px] h-12 flex-1">
+
+              {/* ✅ Desktop only */}
+              <div className="hidden md:block w-full min-w-0 h-12 flex-1">
                 <CatalogSearchBox />
               </div>
-              <Divider />
+
               <div className="flex items-center gap-3 shrink-0">
                 <span className="text-sm font-semibold text-gray-700">
                   Sort:
@@ -535,8 +575,8 @@ export default function TopFiltersBar({ data }) {
                               carsData: res.data.docs,
                               page: res.data.page,
                               totalPages: res.data.totalPages,
-                            })
-                          )
+                            }),
+                          ),
                         );
 
                       router.push(`/catalog/all/cars?page=1`, {
@@ -561,7 +601,7 @@ export default function TopFiltersBar({ data }) {
                 <button
                   onClick={() => openFilter("advanced")}
                   className="flex items-center gap-2
-                  bg-gradient-to-r from-site-accent to-slate-teal text-white
+                  bg-linear-to-r from-site-accent to-slate-teal text-white
                   px-6 py-3 rounded-full
                   text-sm font-semibold
                   shadow-md hover:opacity-95 transition
@@ -571,7 +611,7 @@ export default function TopFiltersBar({ data }) {
                 </button>
 
                 {openDesktop.advanced && (
-                  <div className="hidden md:block absolute right-0 top-full mt-3 z-[9999] bg-white w-100 shadow-xl rounded-2xl p-4 border border-gray-100 max-h-120 overflow-y-auto">
+                  <div className="hidden md:block absolute right-0 top-full mt-3 z-9999 bg-white w-100 shadow-xl rounded-2xl p-4 border border-gray-100 max-h-120 overflow-y-auto">
                     <Section title="Category">
                       <div className="flex flex-wrap gap-2">
                         {data.categories.map((cat) => {
@@ -584,11 +624,11 @@ export default function TopFiltersBar({ data }) {
                               onClick={() => {
                                 const updated = active
                                   ? category.filter(
-                                      (x: string) => x !== cat._id
+                                      (x: string) => x !== cat._id,
                                     )
                                   : [...category, cat._id];
                                 dispatch(
-                                  setCatalogFilters({ category: updated })
+                                  setCatalogFilters({ category: updated }),
                                 );
                               }}
                             />
@@ -613,7 +653,7 @@ export default function TopFiltersBar({ data }) {
                               className={`px-3 py-3 rounded-2xl border text-sm font-semibold transition
                                             ${
                                               active
-                                                ? "bg-site-accent/10 border-site-accent text-site-accent"
+                                                ? "bg-site-accent/10 bg-linear-to-r from-site-accent to-slate-teal text-white"
                                                 : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
                                             }`}
                             >
@@ -634,17 +674,17 @@ export default function TopFiltersBar({ data }) {
                               onClick={() => {
                                 const updated = active
                                   ? regionalSpec.filter(
-                                      (x: string) => x !== rs._id
+                                      (x: string) => x !== rs._id,
                                     )
                                   : [...regionalSpec, rs._id];
                                 dispatch(
-                                  setCatalogFilters({ regionalSpec: updated })
+                                  setCatalogFilters({ regionalSpec: updated }),
                                 );
                               }}
                               className={`px-2 py-3 rounded-2xl border text-xs font-bold transition text-center
                                     ${
                                       active
-                                        ? "bg-site-primary text-white border-site-primary shadow-sm"
+                                        ? "bg-linear-to-r from-site-accent to-slate-teal text-white "
                                         : "bg-white border-gray-200 text-gray-700 hover:border-site-primary/40"
                                     }`}
                             >
@@ -666,13 +706,13 @@ export default function TopFiltersBar({ data }) {
                               onClick={() => {
                                 const updated = active
                                   ? seatingCapacity.filter(
-                                      (x: string) => x !== sc._id
+                                      (x: string) => x !== sc._id,
                                     )
                                   : [...seatingCapacity, sc._id];
                                 dispatch(
                                   setCatalogFilters({
                                     seatingCapacity: updated,
-                                  })
+                                  }),
                                 );
                               }}
                             />
@@ -692,11 +732,11 @@ export default function TopFiltersBar({ data }) {
                               onClick={() => {
                                 const updated = active
                                   ? transmission.filter(
-                                      (x: string) => x !== tr._id
+                                      (x: string) => x !== tr._id,
                                     )
                                   : [...transmission, tr._id];
                                 dispatch(
-                                  setCatalogFilters({ transmission: updated })
+                                  setCatalogFilters({ transmission: updated }),
                                 );
                               }}
                             />
@@ -716,11 +756,11 @@ export default function TopFiltersBar({ data }) {
                               onClick={() => {
                                 const updated = active
                                   ? interiorColor.filter(
-                                      (x: string) => x !== clr._id
+                                      (x: string) => x !== clr._id,
                                     )
                                   : [...interiorColor, clr._id];
                                 dispatch(
-                                  setCatalogFilters({ interiorColor: updated })
+                                  setCatalogFilters({ interiorColor: updated }),
                                 );
                               }}
                             />
@@ -740,11 +780,11 @@ export default function TopFiltersBar({ data }) {
                               onClick={() => {
                                 const updated = active
                                   ? exteriorColor.filter(
-                                      (x: string) => x !== clr._id
+                                      (x: string) => x !== clr._id,
                                     )
                                   : [...exteriorColor, clr._id];
                                 dispatch(
-                                  setCatalogFilters({ exteriorColor: updated })
+                                  setCatalogFilters({ exteriorColor: updated }),
                                 );
                               }}
                             />
@@ -760,6 +800,7 @@ export default function TopFiltersBar({ data }) {
           </div>
         </div>
       </div>
+
       <MobileBottomSheet
         title="Brand"
         open={openMobile === "brand"}
@@ -783,8 +824,8 @@ export default function TopFiltersBar({ data }) {
                   carsData: res.data.docs,
                   page: res.data.page,
                   totalPages: res.data.totalPages,
-                })
-              )
+                }),
+              ),
             );
 
           router.push(`/catalog/all/cars?page=1`, { scroll: false });
@@ -796,29 +837,23 @@ export default function TopFiltersBar({ data }) {
             const active = tempBrand.includes(b._id);
 
             return (
-              <button
+              <Chip
                 key={b._id}
-                type="button"
+                active={active}
+                label={b.name}
                 onClick={() => {
                   setTempBrand((prev) =>
                     prev.includes(b._id)
                       ? prev.filter((x) => x !== b._id)
-                      : [...prev, b._id]
+                      : [...prev, b._id],
                   );
                 }}
-                className={`px-3 py-3 rounded-2xl border text-sm font-semibold transition
-            ${
-              active
-                ? "bg-site-accent/10 border-site-accent text-site-accent"
-                : "bg-white border-gray-200 text-gray-700"
-            }`}
-              >
-                {b.name}
-              </button>
+              />
             );
           })}
         </div>
       </MobileBottomSheet>
+
       <MobileBottomSheet
         title="Price (AED)"
         open={openMobile === "price"}
@@ -841,8 +876,8 @@ export default function TopFiltersBar({ data }) {
                   carsData: res.data.docs,
                   page: res.data.page,
                   totalPages: res.data.totalPages,
-                })
-              )
+                }),
+              ),
             );
 
           router.push(`/catalog/all/cars?page=1`, { scroll: false });
@@ -850,36 +885,46 @@ export default function TopFiltersBar({ data }) {
         }}
       >
         <div className="space-y-5">
-          {/* Selected Value */}
-          <p className="text-xs font-semibold text-gray-500 mb-1">
-            Selected Price
-          </p>
-          <p className="text-base font-extrabold text-gray-900">
-            AED {(priceRange?.[1] ?? 0).toLocaleString()}
+          <p className="text-sm font-bold text-gray-900">
+            Selected Max Price: AED {(priceRange?.[1] ?? 0).toLocaleString()}
           </p>
 
-          {/* Slider */}
-          <div className="bg-white border border-gray-200 rounded-2xl p-4">
-            <p className="text-sm font-semibold text-gray-800 mb-3">
-              Choose Max Price
-            </p>
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-gray-500">
+              Max Price
+            </label>
 
             <input
-              type="range"
+              type="number"
               min={0}
               max={5000}
-              step={50}
-              value={priceRange?.[1] ?? 0}
+              value={priceRange?.[1] === 0 ? "" : priceRange?.[1]}
               onChange={(e) => {
-                const value = Number(e.target.value);
-                dispatch(setCatalogFilters({ priceRange: [0, value] }));
-              }}
-              className="w-full accent-site-primary"
-            />
+                const raw = e.target.value;
 
-            <div className="flex justify-between text-xs text-gray-500 mt-2">
+                if (raw === "") {
+                  dispatch(setCatalogFilters({ priceRange: [0, 0] }));
+                  return;
+                }
+
+                const maxVal = Math.min(5000, Math.max(0, Number(raw)));
+                dispatch(setCatalogFilters({ priceRange: [0, maxVal] }));
+              }}
+              placeholder="Enter max price "
+              className="
+    w-full h-12 px-4
+    rounded-full border border-gray-200
+    outline-none text-base font-semibold text-gray-800
+    focus:border-site-accent
+
+    pointer-events-auto
+    touch-manipulation
+  "
+            />
+            {/* ✅ 0 to max price range show */}
+            <div className="flex justify-between text-xs text-gray-500">
               <span>AED 0</span>
-              <span>AED 5000+</span>
+              <span>AED {(priceRange?.[1] ?? 0).toLocaleString()}</span>
             </div>
           </div>
         </div>
@@ -904,7 +949,7 @@ export default function TopFiltersBar({ data }) {
             className={`w-full px-4 py-3 rounded-2xl border text-sm font-semibold text-left
         ${
           noDeposit
-            ? "border-site-accent bg-site-accent/10 text-site-accent"
+            ? "bg-linear-to-r from-site-accent to-slate-teal bg-site-accent/10 text-white"
             : "border-gray-200 bg-white text-gray-700"
         }`}
           >
@@ -912,7 +957,6 @@ export default function TopFiltersBar({ data }) {
           </button>
         </div>
       </MobileBottomSheet>
-
       <MobileBottomSheet
         title="Body Type"
         open={openMobile === "bodyType"}
@@ -941,46 +985,7 @@ export default function TopFiltersBar({ data }) {
                 className={`px-4 py-2 rounded-full border text-sm font-semibold transition
             ${
               active
-                ? "border-site-accent text-site-accent bg-site-accent/10"
-                : "border-gray-200 text-gray-700 bg-white"
-            }`}
-              >
-                {bt.name}
-              </button>
-            );
-          })}
-        </div>
-      </MobileBottomSheet>
-
-      <MobileBottomSheet
-        title="Filters"
-        open={openMobile === "advanced"}
-        onClose={() => setOpenMobile(null)}
-        onClear={clearFilters}
-        onApply={() => {
-          applyFilters();
-          setOpenMobile(null);
-        }}
-      >
-        <div className="flex flex-wrap gap-3">
-          {data?.bodyTypes?.map((bt) => {
-            const active = bodyType.includes(bt._id);
-
-            return (
-              <button
-                key={bt._id}
-                type="button"
-                onClick={() => {
-                  const updated = active
-                    ? bodyType.filter((x: string) => x !== bt._id)
-                    : [...bodyType, bt._id];
-
-                  dispatch(setCatalogFilters({ bodyType: updated }));
-                }}
-                className={`px-4 py-2 rounded-full border text-sm font-semibold transition
-            ${
-              active
-                ? "border-site-accent text-site-accent bg-site-accent/10"
+                ? "bg-linear-to-r from-site-accent to-slate-teal text-white bg-site-accent/10"
                 : "border-gray-200 text-gray-700 bg-white"
             }`}
               >
@@ -1003,7 +1008,7 @@ export default function TopFiltersBar({ data }) {
       >
         <div className="space-y-6">
           <Section title="Category">
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {data?.categories?.map((cat) => {
                 const active = category.includes(cat._id);
                 return (
@@ -1024,7 +1029,7 @@ export default function TopFiltersBar({ data }) {
           </Section>
 
           <Section title="Brand">
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-3">
               {data?.brands?.map((br) => {
                 const active = brand.includes(br._id);
                 return (
@@ -1040,7 +1045,7 @@ export default function TopFiltersBar({ data }) {
                     className={`px-3 py-3 rounded-2xl border text-sm font-semibold transition
                 ${
                   active
-                    ? "bg-site-accent/10 border-site-accent text-site-accent"
+                    ? " bg-linear-to-r from-site-accent to-slate-teal text-white border-site-primary"
                     : "bg-white border-gray-200 text-gray-700"
                 }`}
                   >
@@ -1050,7 +1055,6 @@ export default function TopFiltersBar({ data }) {
               })}
             </div>
           </Section>
-
           <Section title="Regional Specs">
             <div className="grid grid-cols-3 gap-2">
               {data?.regionalSpecs?.map((rs) => {
@@ -1068,7 +1072,7 @@ export default function TopFiltersBar({ data }) {
                     className={`px-3 py-3 rounded-2xl border text-sm font-semibold transition
                 ${
                   active
-                    ? "bg-site-primary text-white border-site-primary"
+                    ? " bg-linear-to-r from-site-accent to-slate-teal text-white border-site-primary"
                     : "bg-white border-gray-200 text-gray-700"
                 }`}
                   >
@@ -1078,7 +1082,6 @@ export default function TopFiltersBar({ data }) {
               })}
             </div>
           </Section>
-
           <Section title="Seating Capacity">
             <div className="grid grid-cols-4 gap-2">
               {data?.seatingCapacities?.map((sc) => {
@@ -1099,7 +1102,6 @@ export default function TopFiltersBar({ data }) {
               })}
             </div>
           </Section>
-
           <Section title="Transmission">
             <div className="flex flex-wrap gap-2">
               {data?.transmissions?.map((tr) => {
@@ -1120,7 +1122,6 @@ export default function TopFiltersBar({ data }) {
               })}
             </div>
           </Section>
-
           <Section title="Interior Color">
             <div className="grid grid-cols-3 gap-2">
               {data?.carColors?.map((clr) => {
@@ -1141,7 +1142,6 @@ export default function TopFiltersBar({ data }) {
               })}
             </div>
           </Section>
-
           <Section title="Exterior Color">
             <div className="grid grid-cols-3 gap-2">
               {data?.carColors?.map((clr) => {

@@ -40,7 +40,6 @@ const HorizontalCarCard = ({ car }: HorizontalCarCardProps) => {
   const router = useRouter();
 
   const [createClick] = useCreateClickMutation();
-  const [imgError, setImgError] = useState(false);
 
   // ✅ Comparison logic
   const {
@@ -79,7 +78,7 @@ const HorizontalCarCard = ({ car }: HorizontalCarCardProps) => {
     const percentage = Math.max(0, Math.min(1, relativeX / rect.width));
     const newIndex = Math.min(
       car.car.images.length - 1,
-      Math.floor(percentage * car.car.images.length)
+      Math.floor(percentage * car.car.images.length),
     );
     if (newIndex !== currentImageIndex) setCurrentImageIndex(newIndex);
   };
@@ -88,7 +87,7 @@ const HorizontalCarCard = ({ car }: HorizontalCarCardProps) => {
     if (car) {
       setImgSrc(
         car?.car?.images?.[currentImageIndex]?.url ||
-          "/assets/car_placeholder.png"
+          "/assets/car_placeholder.png",
       );
     }
   }, [car, currentImageIndex]);
@@ -150,8 +149,8 @@ const HorizontalCarCard = ({ car }: HorizontalCarCardProps) => {
   const whatsappUrl = buildWhatsAppUrl(
     whatsappNumber,
     `${buildWhatsAppMessage(
-      car as CarTypes
-    )}\n\n*Any changes made to this message will result in the inquiry not being sent to the dealer.*`
+      car as CarTypes,
+    )}\n\n*Any changes made to this message will result in the inquiry not being sent to the dealer.*`,
   );
 
   const callNumber =
@@ -181,32 +180,32 @@ const HorizontalCarCard = ({ car }: HorizontalCarCardProps) => {
   return (
     <div
       onClick={handleCardClick}
-      className="cursor-pointer  w-full lg:w-[1200px] bg-gradient-to-br from-white to-gray-100 border border-gray-100 rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 group mb-6"
+      className="cursor-pointer  w-full lg:w-300 bg-linear-to-br from-white to-gray-100 border border-gray-100 rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 group mb-6"
     >
       <div className="flex flex-col md:flex-row">
         {/* IMAGE SECTION */}
         <div
           ref={imageContainerRef}
-          className="md:w-[40%] relative overflow-hidden bg-gray-100 select-none isolate"
-          style={{ height: 390 }}
+          className="
+    md:w-[40%] relative overflow-hidden bg-gray-100 select-none isolate
+    h-55 sm:h-70 md:h-97.5
+  "
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
           onMouseMove={handlePointerMove}
           onTouchMove={handlePointerMove}
         >
-          {!imgError && imgSrc && (
-            <Image
-              src={imgSrc}
-              alt={`${car?.car?.carBrand?.name} image`}
-              fill
-              unoptimized
-              sizes="(max-width: 768px) 100vw, 40vw"
-              className={`object-cover transition-transform duration-500 ${
-                isHovering ? "scale-[1.05]" : "scale-100"
-              }`}
-              onError={() => setImgError(true)}
-            />
-          )}
+          <Image
+            src={imgSrc}
+            alt={`${car?.car?.carBrand?.name} image`}
+            fill
+            priority={false}
+            sizes="(max-width: 768px) 100vw, 40vw"
+            className={`object-cover transition-transform duration-500 ${
+              isHovering ? "scale-[1.05]" : "scale-100"
+            }`}
+            onError={() => setImgSrc("/assets/car_placeholder.jpg")}
+          />
 
           {/* Compare Button */}
           <button
@@ -253,7 +252,7 @@ const HorizontalCarCard = ({ car }: HorizontalCarCardProps) => {
         <div className="p-6 w-full md:w-[60%] flex flex-col justify-between">
           <div className="flex items-start justify-between mb-3">
             <div>
-              <p className="text-site-accent font-semibold  text-sm mb-1">
+              <p className="hidden md:block text-site-accent font-semibold  text-sm mb-1">
                 {car?.car?.carBrand?.name}
               </p>
               <h3
@@ -262,7 +261,7 @@ const HorizontalCarCard = ({ car }: HorizontalCarCardProps) => {
               >
                 {car?.title}
               </h3>
-              <p className="text-site-secondary text-xs font-semibold">
+              <p className="hidden md:block text-site-secondary text-xs font-semibold">
                 {car?.car?.modelYear} Model
               </p>
             </div>
@@ -336,7 +335,7 @@ const HorizontalCarCard = ({ car }: HorizontalCarCardProps) => {
                     onClick={() => setSelectedPeriod(p)}
                     className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
                       selectedPeriod === p
-                        ? "bg-gradient-to-r from-site-accent to-slate-teal text-white shadow-md scale-105"
+                        ? "bg-linear-to-r from-site-accent to-slate-teal text-white shadow-md scale-105"
                         : "bg-slate-teal/10 text-slate-teal hover:bg-slate-teal/20"
                     }`}
                   >
@@ -346,7 +345,7 @@ const HorizontalCarCard = ({ car }: HorizontalCarCardProps) => {
               </div>
 
               <div className="flex items-baseline gap-2">
-                <DirhamSymbol className="w-[30px] h-[30px] relative top-[6px] text-[#00B4D8]" />
+                <DirhamSymbol className="w-7.5 h-7.5 relative top-[6px] text-[#00B4D8]" />
 
                 {hasOffer ? (
                   <>
@@ -408,7 +407,7 @@ const HorizontalCarCard = ({ car }: HorizontalCarCardProps) => {
                       }, 200);
                     });
                 }}
-                className="flex-1 flex items-center justify-center gap-2 whitespace-nowrap bg-gradient-to-br from-white to-off-white border-2 border-soft-grey/50 text-site-grey hover:border-site-accent hover:text-site-accent hover:bg-white px-5 py-3 rounded-xl font-semibold transition-all duration-300 text-sm md:text-base shadow-md hover:shadow-lg hover:-translate-y-0.5"
+                className="flex-1 flex items-center justify-center gap-2 whitespace-nowrap bg-linear-to-br from-white to-off-white border-2 border-soft-grey/50 text-site-grey hover:border-site-accent hover:text-site-accent hover:bg-white px-5 py-3 rounded-xl font-semibold transition-all duration-300 text-sm md:text-base shadow-md hover:shadow-lg hover:-translate-y-0.5"
               >
                 <Phone className="w-5 h-5" />
                 Call
@@ -425,12 +424,12 @@ const HorizontalCarCard = ({ car }: HorizontalCarCardProps) => {
                         window.open(
                           whatsappUrl,
                           "_blank",
-                          "noopener,noreferrer"
+                          "noopener,noreferrer",
                         );
                       }, 150);
                     });
                 }}
-                className="flex-1 flex items-center justify-center gap-2 whitespace-nowrap bg-gradient-to-br from-white to-off-white border-2 border-site-accent/60 text-site-accent hover:border-site-accent hover:text-white hover:bg-gradient-to-r hover:from-site-accent hover:to-site-accent/90 px-5 py-3 rounded-xl font-semibold transition-all duration-300 text-sm md:text-base shadow-md hover:shadow-lg hover:-translate-y-0.5"
+                className="flex-1 flex items-center justify-center gap-2 whitespace-nowrap bg-linear-to-br from-white to-off-white border-2 border-site-accent/60 text-site-accent hover:border-site-accent hover:text-white hover:bg-linear-to-r hover:from-site-accent hover:to-site-accent/90 px-5 py-3 rounded-xl font-semibold transition-all duration-300 text-sm md:text-base shadow-md hover:shadow-lg hover:-translate-y-0.5"
               >
                 <MessageCircle className="w-5 h-5" />
                 WhatsApp
@@ -438,7 +437,7 @@ const HorizontalCarCard = ({ car }: HorizontalCarCardProps) => {
 
               <Link
                 href={`/car/${car._id}`}
-                className="flex-1 flex items-center justify-center gap-2 whitespace-nowrap bg-gradient-to-r from-site-accent to-slate-teal hover:from-site-accent hover:to-slate-teal text-white px-5  py-3 rounded-xl font-semibold transition-all duration-300 text-sm md:text-base shadow-lg hover:shadow-lg hover:-translate-y-0.5"
+                className="flex-1 flex items-center justify-center gap-2 whitespace-nowrap bg-linear-to-r from-site-accent to-slate-teal hover:from-site-accent hover:to-slate-teal text-white px-5  py-3 rounded-xl font-semibold transition-all duration-300 text-sm md:text-base shadow-lg hover:shadow-lg hover:-translate-y-0.5"
               >
                 Rent Now
               </Link>

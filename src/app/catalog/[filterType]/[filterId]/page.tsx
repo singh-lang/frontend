@@ -8,7 +8,7 @@ import CarCards from "@/components/catalogue/CarCards";
 import CatalogSearchBox from "@/components/catalogue/CatalogSearchBox";
 import ComparisonBar from "@/components/shared/ComparisonBar";
 import TopFiltersBar from "@/components/catalogue/TopFilterBar";
-
+import MobileSearch from "@/components/catalogue/MobileSearch";
 import { CarTypes } from "@/types/homePageTypes";
 
 import {
@@ -49,7 +49,6 @@ export default async function Page({ params, searchParams }: PageProps) {
 
   // CHECK ACTIVE FILTERS
   const hasFilters = [
-    sp.search,
     sp.brand,
     sp.bodyType,
     sp.location,
@@ -59,15 +58,8 @@ export default async function Page({ params, searchParams }: PageProps) {
   ].some(Boolean);
 
   /* --------------------- FETCH CARS --------------------- */
-  // const apiRes = hasFilters
-  //   ? await getFilteredData({ ...sp, page: String(currentPage) })
-  //   : await getCatalogData(filterType, filterId, String(currentPage));
   const apiRes = hasFilters
-    ? await getFilteredData({
-        ...sp,
-        search: sp.search || undefined,
-        page: String(currentPage),
-      })
+    ? await getFilteredData({ ...sp, page: String(currentPage) })
     : await getCatalogData(filterType, filterId, String(currentPage));
 
   const rawData = apiRes.data;
@@ -83,12 +75,23 @@ export default async function Page({ params, searchParams }: PageProps) {
   return (
     <>
       <CatalogHeader data={masterData} />
+      {/* ✅ MOBILE */}
+      <div className="block md:hidden sticky top-0 z-9999">
+        <div className="px-4 pt-3 pb-2  border-gray-200">
+          <MobileSearch />
+        </div>
 
-      <div className="sticky top-0 mt-8 z-[20]">
+        <div className="px-1 pb-3">
+          <TopFiltersBar data={masterData} />
+        </div>
+      </div>
+
+      {/* ✅ DESKTOP */}
+      <div className="hidden md:block sticky top-0 mt-8 z-20">
         <TopFiltersBar data={masterData} />
       </div>
 
-      <div className="max-w-[1920px]  mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-480  mx-auto px-4 sm:px-6 py-8">
         <div className="w-full block sm:flex sm:gap-6">
           {/* LEFT FILTERS */}
 
