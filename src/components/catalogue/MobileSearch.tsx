@@ -84,13 +84,13 @@ const MobileSearch = () => {
       ) : (
         isSearch && (
           <div className="absolute left-0 right-0 top-full mt-2 bg-white border border-gray-200 rounded-2xl shadow-xl z-9999 px-4 py-3 text-sm text-gray-500">
-            No cars found
+            No cars found.
           </div>
         )
       )}
       {error && (
         <div className="absolute left-0 right-top-full mt-2 bg-white border border-red-200 rounded-2xl shadow-xl z-9999 px-4 py-3 text-sm text-red-600">
-          Failed to fetch cars, try again
+          Failed to fetch cars, try again.
         </div>
       )}
     </div>
