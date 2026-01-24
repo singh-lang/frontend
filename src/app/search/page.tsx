@@ -3,12 +3,14 @@ export const revalidate = 0;
 
 import type { Metadata } from "next";
 import CatalogHeader from "@/components/catalogue/CatalogHeader";
+import SortingBar from "@/components/catalogue/SortingBar";
 import CarCards from "@/components/catalogue/CarCards";
+import CatalogSearchBox from "@/components/catalogue/CatalogSearchBox";
 import ComparisonBar from "@/components/shared/ComparisonBar";
-import HeroFormLayout from "@/components/home/HeroSearchComponent";
-import SideFilterPanel from "@/components/catalogue/FilterPanel";
-
+import TopFiltersBar from "@/components/catalogue/TopFilterBar";
+import MobileSearch from "@/components/catalogue/MobileSearch";
 import { CarTypes } from "@/types/homePageTypes";
+
 import {
   getCatalogData,
   getFilteredData,
@@ -16,7 +18,6 @@ import {
 } from "@/lib/api/catalog";
 
 import type { SearchParams } from "@/types/catalog";
-import TopFiltersBar from "@/components/catalogue/TopFilterBar";
 
 interface PageProps {
   params: Promise<{ filterType: string; filterId: string }>;
@@ -27,7 +28,7 @@ interface PageProps {
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
-  const { filterId } = await params;
+  const { filterType, filterId } = await params;
 
   return {
     title: `${filterId} Cars for Rent`,
@@ -74,19 +75,30 @@ export default async function Page({ params, searchParams }: PageProps) {
   return (
     <>
       <CatalogHeader data={masterData} />
+      {/* ✅ MOBILE */}
+      <div className="block md:hidden sticky top-0 z-9999">
+        <div className="px-4 pt-3 pb-2  border-gray-200">
+          <MobileSearch />
+        </div>
 
-      {/* Main Layout */}
-      <div className="w-full max-w-[1400px] mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6">
-          {/* LEFT SIDE FILTER PANEL */}
-          <div className="w-full">
-            <SideFilterPanel />
-          </div>
+        <div className="px-1 pb-3">
+          <TopFiltersBar data={masterData} />
+        </div>
+      </div>
 
-          {/* RIGHT SIDE CAR LIST */}
-          <div className="w-full space-y-2">
-            <TopFiltersBar data={masterData} />
+      {/* ✅ DESKTOP */}
+      <div className="hidden md:block sticky top-0 mt-8 z-20">
+        <TopFiltersBar data={masterData} />
+      </div>
 
+      <div className="max-w-480  mx-auto px-4 sm:px-6 py-8">
+        <div className="w-full block sm:flex sm:gap-6">
+          {/* LEFT FILTERS */}
+
+          {/* RIGHT CONTENT */}
+          <div className="max-w-7xl mx-auto px-4 -mt-8 pb-20 space-y-8">
+            {/* <CatalogSearchBox /> */}
+            {/* <SortingBar categories={masterData?.categories || []} /> */}
             <CarCards data={data} />
             <ComparisonBar />
           </div>

@@ -1,4 +1,5 @@
 export interface CarTypes {
+  addons: boolean;
   _id: string;
   vendor: {
     _id: string;
@@ -34,6 +35,16 @@ export interface CarTypes {
   isPremium: boolean;
   location: string;
   car: {
+    airBags: string;
+    regionalSpecs: string;
+    warranty: string;
+    extraKmCharge: number;
+    carModel: string;
+    carTrim: string;
+    bodyType: string;
+    doors: string;
+    interiorColor: string;
+    exteriorColor: string;
     carBrand: {
       name: string;
       logo: {

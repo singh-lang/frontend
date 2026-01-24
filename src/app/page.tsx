@@ -1,7 +1,7 @@
 // app/page.tsx
 import type { Metadata } from "next";
 import Image from "next/image";
-import HeroFormLayout from "@/components/home/hero";
+import HeroFormLayout from "@/components/home/HeroSearchComponent";
 import FeatureCards from "@/components/home/FeatureCards";
 import CategoriesSection from "@/components/home/CategoriesSection";
 import CarsCarousel from "@/components/home/CarsCarousel";
@@ -57,11 +57,11 @@ export default async function Page() {
   ]);
 
   const luxuryCategory = categories?.data?.[0]?.categories.find(
-    (cat: { name: string }) => cat.name === "Luxury Cars"
+    (cat: { name: string }) => cat.name === "Luxury Cars",
   )?.listings;
 
   const sportsCategory = categories?.data?.[0]?.categories.find(
-    (cat: { name: string }) => cat.name === "Sports Cars"
+    (cat: { name: string }) => cat.name === "Sports Cars",
   )?.listings;
 
   return (
@@ -89,7 +89,7 @@ export default async function Page() {
             bodyTypes={masterData?.data?.[0]?.allBodyTypes}
           />
 
-          <div className="mt-4 flex flex-wrap justify-center gap-3 animate-fade-in">
+          <div className="mt-5 flex flex-wrap justify-center gap-3 animate-fade-in">
             {["500+ Luxury Cars", "UAE-Wide Delivery", "24/7 Support"].map(
               (text) => (
                 <div
@@ -98,18 +98,18 @@ export default async function Page() {
                 >
                   {text}
                 </div>
-              )
+              ),
             )}
           </div>
         </div>
       </section>
 
-      <section className="py-6 md:py-8 bg-gradient-to-b from-off-white to-white">
+      <section className="py-6 md:py-8  bg-gradient-to-b from-off-white to-white">
         <FeatureCards />
       </section>
 
       {masterData?.data?.[0]?.allCategories?.length > 0 && (
-        <section className="py-6 bg-gradient-to-b from-off-white to-white relative overflow-hidden">
+        <section className="py-6 bg-gradient-to-b mt-5 from-off-white to-white relative overflow-hidden">
           <CategoriesSection data={masterData?.data?.[0]?.allCategories} />
         </section>
       )}
@@ -159,7 +159,7 @@ export default async function Page() {
             sectionName="categories"
             sectionId={
               categories?.data?.[0]?.categories.find(
-                (cat: { name: string }) => cat.name === "Luxury Cars"
+                (cat: { name: string }) => cat.name === "Luxury Cars",
               )?._id
             }
             sectionTitle="Luxury Collection"
@@ -194,7 +194,7 @@ export default async function Page() {
             sectionName="categories"
             sectionId={
               categories?.data?.[0]?.categories.find(
-                (cat: { name: string }) => cat.name === "Sports Cars"
+                (cat: { name: string }) => cat.name === "Sports Cars",
               )?._id
             }
             sectionTitle="Sports Cars"

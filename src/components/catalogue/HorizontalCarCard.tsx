@@ -1,351 +1,187 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import {
-  Star,
-  Users,
-  Gauge,
-  Fuel,
-  Calendar,
-  MessageCircle,
-  Shield,
-  CheckCircle,
-  Phone,
-  Plus,
-  ArrowLeftRight,
-} from "lucide-react";
-import { useRouter } from "next/navigation";
-import VerifiedBadge from "../home/VerifiedBadge";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import type { CarTypes } from "@/types/homePageTypes";
-import DirhamSymbol from "../shared/DirhamSymbol";
-import { useComparison } from "@/contexts/ComparisionContext";
-import { useCreateClickMutation } from "@/lib/api/car";
-import { buildWhatsAppMessage, buildWhatsAppUrl } from "@/util/watsapp";
+import {
+  Phone,
+  MessageCircle,
+  Users,
+  Gauge,
+  CheckCircle,
+  Shield,
+  Plus,
+  Minus,
+  Building2,
+  MapPin,
+  Star,
+} from "lucide-react";
 
-interface HorizontalCarCardProps {
+import DirhamSymbol from "../shared/DirhamSymbol";
+import type { CarTypes } from "@/types/homePageTypes";
+import { buildWhatsAppMessage, buildWhatsAppUrl } from "@/util/watsapp";
+import { useCreateClickMutation } from "@/lib/api/car";
+
+type PeriodType = "daily" | "weekly" | "monthly";
+type DetailTabType = "carInfo" | "overview" | "features" | "provider";
+
+interface CompactCarCardProps {
   car: CarTypes;
 }
 
-const HorizontalCarCard = ({ car }: HorizontalCarCardProps) => {
-  const [imgSrc, setImgSrc] = useState("/assets/car_placeholder.png");
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isHovering, setIsHovering] = useState(false);
-
-  const [selectedPeriod, setSelectedPeriod] = useState<
-    "daily" | "weekly" | "monthly"
-  >("daily");
-  const imageContainerRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
-
+const CompactCarCard = ({ car }: CompactCarCardProps) => {
+  const [period, setPeriod] = useState<PeriodType>("daily");
+  const [showDetails, setShowDetails] = useState(false);
+  const [activeTab, setActiveTab] = useState<DetailTabType>("carInfo");
   const [createClick] = useCreateClickMutation();
 
-  // ✅ Comparison logic
-  const {
-    addToComparison,
-    removeFromComparison,
-    isInComparison,
-    comparisonCars,
-  } = useComparison();
-  const inComparison = isInComparison(car._id);
+  const imageUrl = car?.car?.images?.[0]?.url || "/assets/car_placeholder.png";
 
-  // Toggle compare
-  const handleCompareClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    if (inComparison) removeFromComparison(car._id);
-    else if (comparisonCars.length < 3) addToComparison(car);
-  };
+  const whatsappNumber =
+    car?.vendor?.vendorDetails?.contact?.whatsappNum?.replaceAll(" ", "") ||
+    "971501234567";
 
-  const handleMouseEnter = () => setIsHovering(true);
-  const handleMouseLeave = () => {
-    setIsHovering(false);
-    setCurrentImageIndex(0);
-  };
+  const whatsappUrl = buildWhatsAppUrl(
+    whatsappNumber,
+    `${buildWhatsAppMessage(
+      car,
+    )}\n\n*Any changes made to this message will result in the inquiry not being sent to the dealer.*`,
+  );
 
-  const handleCardClick = () => router.push(`/car/${car._id}`);
+  const callNumber =
+    car?.vendor?.vendorDetails?.contact?.mobileNum || "+971501234567";
 
-  // 🧭 Pointer-based image control
-  const handlePointerMove = (e: React.MouseEvent | React.TouchEvent) => {
-    if (!car?.car?.images?.length) return;
-    const container = imageContainerRef.current;
-    if (!container) return;
-
-    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
-    const rect = container.getBoundingClientRect();
-    const relativeX = clientX - rect.left;
-    const percentage = Math.max(0, Math.min(1, relativeX / rect.width));
-    const newIndex = Math.min(
-      car.car.images.length - 1,
-      Math.floor(percentage * car.car.images.length),
-    );
-    if (newIndex !== currentImageIndex) setCurrentImageIndex(newIndex);
-  };
-
-  useEffect(() => {
-    if (car) {
-      setImgSrc(
-        car?.car?.images?.[currentImageIndex]?.url ||
-          "/assets/car_placeholder.png",
-      );
-    }
-  }, [car, currentImageIndex]);
-  const getPriceForPeriod = () => {
-    switch (selectedPeriod) {
+  const price = useMemo(() => {
+    switch (period) {
       case "daily":
         return {
-          base: car.rentPerDay,
-          offer: car.offerRentPerDay,
-          final: car.offerRentPerDay ?? car.rentPerDay,
+          base: car?.rentPerDay,
+          offer: car?.offerRentPerDay,
+          final: car?.offerRentPerDay ?? car?.rentPerDay,
           label: "/day",
-          mileage: car.car.dailyMileage || 250,
+          mileage: car?.car?.dailyMileage || 250,
         };
-
       case "weekly":
         return {
-          base: car.rentPerWeek,
-          offer: car.offerRentPerWeek,
-          final: car.offerRentPerWeek ?? car.rentPerWeek,
+          base: car?.rentPerWeek,
+          offer: car?.offerRentPerWeek,
+          final: car?.offerRentPerWeek ?? car?.rentPerWeek,
           label: "/week",
-          mileage: car.car.weeklyMileage || 1500,
+          mileage: car?.car?.weeklyMileage || 1500,
         };
-
       case "monthly":
         return {
-          base: car.rentPerMonth,
-          offer: car.offerRentPerMonth,
-          final: car.offerRentPerMonth ?? car.rentPerMonth,
+          base: car?.rentPerMonth,
+          offer: car?.offerRentPerMonth,
+          final: car?.offerRentPerMonth ?? car?.rentPerMonth,
           label: "/month",
-          mileage: car.car.monthlyMileage || 5000,
+          mileage: car?.car?.monthlyMileage || 5000,
+        };
+      default:
+        return {
+          base: car?.rentPerDay,
+          offer: car?.offerRentPerDay,
+          final: car?.offerRentPerDay ?? car?.rentPerDay,
+          label: "/day",
+          mileage: car?.car?.dailyMileage || 250,
         };
     }
-  };
-
-  const price = getPriceForPeriod();
+  }, [period, car]);
 
   const hasOffer =
     price?.offer !== null &&
     price?.offer !== undefined &&
     Number(price.offer) > 0;
 
-  const getTransmissionSubstring = () => {
-    switch (car?.car?.transmission?.toLowerCase()) {
-      case "automatic":
-        return "Auto";
-      case "manual":
-        return "Manual";
-      case "semi-automatic":
-        return "Semi-Auto";
-      default:
-        return car?.car?.transmission;
-    }
-  };
-
-  // ✅ Prebuild WhatsApp URL with message + warning line (consistent across components)
-  const whatsappNumber =
-    car?.vendor?.vendorDetails?.contact?.whatsappNum?.replaceAll(" ", "") ||
-    "971501234567";
-  const whatsappUrl = buildWhatsAppUrl(
-    whatsappNumber,
-    `${buildWhatsAppMessage(
-      car as CarTypes,
-    )}\n\n*Any changes made to this message will result in the inquiry not being sent to the dealer.*`,
-  );
-
-  const callNumber =
-    car?.vendor?.vendorDetails?.contact?.mobileNum || "+971501234567";
   const specs = [
     {
-      icon: <Calendar className="w-4 h-4" />,
-      value: car?.car?.modelYear,
-      label: "Year",
-    },
-    {
       icon: <Users className="w-4 h-4" />,
-      value: `${car?.car?.seatingCapacity} Seats`,
-      label: "Seats",
+      value: `${car?.car?.seatingCapacity || "-"} Seats`,
     },
     {
       icon: <Gauge className="w-4 h-4" />,
-      value: getTransmissionSubstring(),
-      label: "Trans",
-    },
-    {
-      icon: <Fuel className="w-4 h-4" />,
-      value: car?.car?.fuelType,
-      label: "Fuel",
+      value: car?.car?.transmission || "-",
     },
   ];
+
+  const toggleDetails = () => {
+    setShowDetails((prev) => {
+      const next = !prev;
+      if (next) setActiveTab("carInfo");
+      return next;
+    });
+  };
+
   return (
-    <div
-      onClick={handleCardClick}
-      className="cursor-pointer  w-full lg:w-300 bg-linear-to-br from-white to-gray-100 border border-gray-100 rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 group mb-6"
-    >
+    <div className="w-full rounded-2xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition overflow-hidden">
       <div className="flex flex-col md:flex-row">
-        {/* IMAGE SECTION */}
-        <div
-          ref={imageContainerRef}
-          className="
-    md:w-[40%] relative overflow-hidden bg-gray-100 select-none isolate
-    h-55 sm:h-70 md:h-97.5
-  "
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-          onMouseMove={handlePointerMove}
-          onTouchMove={handlePointerMove}
-        >
+        {/* Image */}
+        <div className="relative w-full md:w-[34%] h-[190px] md:h-[180px] bg-gray-100">
           <Image
-            src={imgSrc}
-            alt={`${car?.car?.carBrand?.name} image`}
+            src={imageUrl}
+            alt={car?.title || "car"}
             fill
-            priority={false}
-            sizes="(max-width: 768px) 100vw, 40vw"
-            className={`object-cover transition-transform duration-500 ${
-              isHovering ? "scale-[1.05]" : "scale-100"
-            }`}
-            onError={() => setImgSrc("/assets/car_placeholder.jpg")}
+            className="object-cover"
+            sizes="(max-width:768px) 100vw, 35vw"
           />
 
-          {/* Compare Button */}
-          <button
-            onClick={handleCompareClick}
-            className={`absolute bottom-4 left-4 px-3 py-1.5 rounded-lg shadow-lg flex items-center gap-1 text-xs font-bold transition-all ${
-              inComparison
-                ? "bg-site-accent text-white"
-                : "bg-white/95 text-site-accent hover:bg-site-accent hover:text-white"
-            }`}
-            title={
-              inComparison ? "Remove from comparison" : "Add to comparison"
-            }
-          >
-            {inComparison ? (
-              <ArrowLeftRight className="w-4 h-4" />
-            ) : (
-              <Plus className="w-4 h-4" />
-            )}
-            <span>Compare</span>
-          </button>
-
-          {/* Rating */}
-          <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow">
-            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-            <span className="text-sm font-semibold text-primary">4.7</span>
+          {/* Tag */}
+          <div className="absolute top-3 left-3 bg-white/90 px-3 py-1 rounded-full text-xs font-semibold text-gray-700">
+            {car?.car?.category || "Car"}
           </div>
-
-          {/* Dots for multiple images */}
-          {car?.car?.images?.length > 1 && (
-            <div className="absolute bottom-4 right-4 flex gap-1.5">
-              {car?.car?.images.map((_, index) => (
-                <div
-                  key={index}
-                  className={`w-2 h-2 rounded-full transition-all ${
-                    index === currentImageIndex
-                      ? "bg-site-accent w-6"
-                      : "bg-white/50"
-                  }`}
-                />
-              ))}
-            </div>
-          )}
         </div>
-        <div className="p-6 w-full md:w-[60%] flex flex-col justify-between">
-          <div className="flex items-start justify-between mb-3">
-            <div>
-              <p className="hidden md:block text-site-accent font-semibold  text-sm mb-1">
-                {car?.car?.carBrand?.name}
+
+        {/* Content */}
+        <div className="w-full md:w-[66%] p-4 flex flex-col gap-2 relative pb-2">
+          {/* Title + Period Buttons */}
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-site-accent">
+                {car?.car?.carBrand?.name || ""}
               </p>
-              <h3
-                className="text-xl font-bold text-primary mb-1 "
-                style={{ fontFamily: "Stretch Pro, sans-serif" }}
-              >
+
+              <h3 className="text-base font-extrabold text-gray-900 truncate leading-tight">
                 {car?.title}
               </h3>
-              <p className="hidden md:block text-site-secondary text-xs font-semibold">
-                {car?.car?.modelYear} Model
-              </p>
             </div>
 
-            <Image
-              height={100}
-              width={100}
-              src={
-                car?.vendor?.profilePicture?.url ||
-                "/assets/car_placeholder.png"
-              }
-              alt={car?.vendor?.vendorDetails?.businessName || "Vendor"}
-              className="w-12 h-12 rounded-xl object-contain bg-white border border-gray-200"
-            />
+            <div className="flex items-center gap-2 mt-2">
+              {(["daily", "weekly", "monthly"] as const).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setPeriod(p)}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold transition ${
+                    period === p
+                      ? "bg-gradient-to-r from-site-accent to-slate-teal text-white shadow"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  {p.charAt(0).toUpperCase() + p.slice(1)}
+                </button>
+              ))}
+            </div>
           </div>
-          <div
-            className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-300"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <span className="text-xs text-site-secondary font-medium">
-              Provided by
-            </span>
-            <Link
-              href={`/catalog/vendor-cars/${car?.vendor?._id}`}
-              className="text-sm font-semibold text-primary"
-            >
-              {car?.vendor?.vendorDetails?.businessName}
-            </Link>
-            <VerifiedBadge className="w-5 h-5" />
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {specs.map((item, i) => (
+
+          {/* Specs */}
+          <div className="flex flex-wrap gap-3">
+            {specs.map((s, i) => (
               <div
                 key={i}
-                className="
-                  flex items-center gap-3
-                  rounded-2xl border border-gray-200 bg-white
-                  px-4 py-3
-                  shadow-sm hover:shadow-md transition
-                "
+                className="flex items-center gap-1 text-xs font-semibold text-gray-700"
               >
-                <div
-                  className="
-                  w-10 h-10 rounded-full
-                  bg-site-accent/10
-                  flex items-center justify-center
-                "
-                >
-                  {item.icon}
-                </div>
-                <div className="leading-tight">
-                  <p className="text-[11px] text-gray-500 font-semibold">
-                    {item.label}
-                  </p>
-                  <p className="text-sm font-extrabold text-gray-900 truncate">
-                    {item.value}
-                  </p>
-                </div>
+                <span className="text-site-accent">{s.icon}</span>
+                <span className="truncate">{s.value}</span>
               </div>
             ))}
           </div>
-          <div className="flex flex-col sm:flex-row justify-between items-center mt-2">
-            <div>
-              <div
-                className="flex gap-2 mb-2"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {(["daily", "weekly", "monthly"] as const).map((p) => (
-                  <button
-                    key={p}
-                    onClick={() => setSelectedPeriod(p)}
-                    className={`px-2.5 py-1 rounded text-xs font-medium transition-all ${
-                      selectedPeriod === p
-                        ? "bg-linear-to-r from-site-accent to-slate-teal text-white shadow-md scale-105"
-                        : "bg-slate-teal/10 text-slate-teal hover:bg-slate-teal/20"
-                    }`}
-                  >
-                    {p.charAt(0).toUpperCase() + p.slice(1)}
-                  </button>
-                ))}
-              </div>
 
+          {/* Price + Buttons Row */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            {/* LEFT */}
+            <div>
               <div className="flex items-baseline gap-2">
-                <DirhamSymbol className="w-7.5 h-7.5 relative top-[6px] text-[#00B4D8]" />
+                <DirhamSymbol className="w-6 h-6 relative top-[4px]" />
 
                 {hasOffer ? (
                   <>
@@ -353,100 +189,388 @@ const HorizontalCarCard = ({ car }: HorizontalCarCardProps) => {
                       {price.base?.toLocaleString()}
                     </span>
 
-                    <span className="text-2xl font-bold text-green-600">
+                    <span className="text-2xl font-extrabold text-green-600">
                       {price.final?.toLocaleString()}
                     </span>
                   </>
                 ) : (
-                  <span className="text-2xl font-bold text-site-grey">
+                  <span className="text-2xl font-extrabold text-gray-900">
                     {price.final?.toLocaleString()}
                   </span>
                 )}
 
-                <span className="text-site-secondary text-xs">
+                <span className="text-xs text-gray-500 font-semibold">
                   {price.label}
                 </span>
               </div>
 
-              <div className="flex items-center gap-1.5 text-xs text-grey font-medium mb-1">
+              <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium mt-1">
                 <Gauge className="w-3.5 h-3.5 text-slate-teal" />
                 <span>
                   {price?.mileage} km included {price?.label?.replace("/", "")}
                 </span>
               </div>
+            </div>
 
-              <div className="flex items-center gap-4 text-[10px] text-grey">
-                <div className="flex items-center gap-1">
-                  <CheckCircle className="w-3 h-3 text-site-accent" />
-                  <span className="font-medium">
-                    Min {car.minRentalDays} day
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Shield className="w-3 h-3 text-site-accent" />
-                  <span className="font-medium">
-                    {car.car.carInsurance == "yes" ? "Insured" : "Not Insured"}
-                  </span>
-                </div>
+            {/* RIGHT Buttons */}
+            <div className="flex flex-col items-end gap-1.5 w-full md:w-auto">
+              <div className="flex gap-2 w-full md:w-[380px]">
+                {/* Call */}
+                <a
+                  href={`tel:${callNumber}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    createClick({ carId: car._id, body: { type: "call" } })
+                      .unwrap()
+                      .catch(() => {})
+                      .finally(() => {
+                        setTimeout(() => {
+                          window.location.href = `tel:${callNumber}`;
+                        }, 150);
+                      });
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-800 hover:border-site-accent hover:text-site-accent transition"
+                >
+                  <Phone className="w-4 h-4" />
+                  Call
+                </a>
+
+                {/* WhatsApp */}
+                <a
+                  href={whatsappUrl}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    createClick({ carId: car._id, body: { type: "whatsapp" } })
+                      .unwrap()
+                      .catch(() => {})
+                      .finally(() => {
+                        setTimeout(() => {
+                          window.open(
+                            whatsappUrl,
+                            "_blank",
+                            "noopener,noreferrer",
+                          );
+                        }, 120);
+                      });
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-site-accent/50 bg-white px-3 py-2 text-sm font-semibold text-site-accent hover:bg-site-accent hover:text-white transition"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  WhatsApp
+                </a>
+
+                {/* Rent Now */}
+                <Link
+                  href={`/car/${car._id}`}
+                  className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-site-accent to-slate-teal px-3 py-2 text-sm font-semibold text-white shadow hover:shadow-md transition"
+                >
+                  Rent Now
+                </Link>
               </div>
             </div>
-            <div
-              className="flex flex-col sm:flex-row items-stretch sm:items-end justify-between sm:justify-end gap-2 mt-4 w-full"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <a
-                href={`tel:${callNumber}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  createClick({ carId: car._id, body: { type: "call" } })
-                    .unwrap()
-                    .catch(() => {})
-                    .finally(() => {
-                      setTimeout(() => {
-                        window.location.href = `tel:${callNumber}`;
-                      }, 200);
-                    });
-                }}
-                className="flex-1 flex items-center justify-center gap-2 whitespace-nowrap bg-linear-to-br from-white to-off-white border-2 border-soft-grey/50 text-site-grey hover:border-site-accent hover:text-site-accent hover:bg-white px-5 py-3 rounded-xl font-semibold transition-all duration-300 text-sm md:text-base shadow-md hover:shadow-lg hover:-translate-y-0.5"
-              >
-                <Phone className="w-5 h-5" />
-                Call
-              </a>
-              <a
-                href={whatsappUrl}
-                onClick={(e) => {
-                  e.preventDefault();
-                  createClick({ carId: car._id, body: { type: "whatsapp" } })
-                    .unwrap()
-                    .catch(() => {})
-                    .finally(() => {
-                      setTimeout(() => {
-                        window.open(
-                          whatsappUrl,
-                          "_blank",
-                          "noopener,noreferrer",
-                        );
-                      }, 150);
-                    });
-                }}
-                className="flex-1 flex items-center justify-center gap-2 whitespace-nowrap bg-linear-to-br from-white to-off-white border-2 border-site-accent/60 text-site-accent hover:border-site-accent hover:text-white hover:bg-linear-to-r hover:from-site-accent hover:to-site-accent/90 px-5 py-3 rounded-xl font-semibold transition-all duration-300 text-sm md:text-base shadow-md hover:shadow-lg hover:-translate-y-0.5"
-              >
-                <MessageCircle className="w-5 h-5" />
-                WhatsApp
-              </a>
+          </div>
 
-              <Link
-                href={`/car/${car._id}`}
-                className="flex-1 flex items-center justify-center gap-2 whitespace-nowrap bg-linear-to-r from-site-accent to-slate-teal hover:from-site-accent hover:to-slate-teal text-white px-5  py-3 rounded-xl font-semibold transition-all duration-300 text-sm md:text-base shadow-lg hover:shadow-lg hover:-translate-y-0.5"
-              >
-                Rent Now
-              </Link>
+          {/* Small info row */}
+          <div className="flex items-center gap-3 text-[10px] text-grey relative">
+            <div className="flex items-center gap-1">
+              <CheckCircle className="w-3 h-3 text-site-accent" />
+              <span className="font-medium">Min {car?.minRentalDays} day</span>
             </div>
+
+            <div className="flex items-center gap-1">
+              <Shield className="w-3 h-3 text-site-accent" />
+              <span className="font-medium">
+                {car?.car?.carInsurance === "yes" ? "Insured" : "Not Insured"}
+              </span>
+            </div>
+
+            {/* Toggle */}
+            <button
+              type="button"
+              onClick={toggleDetails}
+              className="absolute right-0 flex items-center gap-1 text-sm font-semibold text-site-accent hover:underline"
+            >
+              {showDetails ? "Less Details" : "More Details"}
+              {showDetails ? (
+                <Minus className="w-4 h-4" />
+              ) : (
+                <Plus className="w-4 h-4" />
+              )}
+            </button>
           </div>
         </div>
       </div>
+
+      {/* DETAILS SECTION */}
+      {showDetails && (
+        <div className="border-t border-gray-200 bg-gray-50 px-4 py-4">
+          {/* Tabs */}
+          <div className="flex items-center gap-6 border-b border-gray-200 pb-3 mb-4">
+            {(["carInfo", "overview", "features"] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setActiveTab(t)}
+                className={`text-sm font-semibold transition ${
+                  activeTab === t
+                    ? "text-gray-900 border-b-2 border-site-accent pb-2"
+                    : "text-gray-500 hover:text-gray-900"
+                }`}
+              >
+                {t === "carInfo"
+                  ? "Car info"
+                  : t.charAt(0).toUpperCase() + t.slice(1)}
+              </button>
+            ))}
+          </div>
+
+          {/* MAIN GRID */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* LEFT BOX */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-4">
+              <h3 className="text-base font-bold text-gray-900 mb-3">
+                {activeTab === "carInfo"
+                  ? "Car info"
+                  : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
+              </h3>
+
+              {activeTab === "carInfo" && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                  {/* Specs Part 1 */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500 font-medium">
+                        Model Year
+                      </span>
+                      <span className="text-gray-900 font-semibold">
+                        {car?.car?.modelYear || "-"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500 font-medium">
+                        Body Type
+                      </span>
+                      <span className="text-gray-900 font-semibold">
+                        {car?.car?.bodyType || "-"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500 font-medium">
+                        Transmission
+                      </span>
+                      <span className="text-gray-900 font-semibold">
+                        {car?.car?.transmission || "-"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500 font-medium">Seats</span>
+                      <span className="text-gray-900 font-semibold">
+                        {car?.car?.seatingCapacity || "-"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500 font-medium">
+                        Fuel Type
+                      </span>
+                      <span className="text-gray-900 font-semibold">
+                        {car?.car?.fuelType || "-"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500 font-medium">Doors</span>
+                      <span className="text-gray-900 font-semibold">
+                        {car?.car?.doors || "-"}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Specs Part 2 */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500 font-medium">
+                        Insurance
+                      </span>
+                      <span className="text-gray-900 font-semibold">
+                        {car?.car?.carInsurance === "yes"
+                          ? "Included"
+                          : "Not Included"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500 font-medium">
+                        Warranty
+                      </span>
+                      <span className="text-gray-900 font-semibold">
+                        {car?.car?.warranty === "yes" ? "Yes" : "No"}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500 font-medium">
+                        Security Deposit
+                      </span>
+                      <span className="text-gray-900 font-semibold">
+                        AED {(car?.securityDeposit || 0).toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "overview" && (
+                <p className="text-sm font-medium text-gray-600 leading-relaxed">
+                  {car?.description || "No overview available."}
+                </p>
+              )}
+
+              {activeTab === "features" && (
+                <div className="max-h-[220px] overflow-y-auto pr-2 space-y-4">
+                  {/* Technical Features */}
+                  {(car?.car?.techFeatures || []).length > 0 && (
+                    <div>
+                      <p className="text-sm font-bold text-gray-900 mb-2">
+                        Technical Features
+                      </p>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {(car?.car?.techFeatures || []).map(
+                          (f: string, idx: number) => (
+                            <div
+                              key={`tech-${idx}`}
+                              className="flex items-center gap-2 text-sm text-gray-700"
+                            >
+                              <CheckCircle className="w-4 h-4 text-site-accent shrink-0" />
+                              <span className="break-words">{f}</span>
+                            </div>
+                          ),
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Other Features */}
+                  {(car?.car?.otherFeatures || []).length > 0 && (
+                    <div>
+                      <p className="text-sm font-bold text-gray-900 mb-2">
+                        Other Features
+                      </p>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {(car?.car?.otherFeatures || []).map(
+                          (f: string, idx: number) => (
+                            <div
+                              key={`other-${idx}`}
+                              className="flex items-center gap-2 text-sm text-gray-700"
+                            >
+                              <CheckCircle className="w-4 h-4 text-site-accent shrink-0" />
+                              <span className="break-words">{f}</span>
+                            </div>
+                          ),
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Fallback */}
+                  {!car?.car?.techFeatures?.length &&
+                    !car?.car?.otherFeatures?.length && (
+                      <p className="text-sm text-gray-500">
+                        No features available.
+                      </p>
+                    )}
+                </div>
+              )}
+            </div>
+
+            {/* RIGHT BOX */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-4">
+              <h3 className="text-base font-bold text-gray-900 mb-3">
+                Car info
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-3">
+                  <p className="text-xs text-gray-500 font-semibold">Mileage</p>
+                  <p className="text-sm font-bold text-gray-900">
+                    {price?.mileage || 250} km/day
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-3">
+                  <p className="text-xs text-gray-500 font-semibold">
+                    Transmission
+                  </p>
+                  <p className="text-sm font-bold text-gray-900">
+                    {car?.car?.transmission || "-"}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-3">
+                  <p className="text-xs text-gray-500 font-semibold">
+                    Insurance
+                  </p>
+                  <p className="text-sm font-bold text-gray-900">
+                    {car?.car?.carInsurance === "yes"
+                      ? "Insurance Included"
+                      : "Not Included"}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-3">
+                  <p className="text-xs text-gray-500 font-semibold">
+                    Body Type
+                  </p>
+                  <p className="text-sm font-bold text-gray-900">
+                    {car?.car?.bodyType || "-"}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-3">
+                  <p className="text-xs text-gray-500 font-semibold">
+                    Fuel Type
+                  </p>
+                  <p className="text-sm font-bold text-gray-900">
+                    {car?.car?.fuelType || "-"}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-3">
+                  <p className="text-xs text-gray-500 font-semibold">Price</p>
+                  <p className="text-sm font-bold text-gray-900">
+                    AED {price?.final?.toLocaleString() || "-"} {price?.label}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 rounded-2xl border border-gray-200 bg-gray-50 p-4 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-bold text-gray-900">
+                    Still have questions?
+                  </p>
+                  <p className="text-xs text-gray-500 font-medium">
+                    Contact support for help
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  className="px-5 py-2 rounded-full bg-gradient-to-r from-site-accent to-slate-teal text-white text-sm font-semibold shadow hover:shadow-md transition"
+                >
+                  Contact Support
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default HorizontalCarCard;
+export default CompactCarCard;

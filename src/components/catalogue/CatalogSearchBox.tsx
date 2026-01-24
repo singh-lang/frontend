@@ -8,29 +8,42 @@ import { useRouter } from "@bprogress/next/app";
 
 const CatalogSearchBox = () => {
   const router = useRouter();
+  const [query, setQuery] = useState("");
   const [isSearch, setIsSearch] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
-  const [triggerSearch, { data: searchedCars, isFetching, error }] =
+  const [triggerSearch, { data, isFetching, error }] =
     useLazyGetSearchedCarsQuery();
 
-  const handleChange = (searchString: string) => {
-    if (searchString.trim() !== "") {
+  /** 🔍 INPUT CHANGE */
+  const handleChange = (value: string) => {
+    setQuery(value);
+
+    if (value.trim()) {
       setIsSearch(true);
-      triggerSearch(searchString);
+      triggerSearch(value);
     } else {
       setIsSearch(false);
     }
   };
 
-  /* ✅ CORRECT REDIRECT */
+  /** 🔥 ENTER KEY → FREE SEARCH */
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && query.trim()) {
+      setIsSearch(false);
+      router.push(`/catalog/all/cars?search=${encodeURIComponent(query)}`);
+    }
+  };
+
+  /** ✅ DROPDOWN CLICK */
   const handleClick = (title: string) => {
     setIsSearch(false);
     router.push(`/catalog/all/cars?search=${encodeURIComponent(title)}`);
   };
 
+  /** CLICK OUTSIDE */
   useEffect(() => {
-    const handleOutside = (e: MouseEvent | TouchEvent) => {
+    const handler = (e: MouseEvent | TouchEvent) => {
       if (
         dropdownRef.current &&
         !dropdownRef.current.contains(e.target as Node)
@@ -39,41 +52,41 @@ const CatalogSearchBox = () => {
       }
     };
 
-    document.addEventListener("mousedown", handleOutside);
-    document.addEventListener("touchstart", handleOutside);
+    document.addEventListener("mousedown", handler);
+    document.addEventListener("touchstart", handler);
 
     return () => {
-      document.removeEventListener("mousedown", handleOutside);
-      document.removeEventListener("touchstart", handleOutside);
+      document.removeEventListener("mousedown", handler);
+      document.removeEventListener("touchstart", handler);
     };
   }, []);
 
   return (
-    <div className="relative w-full mx-auto mb-6" ref={dropdownRef}>
-      <div className="flex items-center bg-white/10 backdrop-blur-sm rounded-lg overflow-hidden shadow-sm border border-site-accent/40 hover:border-site-accent/70">
-        <input
-          type="text"
-          placeholder="Search Your Dream Car..."
-          onChange={(e) => handleChange(e.target.value)}
-          className="w-full bg-transparent text-black placeholder-gray-400 px-4 py-2.5 md:py-3 focus:outline-none text-sm md:text-base"
-        />
-      </div>
+    <div ref={dropdownRef} className="relative w-full mb-6">
+      <input
+        type="text"
+        value={query}
+        placeholder="Search your dream car..."
+        onChange={(e) => handleChange(e.target.value)}
+        onKeyDown={handleKeyDown}
+        className="w-full px-4 py-3 rounded-lg border border-site-accent/40 focus:outline-none"
+      />
 
       {isFetching && (
-        <div className="absolute left-0 right-0 bg-white border border-gray-200 rounded-lg mt-2 shadow-xl z-[99] p-4 space-y-2 max-h-64 overflow-auto">
-          {Array.from({ length: 8 }).map((_, i) => (
+        <div className="absolute w-full bg-white mt-2 p-4 shadow-xl rounded-lg z-[99]">
+          {Array.from({ length: 6 }).map((_, i) => (
             <Skeleton key={i} height={16} />
           ))}
         </div>
       )}
 
-      {!isFetching && isSearch && searchedCars?.result?.length > 0 && (
-        <div className="absolute left-0 right-0 bg-white border border-gray-200 rounded-lg mt-2 shadow-xl z-[99] p-1 max-h-64 overflow-auto">
-          {searchedCars.result.map((car: { _id: string; title: string }) => (
+      {!isFetching && isSearch && data?.result?.length > 0 && (
+        <div className="absolute w-full bg-white mt-2 shadow-xl rounded-lg z-[99] max-h-64 overflow-auto">
+          {data.result.map((car: any) => (
             <div
               key={car._id}
               onClick={() => handleClick(car.title)}
-              className="px-4 py-2 text-sm text-gray-900 hover:bg-gray-100 cursor-pointer"
+              className="px-4 py-2 cursor-pointer hover:bg-gray-100 text-sm"
             >
               {car.title}
             </div>
@@ -81,16 +94,16 @@ const CatalogSearchBox = () => {
         </div>
       )}
 
-      {!isFetching && isSearch && searchedCars?.result?.length === 0 && (
-        <div className="absolute left-0 right-0 bg-white border border-gray-200 rounded-lg mt-2 shadow-xl z-[99] px-4 py-2 text-sm text-gray-500">
+      {!isFetching && isSearch && data?.result?.length === 0 && (
+        <div className="absolute w-full bg-white mt-2 p-3 shadow-xl rounded-lg text-sm text-gray-500 z-[99]">
           No cars found
         </div>
       )}
 
       {error && (
-        <div className="text-red-500 mt-2 text-sm">
-          Failed to fetch cars, try again
-        </div>
+        <p className="text-red-500 text-sm mt-2">
+          Failed to fetch search results
+        </p>
       )}
     </div>
   );
