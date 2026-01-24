@@ -19,6 +19,8 @@ import {
   Settings,
   Users,
   Palette,
+  Settings2,
+  Shapes,
 } from "lucide-react";
 
 export default function TopFiltersBar({ data }) {
@@ -156,17 +158,35 @@ export default function TopFiltersBar({ data }) {
   return (
     <>
       {/* TOP BAR */}
-      <div className="sticky top-0 z-[9999] backdrop-blur-md">
+      <div className="relative z-[9999] backdrop-blur-md">
         <div className="w-full">
           <div className="max-w-[1100px] mx-auto px-4 sm:px-6">
-            <div className="text-4xl font-medium pt-2 text-slate-900">
-              Choose a Car
+            <div className="flex items-center justify-between gap-4">
+              <h2 className="text-3xl font-extrabold text-gray-900">
+                Choose a car
+              </h2>
+
+              <button
+                type="button"
+                onClick={() => setOpenFullFilter(true)}
+                className="
+        flex items-center gap-2
+        bg-gradient-to-r from-site-accent to-slate-teal text-white
+        px-6 py-3 rounded-full
+        text-sm font-semibold
+        shadow-md hover:opacity-95 transition
+      "
+              >
+                <SlidersHorizontal className="w-4 h-4" />
+                Filter
+              </button>
             </div>
-            <div
-              ref={dropdownRef}
-              className="
-     bg-white/90 backdrop-blur-md
-            border border-gray-200 shadow-sm
+          </div>
+
+          <div
+            ref={dropdownRef}
+            className="
+    
     rounded-[28px]
     px-4 py-3
     flex items-center gap-6
@@ -176,141 +196,146 @@ export default function TopFiltersBar({ data }) {
     md:flex-wrap md:overflow-visible md:whitespace-normal
     relative z-50
   "
-            >
-              {/* Deposit */}
-              <div className="relative shrink-0  p-2 rounded-2xl">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openDesktop.deposit ? closeAll() : openFilter("deposit");
-                  }}
-                  className="flex flex-col text-left"
+          >
+            {/* Deposit */}
+            <div className="relative shrink-0  p-2 rounded-2xl">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openDesktop.deposit ? closeAll() : openFilter("deposit");
+                }}
+                className="flex flex-col text-left"
+              >
+                <span
+                  className="flex items-center justify-between
+               w-[220px] h-11 px-5
+               rounded-full border border-gray-200 bg-white
+               text-gray-800 text-sm font-medium
+               shadow-sm hover:shadow-md transition"
                 >
-                  <span className="text-sm font-semibold text-gray-900">
-                    Deposit
-                  </span>
-                  <span className="text-gray-500 flex items-center gap-1 text-sm">
-                    {noDeposit ? "No Deposit" : "Select"}
-                    <ChevronDown size={16} />
-                  </span>
-                </button>
+                  {noDeposit ? "No Deposit" : "Deposit"}
+                  <ChevronDown size={16} />
+                </span>
+              </button>
 
-                {openDesktop.deposit && (
-                  <div
-                    onClick={(e) => e.stopPropagation()}
-                    className=" absolute left-0 top-full mt-3 z-[9999] bg-white w-56 rounded-2xl shadow-xl border border-gray-100 p-4"
-                  >
-                    <label className="flex items-center gap-2 py-1 text-sm text-gray-700">
+              {openDesktop.deposit && (
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className=" absolute left-0 top-full  z-[9999] bg-white w-56 rounded-2xl shadow-xl border border-gray-100 p-4"
+                >
+                  <label className="flex items-center gap-2 py-1 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={noDeposit}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        dispatch(setCatalogFilters({ noDeposit: checked }));
+                        applyFilters({ noDeposit: checked });
+                      }}
+                      className="accent-site-primary"
+                    />
+                    No Deposit
+                  </label>
+                </div>
+              )}
+            </div>
+            <div className="relative shrink-0">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openDesktop.bodyType ? closeAll() : openFilter("bodyType");
+                }}
+                className="flex items-center"
+              >
+                <span
+                  className="flex items-center justify-between
+               w-[220px] h-11 px-5
+               rounded-full border border-gray-200 bg-white
+               text-gray-800 text-sm font-medium
+               shadow-sm hover:shadow-md transition"
+                >
+                  <span className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-gray-800">
+                      Body Type
+                    </span>
+
+                    {bodyType.length > 0 && (
+                      <span
+                        className="min-w-[22px] h-[22px] px-2
+                 flex items-center justify-center
+                 rounded-full bg-site-accent text-white
+                 text-xs font-semibold"
+                      >
+                        {bodyType.length}
+                      </span>
+                    )}
+                  </span>
+
+                  <ChevronDown
+                    size={16}
+                    className={`transition-transform duration-200 ${
+                      openDesktop.bodyType ? "rotate-180" : ""
+                    }`}
+                  />
+                </span>
+              </button>
+
+              {openDesktop.bodyType && (
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  className="hidden md:block absolute left-0 top-full mt-3 z-[9999] bg-white w-72 shadow-xl rounded-2xl p-4 border border-gray-100 max-h-72 overflow-y-auto"
+                >
+                  {data?.bodyTypes?.map((bt) => (
+                    <label
+                      key={bt._id}
+                      className="flex items-center gap-2 py-1 text-sm text-gray-700"
+                    >
                       <input
                         type="checkbox"
-                        checked={noDeposit}
-                        onChange={(e) => {
-                          const checked = e.target.checked;
-                          dispatch(setCatalogFilters({ noDeposit: checked }));
-                          applyFilters({ noDeposit: checked });
+                        checked={bodyType.includes(bt._id)}
+                        onChange={() => {
+                          const updated = bodyType.includes(bt._id)
+                            ? bodyType.filter((x: string) => x !== bt._id)
+                            : [...bodyType, bt._id];
+
+                          dispatch(setCatalogFilters({ bodyType: updated }));
+                          applyFilters({ bodyType: updated });
                         }}
                         className="accent-site-primary"
                       />
-                      No Deposit
+                      {bt.name}
                     </label>
-                  </div>
-                )}
-              </div>
-
-              <Divider />
-
-              {/* Body Type */}
-              <div className="relative shrink-0">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openDesktop.bodyType ? closeAll() : openFilter("bodyType");
-                  }}
-                  className="flex flex-col text-left"
-                >
-                  <span className="text-sm font-semibold text-gray-900">
-                    Body Type
-                  </span>
-                  <span className="text-gray-500 flex items-center gap-1 text-sm">
-                    {bodyType.length ? `${bodyType.length} selected` : "Select"}
-                    <ChevronDown size={16} />
-                  </span>
-                </button>
-
-                {openDesktop.bodyType && (
-                  <div
-                    onClick={(e) => e.stopPropagation()}
-                    className="hidden md:block absolute left-0 top-full mt-3 z-[9999] bg-white w-72 shadow-xl rounded-2xl p-4 border border-gray-100 max-h-72 overflow-y-auto"
-                  >
-                    {data?.bodyTypes?.map((bt) => (
-                      <label
-                        key={bt._id}
-                        className="flex items-center gap-2 py-1 text-sm text-gray-700"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={bodyType.includes(bt._id)}
-                          onChange={() => {
-                            const updated = bodyType.includes(bt._id)
-                              ? bodyType.filter((x: string) => x !== bt._id)
-                              : [...bodyType, bt._id];
-
-                            dispatch(setCatalogFilters({ bodyType: updated }));
-                            applyFilters({ bodyType: updated });
-                          }}
-                          className="accent-site-primary"
-                        />
-                        {bt.name}
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <Divider />
-
-              {/* Sort */}
-              <div className="flex items-center gap-3 shrink-0">
-                <span className="text-sm font-semibold text-gray-700">
-                  Sort:
-                </span>
-                <select
-                  value={sort}
-                  onChange={(e) => {
-                    const newSort = e.target.value;
-                    setSort(newSort);
-                    dispatch(setCatalogFilters({ sort: newSort }));
-                    applyFilters({ sort: newSort });
-                  }}
-                  className="w-56 h-11 px-4 rounded-2xl border border-gray-200 bg-white text-gray-700 text-sm outline-none"
-                >
-                  <option value="newest">Newest Cars</option>
-                  <option value="lowestPrice">Price: Low to High</option>
-                  <option value="highestPrice">Price: High to Low</option>
-                  <option value="mostBooked">Most Booked</option>
-                </select>
-              </div>
-
-              {/* ✅ FULL SCREEN FILTER BUTTON */}
-              <div className="ml-auto shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setOpenFullFilter(true)}
-                  className="
-                  flex items-center gap-2
-                  bg-gradient-to-r from-site-accent to-slate-teal text-white
-                  px-6 py-3 rounded-full
-                  text-sm font-semibold
-                  shadow-md hover:opacity-95 transition max-w-
-                "
-                >
-                  <SlidersHorizontal className="w-4 h-4" />
-                  Filter
-                </button>
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
+
+            <div className="flex items-center gap-3 shrink-0">
+              <span className="text-sm font-semibold text-gray-900">Sort</span>
+              <select
+                value={sort}
+                onChange={(e) => {
+                  const newSort = e.target.value;
+                  setSort(newSort);
+                  dispatch(setCatalogFilters({ sort: newSort }));
+                  applyFilters({ sort: newSort });
+                }}
+                className="flex items-center justify-between
+               w-[220px] h-11 px-5
+               rounded-full border border-gray-200 bg-white
+               text-gray-800 text-sm font-medium
+               shadow-sm hover:shadow-md transition"
+              >
+                <option value="newest">Newest Cars</option>
+                <option value="lowestPrice">Price: High to Low</option>
+                <option value="highestPrice">Price: Low to High</option>
+                <option value="mostBooked">Most Booked</option>
+              </select>
+            </div>
+
+            {/* ✅ FULL SCREEN FILTER BUTTON */}
           </div>
         </div>
       </div>
@@ -346,7 +371,8 @@ translate-x-0 transition-transform duration-300"
                   }}
                   className="flex flex-col text-left w-full"
                 >
-                  <span className="text-sm font-semibold text-gray-900">
+                  <span className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                    <LayoutGrid className="w-4 h-4 text-site-accent" />
                     Category
                   </span>
 
@@ -425,7 +451,8 @@ translate-x-0 transition-transform duration-300"
                   }}
                   className="flex flex-col text-left w-full"
                 >
-                  <span className="text-sm font-semibold text-gray-900">
+                  <span className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                    <Car className="w-4 h-4 text-site-accent" />
                     Brand
                   </span>
 
@@ -494,7 +521,8 @@ translate-x-0 transition-transform duration-300"
                   }}
                   className="flex flex-col text-left w-full"
                 >
-                  <span className="text-sm font-semibold text-gray-900">
+                  <span className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                    <Settings2 className="w-4 h-4 text-site-accent" />
                     Transmission
                   </span>
 
@@ -569,7 +597,8 @@ translate-x-0 transition-transform duration-300"
                   }}
                   className="flex flex-col text-left w-full"
                 >
-                  <span className="text-sm font-semibold text-gray-900">
+                  <span className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                    <Users className="w-4 h-4 text-site-accent" />
                     Seating Capacity
                   </span>
 
@@ -645,7 +674,8 @@ translate-x-0 transition-transform duration-300"
                   }}
                   className="flex flex-col text-left w-full"
                 >
-                  <span className="text-sm font-semibold text-gray-900">
+                  <span className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                    <Shapes className="w-4 h-4 text-site-accent" />
                     Body Type
                   </span>
 
@@ -715,7 +745,8 @@ translate-x-0 transition-transform duration-300"
                   }}
                   className="flex flex-col text-left w-full"
                 >
-                  <span className="text-sm font-semibold text-gray-900">
+                  <span className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                    <Palette className="w-4 h-4 text-site-accent" />
                     Interior Color
                   </span>
 
@@ -789,7 +820,8 @@ translate-x-0 transition-transform duration-300"
                   }}
                   className="flex flex-col text-left w-full"
                 >
-                  <span className="text-sm font-semibold text-gray-900">
+                  <span className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                    <Palette className="w-4 h-4 text-site-accent" />
                     Exterior Color
                   </span>
 

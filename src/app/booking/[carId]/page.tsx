@@ -1,24 +1,23 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import React, { useEffect, useMemo, useState } from "react";
+import { useParams } from "next/navigation";
 import { CheckCircle2, Truck, Store } from "lucide-react";
 import { toast } from "sonner";
 import DatePicker from "react-datepicker";
-import { useGetDepositFreePricingFrontendQuery } from "@/lib/api/depositFreeFrontendApi";
+import "react-datepicker/dist/react-datepicker.css";
 
 import { DateInput } from "@/components/ui/datePicker";
+import ImportantInfo from "@/app/booking/[carId]/info";
+import { useCalculatePickupReturnMutation } from "@/lib/api/pickupReturnApi";
 import {
   useCalculateBookingMutation,
   useCreateBookingMutation,
 } from "@/lib/api/booking";
-import ImportantInfo from "@/app/booking/[carId]/info";
-import { useCalculatePickupReturnMutation } from "@/lib/api/pickupReturnApi";
-import CatalogHeader from "@/components/catalogue/CatalogHeader";
 import { getCar } from "@/lib/api/car";
-import { type CarTypes } from "@/types/homePageTypes";
-import Image from "next/image";
-import { useGetAddonsByCarQuery } from "@/lib/api/carAddonsApi";
+import type { CarTypes } from "@/types/homePageTypes";
+import { useGetDepositFreePricingFrontendQuery } from "@/lib/api/depositFreeFrontendApi";
+
 type PriceType = "daily" | "weekly" | "monthly";
 
 interface BookingCalculation {
@@ -32,116 +31,251 @@ interface ApiError {
     message?: string;
   };
 }
-interface CarFetchProp {
-  _id: string;
-  data: CarTypes;
-}
 
-// const DEPOSIT_AMOUNT = 2000;
-// const DEPOSIT_FREE_FEE = 210;
+const ADDONS = {
+  childSeat: { label: "Child Seat", price: 50 },
+  babySeat: { label: "Baby Seat", price: 50 },
+  gps: { label: "GPS Navigation", price: 30 },
+  additionalDriver: { label: "Additional Driver", price: 100 },
+};
+
+type AddonKey = keyof typeof ADDONS;
+
+const EMIRATES = [
+  { id: "6953ce30ad7fb6b0b43ee72c", name: "Dubai" },
+  { id: "6953ce30ad7fb6b0b43ee729", name: "Abu Dhabi" },
+  { id: "6953ce31ad7fb6b0b43ee72f", name: "Sharjah" },
+  { id: "6953ce31ad7fb6b0b43ee732", name: "Ajman" },
+  { id: "6953ce32ad7fb6b0b43ee735", name: "Umm Al Quwain" },
+  { id: "6953ce32ad7fb6b0b43ee738", name: "Ras Al Khaimah" },
+  { id: "6953ce33ad7fb6b0b43ee73b", name: "Fujairah" },
+];
+
 export default function BookingPage() {
   const params = useParams();
-  const router = useRouter();
-
   const carId = (params?.carId as string) || "";
-  // 1️⃣ API HOOK
 
-  const { data: addonRes, isLoading: addonsLoading } = useGetAddonsByCarQuery(
-    carId,
-    {
-      skip: !carId,
-    }
-  );
+  // ---------- STEPS ----------
+  const [step, setStep] = useState(1);
+  const [maxStepReached, setMaxStepReached] = useState(1);
 
-  const vendorAddons = addonRes?.data || [];
-  const { data: depositFreeRes } = useGetDepositFreePricingFrontendQuery(
-    carId,
-    {
-      skip: !carId,
-    }
-  );
+  const steps = [
+    { id: 1, label: "Rental Plan" },
+    { id: 2, label: "Select Dates" },
+    { id: 3, label: "Pickup & Drop off" },
+    { id: 4, label: "Your Details" },
+  ];
 
-  const depositFreeDailyFee = depositFreeRes?.data?.daily || 0;
-
-  // 2️⃣ STATE
-  const [selectedAddons, setSelectedAddons] = useState<Record<string, boolean>>(
-    {}
-  );
-  const [incompleteToastShown, setIncompleteToastShown] = useState(false);
-
-  useEffect(() => {
-    if (!vendorAddons.length) return;
-
-    const map: Record<string, boolean> = {};
-    vendorAddons.forEach((a) => {
-      map[a._id] = false; // ✅ default unchecked
-    });
-
-    setSelectedAddons(map);
-  }, [vendorAddons]);
-
-  const [showDeliveryPolicy, setShowDeliveryPolicy] = useState<boolean>(false);
-  const [priceType, setPriceType] = useState<PriceType>("daily");
-  const [canPay, setCanPay] = useState(false);
+  // ---------- UI STATES ----------
+  const [showDeliveryPolicy, setShowDeliveryPolicy] = useState(false);
   const [addonsOpen, setAddonsOpen] = useState(false);
-  const [selectedOption, setSelectedOption] = useState("delivery");
+  const [infoOpen, setInfoOpen] = useState(false);
+  const [depositFree, setDepositFree] = useState(false);
+
+  // ---------- FORM STATES ----------
+  const [priceType, setPriceType] = useState<PriceType>("daily");
+
   const [pickupDate, setPickupDate] = useState("");
   const [pickupTime, setPickupTime] = useState("10:00");
   const [dropoffDate, setDropoffDate] = useState("");
   const [dropoffTime, setDropoffTime] = useState("10:00");
-  const [carLoading, setCarLoading] = useState(true);
+
+  const [pickupType, setPickupType] = useState<"PICKUP" | "DELIVERY">("PICKUP");
+  const [returnType, setReturnType] = useState<"DROPOFF" | "RETURN">("DROPOFF");
+
+  const [emirateId, setEmirateId] = useState<string>("");
+  const [address, setAddress] = useState("");
 
   const [guestEmail, setGuestEmail] = useState("");
   const [guestName, setGuestName] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
+
+  // ---------- ADDONS ----------
+  const [childSeat, setChildSeat] = useState(false);
+  const [babySeat, setBabySeat] = useState(false);
+  const [gps, setGps] = useState(false);
+  const [additionalDriver, setAdditionalDriver] = useState(false);
+
+  // ---------- DATA ----------
+  const [carLoading, setCarLoading] = useState(true);
   const [carData, setCarData] = useState<CarTypes | null>(null);
-  const hasSecurityDeposit =
-    !!carData?.depositRequired && (carData?.securityDeposit ?? 0) > 0;
 
-  const securityDeposit = hasSecurityDeposit
-    ? carData?.securityDeposit ?? 0
-    : 0;
-  const notifyIncomplete = () => {
-    if (incompleteToastShown) return;
-
-    toast.message("✨ Almost there!", {
-      description: "Please fill all required details to see your final price.",
-      duration: 2200,
-    });
-
-    setIncompleteToastShown(true);
-  };
-
-  const [address, setAddress] = useState("");
-  const [infoOpen, setInfoOpen] = useState<boolean>(false);
-  const [pickupType, setPickupType] = useState<"PICKUP" | "DELIVERY">("PICKUP");
-
-  const [returnType, setReturnType] = useState<"DROPOFF" | "RETURN">("DROPOFF");
-
-  const [emirateId, setEmirateId] = useState<string>("");
+  const [canPay, setCanPay] = useState(false);
+  const [calc, setCalc] = useState<BookingCalculation | null>(null);
 
   const [pickupReturnCharges, setPickupReturnCharges] = useState({
     pickup: 0,
     return: 0,
   });
 
-  const [paused, setPaused] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [calc, setCalc] = useState<BookingCalculation | null>(null);
   const [calculatePickupReturn] = useCalculatePickupReturnMutation();
-
   const [calculateBooking, { isLoading: calcLoading }] =
     useCalculateBookingMutation();
   const [createBooking, { isLoading: createLoading }] =
     useCreateBookingMutation();
 
-  const today = useMemo(() => new Date().toISOString().split("T")[0], []);
+  const { data: depositFreeRes } = useGetDepositFreePricingFrontendQuery(
+    carId,
+    {
+      skip: !carId,
+    },
+  );
+
+  // ---------- DESIGN HELPERS ----------
+  const pageWrap = "min-h-screen bg-[#f5f7fb]";
+  const container = "mx-auto max-w-6xl px-4 py-8";
+
+  const card =
+    "bg-white rounded-3xl border border-gray-200 shadow-[0_12px_40px_rgba(15,23,42,0.06)] p-6 mb-5";
+
+  const sectionTitle = "text-sm font-semibold text-gray-700 mb-4 mt-4";
+
+  const inputBase =
+    "w-full font-semibold rounded-full border border-gray-200 bg-soft-grey/40 px-4 py-3 text-sm font-medium text-gray-800 outline-none transition focus:bg-white focus:ring-2 focus:ring-site-accent/30";
+
+  const fieldLabel = "text-sm font-semibold text-gray-500 mb-1 block";
+
+  const primaryBtn =
+    "w-full rounded-2xl bg-gradient-to-r from-site-accent to-slate-teal py-3 text-sm font-bold text-white shadow-[0_12px_28px_rgba(0,0,0,0.12)] hover:opacity-95 transition disabled:opacity-50 disabled:cursor-not-allowed";
+
+  // ---------- UTILS ----------
   const formatMoney = (n: number) =>
     Number.isFinite(n) ? Math.round(n).toLocaleString() : "0";
 
   const hhmmValid = (t: string) => /^\d{2}:\d{2}$/.test(t);
+
+  // ---------- VALIDATIONS ----------
+  const validateStep1 = (): string | null => {
+    if (!pickupDate) return "Pickup date is required";
+    if (!dropoffDate) return "Dropoff date is required";
+    if (!pickupTime || !hhmmValid(pickupTime))
+      return "Pickup time must be HH:mm";
+    if (!dropoffTime || !hhmmValid(dropoffTime))
+      return "Dropoff time must be HH:mm";
+    return null;
+  };
+
+  const validateStep2 = (): string | null => {
+    if ((pickupType === "DELIVERY" || returnType === "RETURN") && !emirateId)
+      return "Please select emirate for delivery/return pricing";
+
+    if (pickupType === "DELIVERY" && !address.trim())
+      return "Delivery address is required";
+
+    return null;
+  };
+
+  const validateStep3 = (): string | null => {
+    if (!guestName.trim()) return "Full name is required";
+    if (!guestPhone.trim()) return "Phone number is required";
+    if (!guestEmail.trim()) return "Email address is required";
+    return null;
+  };
+
+  const validateAll = (): string | null => {
+    return validateStep1() || validateStep2() || validateStep3();
+  };
+
+  // ---------- RENTAL DAYS ----------
+  const rentalDays = useMemo(() => {
+    if (!pickupDate || !dropoffDate) return 0;
+    const start = new Date(pickupDate);
+    const end = new Date(dropoffDate);
+
+    const diffDays = Math.ceil(
+      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
+    );
+
+    return Math.max(diffDays, 1);
+  }, [pickupDate, dropoffDate]);
+
+  // ---------- ADDONS TOTAL ----------
+  const addonsTotal = useMemo(() => {
+    let total = 0;
+    if (childSeat) total += ADDONS.childSeat.price;
+    if (babySeat) total += ADDONS.babySeat.price;
+    if (gps) total += ADDONS.gps.price;
+    if (additionalDriver) total += ADDONS.additionalDriver.price;
+    return total;
+  }, [childSeat, babySeat, gps, additionalDriver]);
+
+  // ---------- DEPOSIT FREE ----------
+  const depositFreeDailyFee = depositFreeRes?.data?.daily || 0;
+  const depositFreeFee = depositFree ? depositFreeDailyFee * rentalDays : 0;
+
+  // ---------- SUMMARY TOTAL ----------
+  const rentalAmount = calc?.totalAmount ?? 0;
+  const pickupFee = pickupReturnCharges.pickup;
+  const returnFee = pickupReturnCharges.return;
+
+  const frontendTotal =
+    rentalAmount + pickupFee + returnFee + addonsTotal + depositFreeFee;
+
+  const frontendPayNow = calc
+    ? Math.round((rentalAmount * calc.prepaymentPercent) / 100)
+    : 0;
+
+  const frontendPayLater = frontendTotal - frontendPayNow;
+
+  // ---------- FETCH CAR ----------
+  useEffect(() => {
+    if (!carId) return;
+
+    const fetchCar = async () => {
+      try {
+        setCarLoading(true);
+        const res = await getCar(carId);
+        setCarData(res?.data || null);
+      } catch (err) {
+        console.error("Failed to fetch car", err);
+      } finally {
+        setCarLoading(false);
+      }
+    };
+
+    fetchCar();
+  }, [carId]);
+
+  const hasSecurityDeposit =
+    !!carData?.depositRequired && (carData?.securityDeposit ?? 0) > 0;
+
+  const securityDeposit = hasSecurityDeposit
+    ? (carData?.securityDeposit ?? 0)
+    : 0;
+
+  // ---------- IMAGES ----------
+  const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "";
+
+  const carImages = useMemo(() => {
+    if (!carData?.car) return [];
+    const images: string[] = [];
+
+    if (carData.car.coverImage?.url) {
+      images.push(
+        carData.car.coverImage.url.startsWith("http")
+          ? carData.car.coverImage.url
+          : `${BASE_URL}${carData.car.coverImage.url}`,
+      );
+    }
+
+    if (Array.isArray(carData.car.images)) {
+      carData.car.images.forEach((img) => {
+        if (img?.url) {
+          images.push(
+            img.url.startsWith("http") ? img.url : `${BASE_URL}${img.url}`,
+          );
+        }
+      });
+    }
+
+    return images;
+  }, [carData, BASE_URL]);
+
+  // ---------- PICKUP/RETURN CHARGES ----------
   const loadPickupReturnCharges = async () => {
-    if (!carId || !emirateId) return;
+    if (!carId) return;
+    if ((pickupType === "DELIVERY" || returnType === "RETURN") && !emirateId)
+      return;
 
     try {
       const res = await calculatePickupReturn({
@@ -157,33 +291,26 @@ export default function BookingPage() {
       });
     } catch (err) {
       console.error("Pickup/Return pricing failed", err);
+      setPickupReturnCharges({ pickup: 0, return: 0 });
     }
   };
-  const validateForm = (): string | null => {
-    if (!pickupDate) return "Pickup date is required";
-    if (!dropoffDate) return "Dropoff date is required";
-    if (!pickupTime || !hhmmValid(pickupTime))
-      return "Pickup time must be HH:mm";
-    if (!dropoffTime || !hhmmValid(dropoffTime))
-      return "Dropoff time must be HH:mm";
 
-    if (pickupType === "DELIVERY" && !address.trim())
-      return "Delivery address is required";
+  useEffect(() => {
+    loadPickupReturnCharges();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickupType, returnType, emirateId]);
 
-    if ((pickupType === "DELIVERY" || returnType === "RETURN") && !emirateId)
-      return "Please select emirate for delivery/return pricing";
+  // reset calculation when user changes inputs
+  useEffect(() => {
+    setCalc(null);
+    setCanPay(false);
+    setPickupReturnCharges({ pickup: 0, return: 0 });
+  }, [pickupDate, pickupTime, dropoffDate, dropoffTime, priceType, address]);
 
-    if (!guestName.trim()) return "Full name is required";
-    if (!guestPhone.trim()) return "Phone number is required";
-    if (!guestEmail.trim()) return "Email address is required";
-
-    return null;
-  };
-  const autoCalculate = async () => {
-    const err = validateForm();
-    if (err) {
-      return;
-    }
+  // ---------- CALCULATE ----------
+  const handleCalculate = async () => {
+    const err = validateAll();
+    if (err) return toast.error(err);
 
     try {
       const pricing = await calculatePickupReturn({
@@ -211,106 +338,13 @@ export default function BookingPage() {
 
       setCalc(res?.data ?? null);
       setCanPay(true);
-      setIncompleteToastShown(false); // ✅ REQUIRED
-    } catch {
-      setCalc(null);
-      setCanPay(false);
+      toast.success("Price calculated");
+    } catch (error: unknown) {
+      const e = error as ApiError;
+      toast.error(e?.data?.message || "Calculation failed");
     }
   };
-
-  const rentalDays = useMemo(() => {
-    if (!pickupDate || !dropoffDate) return 0;
-
-    const start = new Date(pickupDate);
-    const end = new Date(dropoffDate);
-
-    const diffDays = Math.ceil(
-      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
-    );
-
-    return Math.max(diffDays, 1);
-  }, [pickupDate, dropoffDate]);
-
-  const addonsTotal = useMemo(() => {
-    return vendorAddons.reduce((sum, addon) => {
-      if (!selectedAddons[addon._id]) return sum;
-
-      if (addon.priceType === "per_day") {
-        return sum + addon.price * rentalDays;
-      }
-
-      // per_booking
-      return sum + addon.price;
-    }, 0);
-  }, [vendorAddons, selectedAddons, rentalDays]);
-
-  const toggleAddon = (id: string) => {
-    setSelectedAddons((prev) => ({
-      ...prev,
-      [id]: !prev[id],
-    }));
-  };
-
-  const rentalAmount = calc?.totalAmount ?? 0;
-  const pickupFee = pickupReturnCharges.pickup;
-  const returnFee = pickupReturnCharges.return;
-  const [depositFree, setDepositFree] = useState(false);
-  const depositFreeFee = depositFree ? depositFreeDailyFee * rentalDays : 0;
-
-  const frontendTotal =
-    rentalAmount + pickupFee + returnFee + addonsTotal + depositFreeFee;
-
-  const frontendPayNow = calc
-    ? Math.round((rentalAmount * calc.prepaymentPercent) / 100)
-    : 0;
-
-  const frontendPayLater = frontendTotal - frontendPayNow;
-
-  useEffect(() => {
-    loadPickupReturnCharges();
-  }, [pickupType, returnType, emirateId]);
-  // const handleCalculate = async () => {
-  //   const err = validateForm();
-  //   if (err) return toast.error(err);
-
-  //   try {
-  //     const pricing = await calculatePickupReturn({
-  //       carId,
-  //       emirateId,
-  //       pickupType,
-  //       returnType,
-  //     }).unwrap();
-
-  //     setPickupReturnCharges({
-  //       pickup: pricing.pickupCharge || 0,
-  //       return: pricing.returnCharge || 0,
-  //     });
-
-  //     const res = await calculateBooking({
-  //       carId,
-  //       pickupDate,
-  //       pickupTime,
-  //       dropoffDate,
-  //       dropoffTime,
-  //       priceType,
-  //       deliveryRequired: pickupType === "DELIVERY" || returnType === "RETURN",
-  //       address: pickupType === "DELIVERY" ? address : undefined,
-  //     }).unwrap();
-
-  //     setCalc(res?.data ?? null);
-  //     setCanPay(true);
-  //     toast.success("Price calculated");
-  //   } catch (error: unknown) {
-  //     const e = error as ApiError;
-  //     toast.error(e?.data?.message || "Calculation failed");
-  //   }
-  // };
-
   const handleCreateBooking = async () => {
-    const err = validateForm();
-    if (err) return toast.error(err);
-    // if (!calc) return toast.error("Please calculate price first");
-    // ✅ HARD TYPE GUARD
     if (!calc || !canPay) {
       return toast.error("Please complete booking details first");
     }
@@ -346,117 +380,111 @@ export default function BookingPage() {
       toast.error(e?.data?.message || "Booking failed");
     }
   };
+  const getStepCircle = (id: number) => {
+    if (id === 1)
+      return "bg-gradient-to-r from-site-accent to-slate-teal text-white";
 
-  useEffect(() => {
-    setCalc(null);
-    setCanPay(false);
-    setPickupReturnCharges({ pickup: 0, return: 0 }); // ✅ ADD THIS
-  }, [pickupDate, pickupTime, dropoffDate, dropoffTime, priceType, address]);
-  useEffect(() => {
-    autoCalculate();
-  }, [
-    pickupDate,
-    pickupTime,
-    dropoffDate,
-    dropoffTime,
-    priceType,
-    pickupType,
-    returnType,
-    emirateId,
-    address,
-  ]);
+    if (maxStepReached >= id)
+      return "bg-gradient-to-r from-site-accent to-slate-teal text-white";
 
-  const card = "bg-white rounded-2xl p-5 shadow-[0_10px_40px_rgba(0,0,0,0.05)]";
-  const sectionTitle = "font-semibold text-dark-base mb-4";
-  const inputBase =
-    "w-full rounded-xl bg-soft-grey/30 p-3 text-sm outline-none transition focus:bg-white focus:shadow-sm";
-  const fieldLabel = "text-xs font-medium text-grey mb-1 block";
+    if (step === id) return "bg-site-accent text-white border-site-accent";
+    return "bg-white text-gray-600 border-gray-200";
+  };
 
-  const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "";
-
-  const carImages = useMemo(() => {
-    if (!carData?.car) return [];
-
-    const images: string[] = [];
-
-    if (carData.car.coverImage?.url) {
-      images.push(
-        carData.car.coverImage.url.startsWith("http")
-          ? carData.car.coverImage.url
-          : `${BASE_URL}${carData.car.coverImage.url}`
-      );
-    }
-    if (Array.isArray(carData.car.images)) {
-      carData.car.images.forEach((img) => {
-        if (img?.url) {
-          images.push(
-            img.url.startsWith("http") ? img.url : `${BASE_URL}${img.url}`
-          );
-        }
-      });
-    }
-    return images;
-  }, [carData]);
+  const getStepText = (id: number) => {
+    if (step === id) return "text-gray-900";
+    if (maxStepReached >= id) return "text-gray-600";
+    return "text-gray-500";
+  };
+  const [cityPickupCharges, setCityPickupCharges] = useState<
+    Record<string, number>
+  >({});
   useEffect(() => {
     if (!carId) return;
 
-    const fetchCar = async () => {
-      try {
-        setCarLoading(true);
-        const res = await getCar(carId);
-        setCarData(res?.data || null);
-      } catch (err) {
-        console.error("Failed to fetch car", err);
-      } finally {
-        setCarLoading(false);
+    const loadAllPickupCharges = async () => {
+      const charges: Record<string, number> = {};
+
+      for (const emirate of EMIRATES) {
+        try {
+          const res = await calculatePickupReturn({
+            carId,
+            emirateId: emirate.id,
+            pickupType: "DELIVERY",
+            returnType: "DROPOFF",
+          }).unwrap();
+
+          charges[emirate.id] = res.pickupCharge || 0;
+        } catch {
+          charges[emirate.id] = 0;
+        }
       }
+
+      setCityPickupCharges(charges);
     };
 
-    fetchCar();
+    loadAllPickupCharges();
   }, [carId]);
-  const carouselImages = useMemo(() => {
-    if (carImages.length === 0) return [];
-    return [...carImages, carImages[0]]; // clone first
-  }, [carImages]);
-
-  useEffect(() => {
-    if (paused || carouselImages.length <= 1) return;
-
-    const interval = setInterval(() => {
-      setActiveIndex((prev) => prev + 1);
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [paused, carouselImages.length]);
-
-  const isLastClone = activeIndex === carouselImages.length - 1;
-  const [isResetting, setIsResetting] = useState(false);
-
   return (
-    <div className="min-h-screen bg-[#f7f8fa]">
-      <div className="mx-auto max-w-6xl px-4 py-8">
-        <h1 className="text-2xl font-bold mb-1 text-dark-base">
-          Complete your booking
-        </h1>
-        <p className="text-sm text-grey mb-6">
-          Select dates, add-ons & details — pay partially now.
-        </p>
+    <div className={pageWrap}>
+      <div className={container}>
+        {/* Stepper */}
+        <div className="flex items-center justify-center mb-8">
+          <div className="hidden md:flex items-center gap-6 text-sm font-semibold">
+            {steps.map((s, index) => (
+              <React.Fragment key={s.id}>
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`h-7 w-7 rounded-full border flex items-center justify-center text-xs font-bold transition ${getStepCircle(
+                      s.id,
+                    )}`}
+                  >
+                    {s.id === 1 || maxStepReached >= s.id ? (
+                      <CheckCircle2 className="w-4 h-4" />
+                    ) : (
+                      s.id
+                    )}
+                  </span>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-6">
+                  <span className={`${getStepText(s.id)} transition`}>
+                    {s.label}
+                  </span>
+                </div>
+
+                {index !== steps.length - 1 && (
+                  <div
+                    className={`h-[2px] w-12 transition ${
+                      maxStepReached > s.id ? "bg-gray-500" : "bg-gray-200"
+                    }`}
+                  />
+                )}
+              </React.Fragment>
+            ))}
+          </div>
+        </div>
+
+        {/* Main Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
+          {/* LEFT */}
           <div className="space-y-6">
+            {/* Rental Plan Card */}
             <div className={card}>
-              <p className={sectionTitle}>Rental Plan</p>
+              <h2 className="text-2xl font-medium text-gray-700">
+                Book Your Rental Car
+              </h2>
 
-              <div className="grid grid-cols-3 bg-soft-grey/30 p-1.5 rounded-2xl">
+              <p className={sectionTitle}>Select Rental Plan</p>
+
+              <div className="grid grid-cols-3 bg-gray-100 p-1.5 rounded-2xl border border-gray-200">
                 {(["daily", "weekly", "monthly"] as PriceType[]).map((t) => (
                   <button
                     key={t}
                     type="button"
                     onClick={() => setPriceType(t)}
-                    className={`py-2.5 rounded-xl font-semibold capitalize text-sm transition ${
+                    className={`py-2.5 rounded-xl font-bold capitalize text-sm transition ${
                       priceType === t
-                        ? "bg-white shadow-sm text-site-accent"
-                        : "text-dark-base/60 hover:text-dark-base"
+                        ? "bg-white shadow text-site-accent"
+                        : "text-gray-600 hover:text-gray-900"
                     }`}
                   >
                     {t}
@@ -464,633 +492,698 @@ export default function BookingPage() {
                 ))}
               </div>
             </div>
-            <div className={card}>
-              <p className={sectionTitle}>Dates & Time</p>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={fieldLabel}>Pickup Date</label>
-                  <DatePicker
-                    selected={pickupDate ? new Date(pickupDate) : null}
-                    onChange={(date: Date | null) => {
-                      setPickupDate(
-                        date ? date.toISOString().split("T")[0] : ""
-                      );
-
-                      const err = validateForm();
-                      if (err) notifyIncomplete();
-                    }}
-                    minDate={new Date()}
-                    placeholderText="dd-mm-yyyy"
-                    dateFormat="dd-MM-yyyy"
-                    customInput={<DateInput />}
-                  />
-                </div>
-
-                <div>
-                  <label className={fieldLabel}>Pickup Time</label>
-                  <input
-                    type="time"
-                    value={pickupTime}
-                    onChange={(e) => setPickupTime(e.target.value)}
-                    className={inputBase}
-                  />
-                </div>
-
-                <div>
-                  <label className={fieldLabel}>Dropoff Date</label>
-                  <DatePicker
-                    selected={dropoffDate ? new Date(dropoffDate) : null}
-                    onChange={(date: Date | null) => {
-                      setDropoffDate(
-                        date ? date.toISOString().split("T")[0] : ""
-                      );
-
-                      const err = validateForm();
-                      if (err) notifyIncomplete();
-                    }}
-                    minDate={pickupDate ? new Date(pickupDate) : new Date()}
-                    placeholderText="dd-mm-yyyy"
-                    dateFormat="dd-MM-yyyy"
-                    customInput={<DateInput />}
-                  />
-                </div>
-
-                <div>
-                  <label className={fieldLabel}>Dropoff Time</label>
-                  <input
-                    type="time"
-                    value={dropoffTime}
-                    onChange={(e) => setDropoffTime(e.target.value)}
-                    className={inputBase}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className={card}>
-              <div className="flex items-center justify-between mb-2">
-                <p className="font-semibold text-dark-base">Pickup</p>
-
-                <div className="flex items-center gap-2">
-                  <p
-                    className="px-3 py-1.5 rounded-lg text-dark-base  text-base font-semibold cursor-pointer underline"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowDeliveryPolicy(true);
-                    }}
-                  >
-                    Pickup Delivery Policy
+            {/* STEP 1 */}
+            {step === 1 && (
+              <div className="space-y-6">
+                <div className={card}>
+                  <p className="text-lg mt-2 font-semibold text-gray-700">
+                    Select Dates
                   </p>
+                  <p className="text-sm font-semibold text-gray-500">
+                    Choose pick-up and drop-off date & time.
+                  </p>
+
+                  <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className={fieldLabel}>Pick-up Date</label>
+                      <DatePicker
+                        selected={pickupDate ? new Date(pickupDate) : null}
+                        onChange={(date: Date | null) =>
+                          setPickupDate(
+                            date ? date.toISOString().split("T")[0] : "",
+                          )
+                        }
+                        minDate={new Date()}
+                        placeholderText="dd-mm-yyyy"
+                        dateFormat="dd-MM-yyyy"
+                        customInput={<DateInput />}
+                      />
+                    </div>
+
+                    <div>
+                      <label className={fieldLabel}>Pick-up Time</label>
+                      <input
+                        type="time"
+                        value={pickupTime}
+                        onChange={(e) => setPickupTime(e.target.value)}
+                        className={inputBase}
+                      />
+                    </div>
+
+                    <div>
+                      <label className={fieldLabel}>Drop-off Date</label>
+                      <DatePicker
+                        selected={dropoffDate ? new Date(dropoffDate) : null}
+                        onChange={(date: Date | null) =>
+                          setDropoffDate(
+                            date ? date.toISOString().split("T")[0] : "",
+                          )
+                        }
+                        minDate={pickupDate ? new Date(pickupDate) : new Date()}
+                        placeholderText="dd-mm-yyyy"
+                        dateFormat="dd-MM-yyyy"
+                        customInput={<DateInput />}
+                      />
+                    </div>
+
+                    <div>
+                      <label className={fieldLabel}>Drop-off Time</label>
+                      <input
+                        type="time"
+                        value={dropoffTime}
+                        onChange={(e) => setDropoffTime(e.target.value)}
+                        className={inputBase}
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
-              {showDeliveryPolicy && (
-                <div className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center">
-                  <div className="bg-white w-full h-[400px] sm:max-w-lg rounded p-6 flex flex-col">
-                    <div className="flex-1">
-                      <p className="text-base text-center font-medium">
-                        Pickup & Delivery Policy
+
+                <div className={card}>
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-sm font-extrabold text-gray-900">
+                        Important Info
+                      </p>
+                      <p className="text-xs font-semibold text-gray-500">
+                        Optional
                       </p>
                     </div>
+
                     <button
-                      onClick={() => setShowDeliveryPolicy(false)}
-                      className="mt-4 w-full rounded-2xl
-                   bg-gradient-to-r from-site-accent to-slate-teal
-                   shadow-[0_12px_28px_rgba(0,0,0,0.12)]
-                   py-3 font-medium text-white"
+                      type="button"
+                      onClick={() => setInfoOpen((prev) => !prev)}
+                      className={`relative w-12 h-6 rounded-full transition-colors ${
+                        infoOpen ? "bg-site-accent" : "bg-gray-300"
+                      }`}
                     >
-                      Close
+                      <span
+                        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                          infoOpen ? "translate-x-6" : ""
+                        }`}
+                      />
                     </button>
                   </div>
-                </div>
-              )}
 
-              <div className="relative flex bg-soft-grey/30 rounded-2xl p-1 mb-5">
-                <div
-                  className={`absolute top-1 left-1 h-[calc(100%-0.5rem)] w-1/2 rounded-xl 
-                bg-white shadow-sm transition-transform duration-300
-                ${pickupType === "DELIVERY" ? "translate-x-full" : ""}
-              `}
-                />
-                <button
-                  type="button"
-                  onClick={() => setPickupType("PICKUP")}
-                  className="relative z-10 flex-1 flex items-center gap-3 px-4 py-3 rounded-xl text-left"
-                >
-                  <div
-                    className={`flex h-10 w-10 items-center justify-center rounded-full transition
-                  ${
-                    pickupType === "PICKUP"
-                      ? "bg-site-accent text-white"
-                      : "bg-soft-grey/40 text-dark-base"
-                  }
-                `}
-                  >
-                    <Store size={18} />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm">Pickup from vendor</p>
-                    <p className="text-xs text-grey">Free</p>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPickupType("DELIVERY")}
-                  className="relative z-10 flex-1 flex items-center gap-3 px-4 py-3 rounded-xl text-left"
-                >
-                  <div
-                    className={`flex h-10 w-10 items-center justify-center rounded-full transition
-        ${
-          pickupType === "DELIVERY"
-            ? "bg-site-accent text-white"
-            : "bg-soft-grey/40 text-dark-base"
-        }
-      `}
-                  >
-                    <Truck size={18} />
-                  </div>
-
-                  <div>
-                    <p className="font-semibold text-sm">Delivery to address</p>
-                    <p className="text-xs text-grey">Paid (by emirate)</p>
-                  </div>
-                </button>
-              </div>
-              {(pickupType === "DELIVERY" || returnType === "RETURN") && (
-                <div>
-                  <p className={sectionTitle}>Emirate</p>
-
-                  <select
-                    className={inputBase}
-                    value={emirateId}
-                    onChange={(e) => {
-                      setEmirateId(e.target.value);
-                    }}
-                  >
-                    <option value="">Select Emirate</option>
-
-                    <option value="6953ce30ad7fb6b0b43ee72c">Dubai</option>
-                    <option value="6953ce30ad7fb6b0b43ee729">Abu Dhabi</option>
-                    <option value="6953ce31ad7fb6b0b43ee72f">Sharjah</option>
-                    <option value="6953ce31ad7fb6b0b43ee732">Ajman</option>
-                    <option value="6953ce32ad7fb6b0b43ee735">
-                      Umm Al Quwain
-                    </option>
-                    <option value="6953ce32ad7fb6b0b43ee738">
-                      Ras Al Khaimah
-                    </option>
-                    <option value="6953ce33ad7fb6b0b43ee73b">Fujairah</option>
-                  </select>
-                </div>
-              )}
-              {pickupType === "DELIVERY" && (
-                <div className="mt-4">
-                  <label className={fieldLabel}>Delivery Address</label>
-                  <textarea
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="Building, street, area, city"
-                    rows={3}
-                    className={inputBase}
-                  />
-                </div>
-              )}
-              <p className={sectionTitle}>Return</p>
-
-              <div className="relative flex bg-soft-grey/30 rounded-2xl p-1 mb-5">
-                <div
-                  className={`absolute top-1 left-1 h-[calc(100%-0.5rem)] w-1/2 rounded-xl 
-                bg-white shadow-sm transition-transform duration-300
-                ${returnType === "RETURN" ? "translate-x-full" : ""}
-              `}
-                />
-                <button
-                  type="button"
-                  onClick={() => setReturnType("DROPOFF")}
-                  className="relative z-10 flex-1 flex items-center gap-3 px-4 py-3 rounded-xl text-left pl-5"
-                >
-                  <div>
-                    <p className="font-semibold text-sm text-dark-base">
-                      Dropoff to vendor
-                    </p>
-                    <p className="text-xs text-grey">Free</p>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setReturnType("RETURN")}
-                  className="relative z-10 flex-1 flex items-center gap-3 px-4 py-3 rounded-xl text-left pl-5"
-                >
-                  <div>
-                    <p className="font-semibold text-sm text-dark-base">
-                      Vendor collects car
-                    </p>
-                    <p className="text-xs text-grey">Paid (by emirate)</p>
-                  </div>
-                  {returnType === "RETURN" && (
-                    <div className="absolute right-3 top-3 h-2.5 w-2.5 rounded-full bg-site-accent" />
+                  {infoOpen && (
+                    <div className="mt-4 rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                      <ImportantInfo />
+                    </div>
                   )}
-                </button>
-              </div>
-            </div>
-
-            <div className={card}>
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <p className="font-semibold text-dark-base">Important Info</p>
-                  <p className="text-xs text-grey">Optional</p>
                 </div>
 
                 <button
                   type="button"
-                  onClick={() => setInfoOpen((prev) => !prev)}
-                  className={`
-        relative w-11 h-6 rounded-full transition-colors
-        ${infoOpen ? "bg-site-accent" : "bg-gray-300"}
-      `}
+                  onClick={() => {
+                    const err = validateStep1();
+                    if (err) return toast.error(err);
+
+                    setStep(2);
+                    setMaxStepReached(2);
+                  }}
+                  className={primaryBtn}
                 >
-                  <span
-                    className={`
-          absolute top-0.5 left-0.5
-          h-5 w-5 rounded-full bg-white shadow-sm
-          transition-transform
-          ${infoOpen ? "translate-x-5" : ""}
-        `}
-                  />
+                  Next
                 </button>
               </div>
+            )}
 
-              {infoOpen && (
-                <div className="mt-4 animate-in fade-in slide-in-from-top-2">
-                  <ImportantInfo />
-                </div>
-              )}
-            </div>
-            <div className={card}>
-              {/* TOP SECTION */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-semibold text-gray-900">
-                    Enjoy a deposit-free ride for AED {depositFreeDailyFee} Per
-                    day
-                  </p>
+            {/* STEP 2 */}
+            {step === 2 && (
+              <div className="space-y-6">
+                <div className={card}>
+                  <div className="flex items-center justify-between gap-4 mb-5">
+                    <div>
+                      <p className="text-lg font-semibold text-gray-700">
+                        Pickup & Drop-off
+                      </p>
+                      <p className="text-sm font-semibold text-gray-500">
+                        Choose how you want to receive and return the car.
+                      </p>
+                    </div>
 
-                  <p className="text-sm text-gray-600 p-2">
-                    You can rent a car without any deposit by including the
-                    additional service fee
-                    <br /> in your rental price
-                  </p>
-                </div>
-                <button
-                  onClick={() => setDepositFree(!depositFree)}
-                  className={`relative w-12 h-6 rounded-full transition-colors ${
-                    depositFree ? "bg-site-accent" : "bg-gray-300"
-                  }`}
-                >
-                  <span
-                    className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                      depositFree ? "translate-x-6" : ""
-                    }`}
-                  />
-                </button>
-              </div>
-
-              <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between ">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
-                    💳
+                    <button
+                      type="button"
+                      onClick={() => setShowDeliveryPolicy(true)}
+                      className="text-sm font-semibold underline text-site-accent"
+                    >
+                      Pickup Delivery Policy
+                    </button>
                   </div>
 
-                  <div>
-                    <p className="font-medium text-gray-900">Deposit</p>
-                    <p className="text-xs text-gray-500">
-                      Refunded within 21 days after you return the car
+                  {/* Pick-up */}
+                  <div className="mt-4">
+                    <p className="text-xs font-bold text-gray-500 mb-2">
+                      Pick-up
                     </p>
-                  </div>
-                </div>
-                <p
-                  className={`text-lg font-semibold ${
-                    depositFree ? "text-site-accent" : "text-gray-900"
-                  }`}
-                >
-                  AED {depositFree ? "0" : securityDeposit.toLocaleString()}
-                </p>
-              </div>
-            </div>
 
-            <div className={card}>
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <p className="font-semibold text-dark-base">Add-ons</p>
-                  <p className="text-xs text-grey">
-                    {addonsTotal > 0
-                      ? `AED ${formatMoney(addonsTotal)}`
-                      : "Optional"}
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setAddonsOpen((prev) => !prev)}
-                  className={`relative w-11 h-6 rounded-full transition-colors ${
-                    addonsOpen ? "bg-site-accent" : "bg-gray-300"
-                  }`}
-                >
-                  <span
-                    className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
-                      addonsOpen ? "translate-x-5" : ""
-                    }`}
-                  />
-                </button>
-              </div>
-
-              {addonsOpen && (
-                <div className="space-y-2">
-                  {vendorAddons.map((addon) => {
-                    const checked = !!selectedAddons[addon._id];
-
-                    return (
-                      <label
-                        key={addon._id}
-                        className={`flex justify-between items-center rounded-2xl p-4 cursor-pointer transition ${
-                          checked
-                            ? "bg-site-accent/5"
-                            : "bg-soft-grey/30 hover:bg-soft-grey/45"
+                    <div className="relative flex bg-gray-100 rounded-2xl p-1 border border-gray-200">
+                      <div
+                        className={`absolute top-1 left-1 h-[calc(100%-0.5rem)] w-1/2 rounded-xl bg-white shadow-sm transition-transform duration-300 ${
+                          pickupType === "DELIVERY" ? "translate-x-full" : ""
                         }`}
+                      />
+
+                      <button
+                        type="button"
+                        onClick={() => setPickupType("PICKUP")}
+                        className="relative z-10 flex-1 flex items-center gap-3 px-4 py-3 rounded-xl text-left"
                       >
+                        <div
+                          className={`flex h-10 w-10 items-center justify-center rounded-full transition ${
+                            pickupType === "PICKUP"
+                              ? "bg-site-accent text-white"
+                              : "bg-gray-200 text-gray-700"
+                          }`}
+                        >
+                          <Store size={18} />
+                        </div>
                         <div>
-                          <p className="font-medium text-sm text-dark-base">
-                            {addon.name}
+                          <p className="font-semibold text-sm text-gray-900">
+                            Pick up at vendor
                           </p>
-                          <p className="text-xs text-grey">
-                            AED {addon.price}{" "}
-                            {addon.priceType === "per_day"
-                              ? "/ day"
-                              : "per booking"}
+                          <p className="text-xs font-semibold text-gray-500">
+                            Free
                           </p>
                         </div>
+                      </button>
 
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => toggleAddon(addon._id)}
-                          className="h-5 w-5 accent-[var(--site-accent)]"
+                      <button
+                        type="button"
+                        onClick={() => setPickupType("DELIVERY")}
+                        className="relative z-10 flex-1 flex items-center gap-3 px-4 py-3 rounded-xl text-left"
+                      >
+                        <div
+                          className={`flex h-10 w-10 items-center justify-center rounded-full transition ${
+                            pickupType === "DELIVERY"
+                              ? "bg-site-accent text-white"
+                              : "bg-gray-200 text-gray-700"
+                          }`}
+                        >
+                          <Truck size={18} />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-sm text-gray-900">
+                            Delivery to address
+                          </p>
+                          <p className="text-xs font-semibold text-gray-500">
+                            Paid (by emirate)
+                          </p>
+                        </div>
+                      </button>
+                    </div>
+
+                    {(pickupType === "DELIVERY" || returnType === "RETURN") && (
+                      <div className="mt-4">
+                        <label className={fieldLabel}>Select Emirate</label>
+                        <select
+                          className={inputBase}
+                          value={emirateId}
+                          onChange={(e) => setEmirateId(e.target.value)}
+                        >
+                          <option value="">Select Emirate</option>
+                          {EMIRATES.map((e) => (
+                            <option key={e.id} value={e.id}>
+                              {e.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {pickupType === "DELIVERY" && (
+                      <div className="mt-4">
+                        <label className={fieldLabel}>Delivery Address</label>
+                        <textarea
+                          value={address}
+                          onChange={(e) => setAddress(e.target.value)}
+                          placeholder="Building, street, area, city"
+                          rows={3}
+                          className={`${inputBase} resize-none`}
                         />
-                      </label>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            {/* Your details */}
-            <div className={card}>
-              <p className={sectionTitle}>Your Details</p>
-
-              <div className="space-y-3">
-                <div>
-                  <label className={fieldLabel}>Full Name</label>
-                  <input
-                    value={guestName}
-                    onChange={(e) => setGuestName(e.target.value)}
-                    placeholder="Enter your full name"
-                    className={inputBase}
-                  />
-                </div>
-
-                <div>
-                  <label className={fieldLabel}>Mobile Number</label>
-
-                  <div className="flex items-center rounded-xl bg-soft-grey/30 p-3 focus-within:bg-white focus-within:shadow-sm">
-                    <span className="text-sm font-semibold text-dark-base mr-2">
-                      +971
-                    </span>
-
-                    <input
-                      type="tel"
-                      value={guestPhone}
-                      onChange={(e) => {
-                        const val = e.target.value
-                          .replace(/\D/g, "")
-                          .slice(0, 9);
-                        setGuestPhone(val);
-                      }}
-                      placeholder="50XXXXXXX"
-                      className="flex-1 bg-transparent outline-none text-sm"
-                    />
+                      </div>
+                    )}
                   </div>
-                </div>
 
-                <div>
-                  <label className={fieldLabel}>Email Address</label>
-                  <input
-                    type="email"
-                    value={guestEmail}
-                    onChange={(e) => setGuestEmail(e.target.value)}
-                    placeholder="Enter your email address"
-                    className={inputBase}
-                  />
-                </div>
-              </div>
-            </div>
+                  {/* Drop-off */}
+                  <div className="mt-6">
+                    <p className="text-xs font-bold text-gray-500 mb-2">
+                      Drop-off
+                    </p>
 
-            <div className="space-y-4">
-              <div className="flex gap-3">
-                {/* {!canPay && (
-                  <button
-                    onClick={handleCalculate}
-                    disabled={calcLoading}
-                    className="flex-1 rounded-2xl py-3 font-semibold text-site-accent bg-site-accent/10 hover:bg-site-accent/15 transition disabled:opacity-60"
-                  >
-                    {calcLoading ? "Calculating..." : "Continue"}
-                  </button>
-                )} */}
-              </div>
+                    <div className="relative flex bg-gray-100 rounded-2xl p-1 border border-gray-200">
+                      <div
+                        className={`absolute top-1 left-1 h-[calc(100%-0.5rem)] w-1/2 rounded-xl bg-white shadow-sm transition-transform duration-300 ${
+                          returnType === "RETURN" ? "translate-x-full" : ""
+                        }`}
+                      />
 
-              <button
-                onClick={() => router.push(`/car/${carId}`)}
-                className="
-    mx-auto flex items-center gap-2
-    rounded-2xl px-6 py-2.5
-    text-sm font-semibold
-    text-dark-base
-    bg-soft-grey/40
-    hover:bg-soft-grey/60 hover:text-site-accent
-    transition
-  "
-              >
-                ← Back to car
-              </button>
-            </div>
-          </div>
-          <div className="lg:sticky lg:top-6 h-fit">
-            <div className="bg-white rounded-2xl p-5 shadow-[0_10px_40px_rgba(0,0,0,0.05)]">
-              <p className="font-bold mb-4 text-dark-base">Booking Summary</p>
-              <div className="space-y-4 text-sm">
-                {carImages.length > 0 && (
-                  <div
-                    className="relative w-full overflow-hidden rounded-2xl"
-                    onMouseEnter={() => setPaused(true)}
-                    onMouseLeave={() => setPaused(false)}
-                  >
-                    <div
-                      className={`flex ${
-                        isResetting
-                          ? "transition-none"
-                          : "transition-transform duration-500 ease-in-out"
-                      }`}
-                      style={{
-                        transform: `translateX(-${activeIndex * 100}%)`,
-                      }}
-                      onTransitionEnd={() => {
-                        if (activeIndex === carouselImages.length - 1) {
-                          setIsResetting(true);
-                          setActiveIndex(0);
-                          requestAnimationFrame(() => {
-                            requestAnimationFrame(() => {
-                              setIsResetting(false);
-                            });
-                          });
-                        }
-                      }}
-                    >
-                      {carouselImages.map((img, index) => (
-                        <img
-                          key={index}
-                          src={img}
-                          alt={`Car image ${index + 1}`}
-                          className="w-full h-[200px] object-cover flex-shrink-0"
-                        />
-                      ))}
+                      <button
+                        type="button"
+                        onClick={() => setReturnType("DROPOFF")}
+                        className="relative z-10 flex-1 px-4 py-3 rounded-xl text-left"
+                      >
+                        <p className="font-semibold text-sm text-gray-900">
+                          Dropoff to vendor
+                        </p>
+                        <p className="text-xs font-semibold text-gray-500">
+                          Free
+                        </p>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setReturnType("RETURN")}
+                        className="relative z-10 flex-1 px-4 py-3 rounded-xl text-left"
+                      >
+                        <p className="font-semibold text-sm text-gray-900">
+                          Vendor collects car
+                        </p>
+                        <p className="text-xs font-semibold text-gray-500">
+                          Paid (by emirate)
+                        </p>
+                      </button>
                     </div>
                   </div>
-                )}
-              </div>
-
-              <div className="space-y-4 text-sm pt-4">
-                <div className="rounded-xl bg-soft-grey/30 p-3">
-                  <p className="text-xs text-grey mb-1">Pickup</p>
-                  <p className="font-semibold text-dark-base">
-                    {pickupDate || "—"} • {pickupTime}
-                  </p>
-
-                  <p className="text-xs text-grey mt-3 mb-1">Dropoff</p>
-                  <p className="font-semibold text-dark-base">
-                    {dropoffDate || "—"} • {dropoffTime}
-                  </p>
                 </div>
-                {calc && (
+
+                {/* Deposit Free */}
+                <div className={card}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold text-gray-900">
+                        Enjoy a deposit-free ride for AED {depositFreeDailyFee}{" "}
+                        Per day
+                      </p>
+
+                      <p className="text-sm text-gray-600 p-2">
+                        You can rent a car without any deposit by including the
+                        additional service fee <br /> in your rental price
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => setDepositFree(!depositFree)}
+                      className={`relative w-12 h-6 rounded-full transition-colors ${
+                        depositFree ? "bg-site-accent" : "bg-gray-300"
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                          depositFree ? "translate-x-6" : ""
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
+                        💳
+                      </div>
+
+                      <div>
+                        <p className="font-medium text-gray-900">Deposit</p>
+                        <p className="text-xs text-gray-500">
+                          Refunded within 21 days after you return the car
+                        </p>
+                      </div>
+                    </div>
+
+                    <p
+                      className={`text-lg font-semibold ${
+                        depositFree ? "text-site-accent" : "text-gray-900"
+                      }`}
+                    >
+                      AED {depositFree ? "0" : securityDeposit.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Next */}
+                <div className="flex gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setStep(1)}
+                    className="h-12 w-1/2 rounded-2xl border border-gray-200 font-bold text-gray-700 hover:bg-gray-50 transition"
+                  >
+                    Back
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const err1 = validateStep1();
+                      if (err1) return toast.error(err1);
+
+                      const err2 = validateStep2();
+                      if (err2) return toast.error(err2);
+
+                      setStep(3);
+                      setMaxStepReached(3);
+                    }}
+                    className={`${primaryBtn} h-12 w-1/2`}
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 3 */}
+            {step === 3 && (
+              <div className="space-y-6">
+                <div className={card}>
+                  <p className={sectionTitle}>Your Details</p>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className={fieldLabel}>Full Name</label>
+                      <input
+                        value={guestName}
+                        onChange={(e) => setGuestName(e.target.value)}
+                        placeholder="Enter your full name"
+                        className={inputBase}
+                      />
+                    </div>
+
+                    <div>
+                      <label className={fieldLabel}>Mobile Number</label>
+                      <div className="flex items-center rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 focus-within:bg-white focus-within:ring-2 focus-within:ring-site-accent/30">
+                        <span className="text-sm font-extrabold text-gray-900 mr-2">
+                          +971
+                        </span>
+                        <input
+                          type="tel"
+                          value={guestPhone}
+                          onChange={(e) => {
+                            const val = e.target.value
+                              .replace(/\D/g, "")
+                              .slice(0, 9);
+                            setGuestPhone(val);
+                          }}
+                          placeholder="50XXXXXXX"
+                          className="flex-1 bg-transparent outline-none text-sm font-semibold"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className={fieldLabel}>Email Address</label>
+                      <input
+                        type="email"
+                        value={guestEmail}
+                        onChange={(e) => setGuestEmail(e.target.value)}
+                        placeholder="Enter your email address"
+                        className={inputBase}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Addons */}
+                <div className={card}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-extrabold text-gray-900">
+                        Add-ons
+                      </p>
+                      <p className="text-xs font-semibold text-gray-500">
+                        {addonsTotal > 0
+                          ? `AED ${formatMoney(addonsTotal)}`
+                          : "Optional"}
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setAddonsOpen((prev) => !prev)}
+                      className={`relative w-11 h-6 rounded-full transition-colors ${
+                        addonsOpen ? "bg-site-accent" : "bg-gray-300"
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                          addonsOpen ? "translate-x-5" : ""
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {addonsOpen && (
+                    <div className="mt-4 space-y-3">
+                      {Object.entries(ADDONS).map(([key, item]) => {
+                        const map: Record<
+                          AddonKey,
+                          [
+                            boolean,
+                            React.Dispatch<React.SetStateAction<boolean>>,
+                          ]
+                        > = {
+                          childSeat: [childSeat, setChildSeat],
+                          babySeat: [babySeat, setBabySeat],
+                          gps: [gps, setGps],
+                          additionalDriver: [
+                            additionalDriver,
+                            setAdditionalDriver,
+                          ],
+                        };
+
+                        const [checked, setter] = map[key as AddonKey];
+
+                        return (
+                          <label
+                            key={key}
+                            className={`flex items-center justify-between rounded-2xl border border-gray-200 p-4 cursor-pointer transition ${
+                              checked
+                                ? "bg-site-accent/5"
+                                : "bg-gray-50 hover:bg-gray-100"
+                            }`}
+                          >
+                            <div>
+                              <p className="text-sm font-extrabold text-gray-900">
+                                {item.label}
+                              </p>
+                              <p className="text-xs font-semibold text-gray-500">
+                                AED {formatMoney(item.price)}
+                              </p>
+                            </div>
+
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={(e) => setter(e.target.checked)}
+                              className="h-5 w-5 accent-[var(--site-accent)]"
+                            />
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Buttons */}
+                <div className="flex gap-4">
+                  <button
+                    type="button"
+                    onClick={() => setStep(2)}
+                    className="h-12 w-1/2 rounded-2xl border border-gray-200 font-bold text-gray-700 hover:bg-gray-50 transition"
+                  >
+                    Back
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const err = validateAll();
+                      if (err) return toast.error(err);
+
+                      await handleCalculate();
+                      setMaxStepReached(4); // ✅ Your Details completed
+                    }}
+                    disabled={calcLoading}
+                    className={`${primaryBtn} h-12 w-1/2`}
+                  >
+                    {calcLoading ? "Calculating..." : "Calculate Price"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* RIGHT SUMMARY */}
+          <div className="lg:sticky lg:top-6 h-fit">
+            <div className="bg-white rounded-3xl border border-gray-200 shadow-[0_12px_40px_rgba(15,23,42,0.06)] p-5">
+              <p className="text-sm font-extrabold text-gray-900 mb-4">
+                Booking Summary
+              </p>
+
+              {carImages.length > 0 ? (
+                <div className="rounded-2xl overflow-hidden border border-gray-200 bg-gray-50">
+                  <img
+                    src={carImages[0]}
+                    alt="car"
+                    className="w-full h-[160px] object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-gray-200 bg-gray-50 h-[160px] flex items-center justify-center text-gray-400 font-bold">
+                  No image
+                </div>
+              )}
+
+              <div className="mt-4">
+                <p className="text-lg font-extrabold text-gray-900">
+                  {carLoading ? "Loading..." : carData?.title || "Car Name"}
+                </p>
+
+                <div className="mt-3 rounded-2xl border border-gray-200 bg-gray-50 p-4 space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-grey">Rental Plan</span>
-                    <span className="font-semibold capitalize">
+                    <span className="text-gray-500 text-sm font-semibold">
+                      Rental Plan
+                    </span>
+                    <span className="font-semibold text-sm capitalize">
                       {priceType}
                     </span>
                   </div>
-                )}
-                <div className="flex justify-between">
-                  <span className="text-grey">Method</span>
-                  <span className="font-semibold">
-                    {pickupType === "DELIVERY" && returnType === "RETURN"
-                      ? "Delivery + Return"
-                      : pickupType === "DELIVERY"
-                      ? "Delivery"
-                      : returnType === "RETURN"
-                      ? "Pickup + Return"
-                      : "Pickup"}
-                  </span>
-                </div>
 
-                {pickupType === "DELIVERY" && address && (
-                  <div className="text-xs text-grey bg-soft-grey/30 rounded-xl p-2">
-                    {address}
-                  </div>
-                )}
-                <div className="pt-3 border-t border-soft-grey/40 space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-grey">Base Rental</span>
-                    <span className="font-semibold">
-                      AED {formatMoney(calc?.totalAmount || 0)}
+                  <div className="flex justify-between items-center text-sm font-semibold w-full">
+                    <span className="text-gray-500">Method</span>
+                    <span className="font-semibold text-gray-900">
+                      {pickupType === "DELIVERY" && returnType === "RETURN"
+                        ? "Delivery + Return"
+                        : pickupType === "DELIVERY"
+                          ? "Delivery"
+                          : returnType === "RETURN"
+                            ? "Pickup + Return"
+                            : "Pickup"}
                     </span>
                   </div>
-                  {pickupReturnCharges.pickup > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-grey">Pickup charge</span>
-                      <span className="font-semibold">
-                        AED {formatMoney(pickupReturnCharges.pickup)}
-                      </span>
+
+                  {pickupType === "DELIVERY" && address && (
+                    <div className="text-xs text-gray-500 bg-soft-grey/30 rounded-xl p-2">
+                      {address}
                     </div>
                   )}
 
-                  {pickupReturnCharges.return > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-grey">Return charge</span>
-                      <span className="font-semibold">
-                        AED {formatMoney(pickupReturnCharges.return)}
+                  <div className="pt-3 border-t border-gray-200 space-y-2">
+                    <div className="flex justify-between text-sm font-semibold text-gray-700">
+                      <span>Base Rental:</span>
+                      <span className="text-gray-900">
+                        AED {formatMoney(calc?.totalAmount || 0)}
                       </span>
                     </div>
-                  )}
 
-                  {addonsTotal > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-grey">Add-ons</span>
-                      <span className="font-semibold">
-                        AED {formatMoney(addonsTotal)}
-                      </span>
-                    </div>
-                  )}
+                    {pickupReturnCharges.pickup > 0 && (
+                      <div className="flex justify-between text-sm font-semibold text-gray-700">
+                        <span>Pickup charge:</span>
+                        <span className="text-gray-900">
+                          AED {formatMoney(pickupReturnCharges.pickup)}
+                        </span>
+                      </div>
+                    )}
+
+                    {pickupReturnCharges.return > 0 && (
+                      <div className="flex justify-between text-sm font-semibold text-gray-700">
+                        <span>Return charge:</span>
+                        <span className="text-gray-900">
+                          AED {formatMoney(pickupReturnCharges.return)}
+                        </span>
+                      </div>
+                    )}
+
+                    {depositFreeFee > 0 && (
+                      <div className="flex justify-between text-sm font-semibold text-gray-700">
+                        <span>Deposit-free fee:</span>
+                        <span className="text-gray-900">
+                          AED {formatMoney(depositFreeFee)}
+                        </span>
+                      </div>
+                    )}
+
+                    {addonsTotal > 0 && (
+                      <div className="flex justify-between text-sm font-semibold text-gray-700">
+                        <span>Add-ons:</span>
+                        <span className="text-gray-900">
+                          AED {formatMoney(addonsTotal)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex justify-between text-base font-extrabold text-gray-900 pt-3 border-t border-gray-200">
+                    <span>Total Price:</span>
+                    <span>AED {formatMoney(frontendTotal)}</span>
+                  </div>
                 </div>
-                {depositFree && depositFreeFee > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-grey">
-                      Deposit-Free Fee ({rentalDays} days)
-                    </span>
-                    <span className="font-semibold">
-                      AED {formatMoney(depositFreeFee)}
+
+                <div className="mt-4 space-y-2">
+                  <div className="flex justify-between text-sm font-bold text-site-accent">
+                    <span>Pay Now</span>
+                    <span>AED {formatMoney(frontendPayNow)}</span>
+                  </div>
+
+                  <div className="flex justify-between text-xs font-semibold text-gray-500">
+                    <span>Pay later at handover</span>
+                    <span className="text-gray-900 font-extrabold">
+                      AED {formatMoney(frontendPayLater)}
                     </span>
                   </div>
-                )}
-
-                <div className="pt-3 border-t border-soft-grey/60 flex justify-between font-bold text-base">
-                  <span>Total</span>
-                  <span>AED {formatMoney(frontendTotal)}</span>
-                </div>
-                <div className="flex justify-between text-site-accent font-bold">
-                  <span>To Book Pay Now</span>
-                  <span>AED {formatMoney(frontendPayNow)}</span>
                 </div>
 
-                <div className="flex justify-between text-xs">
-                  <span className="text-grey">
-                    Pay This at the time of handover
-                  </span>
-                  <span className="font-semibold">
-                    AED {formatMoney(frontendPayLater)}
-                  </span>
-                </div>
                 <button
                   onClick={handleCreateBooking}
                   disabled={!canPay || createLoading}
-                  className={`flex-1 w-[380px]  rounded-2xl py-3 font-semibold text-white transition
-        ${
-          canPay
-            ? "bg-gradient-to-r from-site-accent to-slate-teal shadow-[0_12px_28px_rgba(0,0,0,0.12)]"
-            : "bg-gray-300 cursor-not-allowed"
-        }
-      `}
+                  className={`mt-4 ${primaryBtn}`}
                 >
-                  {createLoading ? "Redirecting..." : "Pay Now"}
+                  {createLoading ? "Redirecting..." : "Confirm & Pay"}
                 </button>
-                <div className="flex gap-2 text-xs text-grey pt-3">
-                  <CheckCircle2 className="text-site-accent w-4 h-4 mt-0.5" />
-                  <p>
-                    You’ll pay only the booking amount now. Remaining will be
-                    paid at the time of delivery/pickup.
+
+                {frontendTotal === 0 && (
+                  <p className="mt-3 text-xs font-semibold text-gray-500">
+                    Please complete steps and click{" "}
+                    <span className="font-extrabold">Calculate Price</span>
                   </p>
-                </div>
+                )}
               </div>
             </div>
           </div>
         </div>
+
+        {/* Modal (optional) */}
+        {showDeliveryPolicy && (
+          <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center px-4">
+            <div className="bg-white w-full max-w-md rounded-3xl p-6 border border-gray-200 shadow-xl">
+              <h2 className="text-lg font-semibold text-gray-700 text-center">
+                Pickup Delivery Charges
+              </h2>
+
+              <div className="mt-5 space-y-3">
+                {EMIRATES.map((city) => (
+                  <div
+                    key={city.id}
+                    className="flex items-center justify-between"
+                  >
+                    <p className="text-sm font-semibold text-gray-700">
+                      {city.name}
+                    </p>
+                    <p className="text-sm font-semibold text-gray-900">
+                      {" "}
+                      AED {formatMoney(cityPickupCharges[city.id] || 0)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setShowDeliveryPolicy(false)}
+                className="mt-6 w-full rounded-2xl bg-gradient-to-r from-site-accent to-slate-teal py-3 text-sm font-bold text-white shadow hover:opacity-95 transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
