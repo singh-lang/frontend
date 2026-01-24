@@ -558,12 +558,12 @@ const CompactCarCard = ({ car }: CompactCarCardProps) => {
                   </p>
                 </div>
 
-                <button
-                  type="button"
-                  className="px-5 py-2 rounded-full bg-gradient-to-r from-site-accent to-slate-teal text-white text-sm font-semibold shadow hover:shadow-md transition"
+                <Link
+                  href="/contact"
+                  className="text-black/60 hover:text-slate-teal transition-colors text-sm"
                 >
                   Contact Support
-                </button>
+                </Link>
               </div>
             </div>
           </div>

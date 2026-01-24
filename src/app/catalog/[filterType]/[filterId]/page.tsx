@@ -30,7 +30,7 @@ export async function generateMetadata({
   const { filterId } = await params;
 
   return {
-    title: `${filterId} Cars for Rent`,
+    title: `Best Cars for Rent`,
     description: `Find ${filterId} cars for rent in UAE`,
     robots: { index: true, follow: true },
   };
