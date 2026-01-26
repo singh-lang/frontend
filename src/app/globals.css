@@ -96,10 +96,9 @@ body {
 
 @layer base {
   body {
-    font-family:
-      -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen",
-      "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
-      sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+      "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans",
+      "Helvetica Neue", sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -271,7 +270,7 @@ button,
 
 /* Header */
 .react-datepicker__header {
-  background: linear-gradient(to right, #7dd8fc, #1b7796);
+background: linear-gradient(to right, #0f6176d6, #2564ebcd);
   border-bottom: none;
   padding: 12px 0;
 }
@@ -391,4 +390,139 @@ button,
 
 .animate-pop {
   animation: pop 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+
+/* ✅ FULL CALENDAR WRAP */
+.mobileRangeCalendar,
+.mobileRangeCalendar .react-datepicker {
+  width: 100% !important;
+  border: none !important;
+  box-shadow: none !important;   /* ✅ remove shadow */
+  background: transparent !important;
+  font-family: inherit !important;
+}
+
+.mobileRangeCalendar .react-datepicker__triangle {
+  display: none !important;
+}
+
+/* ✅ Header spacing */
+.mobileRangeCalendar .react-datepicker__header {
+  background: transparent !important;
+  border-bottom: none !important;
+  padding-top: 10px !important;
+}
+
+/* ✅ Day Names row (Su Mo Tu...) */
+.mobileRangeCalendar .react-datepicker__day-names {
+  display: flex !important;
+  justify-content: space-between !important;
+  padding: 0 12px !important;
+  margin-bottom: 8px !important;
+}
+
+.mobileRangeCalendar .react-datepicker__day-name {
+  width: 40px !important;
+  text-align: center !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #6b7280 !important; /* gray-500 */
+}
+
+/* ✅ Week row alignment */
+.mobileRangeCalendar .react-datepicker__week {
+  display: flex !important;
+  justify-content: space-between !important;
+  padding: 0 12px !important;
+}
+
+/* ✅ Each day box */
+.mobileRangeCalendar .react-datepicker__day {
+  width: 40px !important;
+  height: 40px !important;
+  line-height: 40px !important;
+  margin: 0 !important;
+  font-size: 14px !important;
+  font-weight: 700 !important;
+  border-radius: 12px !important;
+  color: #111827 !important; /* gray-900 */
+}
+
+/* ✅ Remove default hover background */
+.mobileRangeCalendar .react-datepicker__day:hover {
+  background: #f3f4f6 !important;
+}
+
+/* ✅ Selected range start/end */
+.mobileRangeCalendar .react-datepicker__day--range-start,
+.mobileRangeCalendar .react-datepicker__day--range-end {
+  background: #06b6d4 !important; /* cyan */
+  color: white !important;
+  border-radius: 999px !important;
+}
+
+/* ✅ In range background (middle days) */
+.mobileRangeCalendar .react-datepicker__day--in-range {
+  background: #cffafe !important; /* light cyan */
+  color: #0f172a !important;
+  border-radius: 0 !important;
+}
+
+/* ✅ Make range pill style */
+.mobileRangeCalendar .react-datepicker__day--range-start {
+  border-top-left-radius: 999px !important;
+  border-bottom-left-radius: 999px !important;
+}
+
+.mobileRangeCalendar .react-datepicker__day--range-end {
+  border-top-right-radius: 999px !important;
+  border-bottom-right-radius: 999px !important;
+}
+
+/* ✅ Disable outside month dates */
+.mobileRangeCalendar .react-datepicker__day--outside-month {
+  color: #cbd5e1 !important;
+}
+.mobileRangeCalendar .react-datepicker__day--outside-month:hover {
+  background: transparent !important;
+  cursor: not-allowed !important;
+}
+/* ✅ Month title show */
+.mobileRangeCalendar .react-datepicker__current-month {
+  display: block !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  color: #111827 !important; /* gray-900 */
+  text-align: left !important;
+  padding: 6px 12px !important;
+  text-align: center !important;
+}
+
+/* ✅ Month header proper */
+.mobileRangeCalendar .react-datepicker__header {
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+}
+.mobileRangeCalendar .react-datepicker__navigation {
+  top: 12px !important;
+}
+
+.mobileRangeCalendar .react-datepicker__navigation-icon::before {
+  border-color: #111827 !important;
+}
+/* Past days disable look */
+.react-datepicker__day--disabled {
+  color: #bdbdbd !important;
+  opacity: 0.5;
+  pointer-events: none;   /* click बंद */
+  cursor: not-allowed;
+}
+.react-datepicker__day--disabled:hover {
+  background: transparent !important;
+}
+.mobileRangeCalendar .react-datepicker__day--today {
+  background: #cffafe;   /* site-accent color */
+  color: black !important;
+  border-radius: 12px;
+  font-weight: 700;
 }

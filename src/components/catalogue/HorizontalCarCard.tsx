@@ -12,9 +12,6 @@ import {
   Shield,
   Plus,
   Minus,
-  Building2,
-  MapPin,
-  Star,
 } from "lucide-react";
 
 import DirhamSymbol from "../shared/DirhamSymbol";
@@ -261,7 +258,7 @@ const CompactCarCard = ({ car }: CompactCarCardProps) => {
 
                 {/* Rent Now */}
                 <Link
-                  href={`/car/${car._id}`}
+                  href={`/booking/${car._id}`}
                   className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-site-accent to-slate-teal px-3 py-2 text-sm font-semibold text-white shadow hover:shadow-md transition"
                 >
                   Rent Now

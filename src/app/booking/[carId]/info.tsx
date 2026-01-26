@@ -44,7 +44,7 @@ const experienceOptions = [
 ];
   return (
     <>
-      <section className="  p-3">
+      <section className="  p-1">
         <div className="rounded-2xl divide-y">
 
    <Row>
@@ -216,15 +216,15 @@ function Popup({
 }) {
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl max-w-md w-full max-h-[80vh] flex flex-col">
-        <div className="p-6 border-b flex justify-between items-center">
+<div className="bg-white rounded-2xl max-w-md w-full max-h-[80vh] flex flex-col">
+<div className="p-4 border-b flex justify-between items-center">
           <h3 className="text-sm font-Medium">{title}</h3>
           <button onClick={onClose}>
             <X size={20} />
           </button>
         </div>
 
-        <div className="p-6 overflow-y-auto flex-1">{children}</div>
+        <div className="p-4 overflow-y-auto flex-1">{children}</div>
 
         <div className="p-6 border-t flex gap-3">
           <button
@@ -269,8 +269,9 @@ function OptionButton({
 }
 
 function Row({ children }: { children: React.ReactNode }) {
-  return <div className="flex justify-between px-6 py-5">{children}</div>;
+  return <div className="flex justify-between px-5 py-3">{children}</div>;
 }
+
 
 function RowLeft({
   icon,
@@ -303,9 +304,8 @@ function ArrowRow({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="w-full flex justify-between items-center
-                 px-6 py-5
-                 hover:bg-black/5 transition"
+    className="w-full flex justify-between items-center px-5 py-3 hover:bg-black/5 transition"
+
     >
       <div className="flex gap-3 items-center">
         <FileText size={20} />

@@ -16,7 +16,6 @@ import {
   X,
   LayoutGrid,
   Car,
-  Settings,
   Users,
   Palette,
   Settings2,
@@ -38,11 +37,9 @@ export default function TopFiltersBar({ data }) {
 
   const {
     noDeposit,
-    priceRange,
     bodyType = [],
     category = [],
     brand = [],
-    regionalSpec = [],
     seatingCapacity = [],
     transmission = [],
     exteriorColor = [],
@@ -198,7 +195,7 @@ export default function TopFiltersBar({ data }) {
   "
           >
             {/* Deposit */}
-            <div className="relative shrink-0  p-2 rounded-2xl">
+            <div className="relative shrink-0 p-1 rounded-2xl">
               <button
                 type="button"
                 onClick={(e) => {
@@ -219,26 +216,27 @@ export default function TopFiltersBar({ data }) {
                 </span>
               </button>
 
-              {openDesktop.deposit && (
-                <div
-                  onClick={(e) => e.stopPropagation()}
-                  className=" absolute left-0 top-full  z-[9999] bg-white w-56 rounded-2xl shadow-xl border border-gray-100 p-4"
-                >
-                  <label className="flex items-center gap-2 py-1 text-sm text-gray-700">
-                    <input
-                      type="checkbox"
-                      checked={noDeposit}
-                      onChange={(e) => {
-                        const checked = e.target.checked;
-                        dispatch(setCatalogFilters({ noDeposit: checked }));
-                        applyFilters({ noDeposit: checked });
-                      }}
-                      className="accent-site-primary"
-                    />
-                    No Deposit
-                  </label>
-                </div>
-              )}
+             {openDesktop.deposit && (
+  <div
+    onClick={(e) => e.stopPropagation()}
+    className="absolute left-0 top-full z-[9999] bg-white w-[220px] rounded-2xl shadow-xl border border-gray-100 p-4 ml-1"
+  >
+    <label className="flex items-center gap-1 py-1 text-sm text-gray-700">
+      <input
+        type="checkbox"
+        checked={noDeposit}
+        onChange={(e) => {
+          const checked = e.target.checked;
+          dispatch(setCatalogFilters({ noDeposit: checked }));
+          applyFilters({ noDeposit: checked });
+        }}
+        className="accent-site-primary"
+      />
+      No Deposit
+    </label>
+  </div>
+)}
+
             </div>
             <div className="relative shrink-0">
               <button
@@ -285,7 +283,7 @@ export default function TopFiltersBar({ data }) {
               {openDesktop.bodyType && (
                 <div
                   onClick={(e) => e.stopPropagation()}
-                  className="hidden md:block absolute left-0 top-full mt-3 z-[9999] bg-white w-72 shadow-xl rounded-2xl p-4 border border-gray-100 max-h-72 overflow-y-auto"
+                  className="hidden md:block absolute left-0 top-full  mt-1 z-[9999] bg-white w-56 shadow-xl rounded-2xl p-4 border border-gray-100 max-h-72 overflow-y-auto"
                 >
                   {data?.bodyTypes?.map((bt) => (
                     <label
@@ -361,7 +359,7 @@ translate-x-0 transition-transform duration-300"
             </div>
 
             {/* Body (scrollable) */}
-            <div className="flex-1 overflow-y-auto px-5 py-5 space-y-4 bg-gray-50">
+<div className="flex-1 overflow-y-auto px-5 py-5 space-y-3 bg-gray-50">
               <div className="relative bg-white rounded-3xl border border-gray-200 p-5 shadow-sm">
                 <button
                   type="button"
@@ -385,7 +383,7 @@ translate-x-0 transition-transform duration-300"
                 {openCategory && (
                   <div
                     onClick={(e) => e.stopPropagation()}
-                    className="absolute left-0 top-full mt-3 z-[9999] bg-white w-full shadow-xl rounded-2xl p-4 border border-gray-100 max-h-72 overflow-y-auto"
+                    className="absolute left-0 top-full mt-1 z-[9999] bg-white w-full shadow-xl rounded-2xl p-4 border border-gray-100 max-h-72 overflow-y-auto"
                   >
                     <p className="text-xs font-semibold text-gray-500 mb-2">
                       Select Categories
@@ -465,7 +463,7 @@ translate-x-0 transition-transform duration-300"
                 {openBrand && (
                   <div
                     onClick={(e) => e.stopPropagation()}
-                    className="absolute left-0 top-full mt-3 z-[9999] bg-white w-full shadow-xl rounded-2xl p-4 border border-gray-100 max-h-72 overflow-y-auto"
+                    className="absolute left-0 top-full mt-1 z-[9999] bg-white w-full shadow-xl rounded-2xl p-4 border border-gray-100 max-h-72 overflow-y-auto"
                   >
                     <p className="text-xs font-semibold text-gray-500 mb-2">
                       Select Brands
@@ -537,7 +535,7 @@ translate-x-0 transition-transform duration-300"
                 {openTransmission && (
                   <div
                     onClick={(e) => e.stopPropagation()}
-                    className="absolute left-0 top-full mt-3 z-[9999] bg-white w-full shadow-xl rounded-2xl p-4 border border-gray-100 max-h-72 overflow-y-auto"
+                    className="absolute left-0 top-full mt-1 z-[9999] bg-white w-full shadow-xl rounded-2xl p-4 border border-gray-100 max-h-72 overflow-y-auto"
                   >
                     <p className="text-xs font-semibold text-gray-500 mb-2">
                       Select Transmission
@@ -613,7 +611,7 @@ translate-x-0 transition-transform duration-300"
                 {openSeating && (
                   <div
                     onClick={(e) => e.stopPropagation()}
-                    className="absolute left-0 top-full mt-3 z-[9999] bg-white w-full shadow-xl rounded-2xl p-4 border border-gray-100 max-h-72 overflow-y-auto"
+                    className="absolute left-0 top-full mt-1 z-[9999] bg-white w-full shadow-xl rounded-2xl p-4 border border-gray-100 max-h-72 overflow-y-auto"
                   >
                     <p className="text-xs font-semibold text-gray-500 mb-2">
                       Select Seating Capacity
@@ -688,7 +686,7 @@ translate-x-0 transition-transform duration-300"
                 {openBodyType && (
                   <div
                     onClick={(e) => e.stopPropagation()}
-                    className="absolute left-0 top-full mt-3 z-[9999] bg-white w-full shadow-xl rounded-2xl p-4 border border-gray-100 max-h-72 overflow-y-auto"
+                    className="absolute left-0 top-full mt-1 z-[9999] bg-white w-full shadow-xl rounded-2xl p-4 border border-gray-100 max-h-72 overflow-y-auto"
                   >
                     <p className="text-xs font-semibold text-gray-500 mb-2">
                       Select Body Type
@@ -761,7 +759,7 @@ translate-x-0 transition-transform duration-300"
                 {openInterior && (
                   <div
                     onClick={(e) => e.stopPropagation()}
-                    className="absolute left-0 top-full mt-3 z-[9999] bg-white w-full shadow-xl rounded-2xl p-4 border border-gray-100 max-h-72 overflow-y-auto"
+                    className="absolute left-0 top-full mt-1 z-[9999] bg-white w-full shadow-xl rounded-2xl p-4 border border-gray-100 max-h-72 overflow-y-auto"
                   >
                     <p className="text-xs font-semibold text-gray-500 mb-2">
                       Select Interior Color
@@ -836,7 +834,7 @@ translate-x-0 transition-transform duration-300"
                 {openExterior && (
                   <div
                     onClick={(e) => e.stopPropagation()}
-                    className="absolute left-0 top-full mt-3 z-[9999] bg-white w-full shadow-xl rounded-2xl p-4 border border-gray-100 max-h-72 overflow-y-auto"
+                    className="absolute left-0 top-full mt-1 z-[9999] bg-white w-full shadow-xl rounded-2xl p-4 border border-gray-100 max-h-72 overflow-y-auto"
                   >
                     <p className="text-xs font-semibold text-gray-500 mb-2">
                       Select Exterior Color
@@ -917,32 +915,6 @@ translate-x-0 transition-transform duration-300"
   );
 }
 
-/* Helpers */
-function Divider() {
-  return <div className="h-9 w-px bg-gray-200 shrink-0" />;
-}
 
-function Chip({
-  active,
-  label,
-  onClick,
-}: {
-  active: boolean;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`px-3 py-2 rounded-full border text-xs font-semibold transition
-        ${
-          active
-            ? "bg-gradient-to-r from-site-accent to-slate-teal text-white border-site-accent"
-            : "bg-white border-gray-200 text-gray-700 hover:border-site-accent/40"
-        }`}
-    >
-      {label}
-    </button>
-  );
-}
+
+ 
