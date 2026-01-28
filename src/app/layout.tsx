@@ -4,7 +4,7 @@ import Script from "next/script";
 import "./globals.css";
 import Providers from "./providers";
 import JsonLd from "@/components/JsonLd";
-import { Toaster } from "sonner";
+// import { Toaster } from "sonner";
 
 const poppins = Poppins({
   subsets: ["latin"],
@@ -162,7 +162,7 @@ export default function RootLayout({
       <body className={`${poppins.className} !bg-off-white mx-auto`}>
         <Providers>{children}</Providers>
         {/* ✅ REQUIRED FOR SONNER TOASTS */}
-        <Toaster position="top-center" richColors closeButton />
+        {/* <Toaster position="top-center" richColors closeButton /> */}
       </body>
     </html>
   );
