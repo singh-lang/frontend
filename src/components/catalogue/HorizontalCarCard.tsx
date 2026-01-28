@@ -332,7 +332,7 @@ const CompactCarCard = ({ car }: CompactCarCardProps) => {
               </h3>
 
               {activeTab === "carInfo" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {/* Specs Part 1 */}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between text-sm">
@@ -341,6 +341,14 @@ const CompactCarCard = ({ car }: CompactCarCardProps) => {
                       </span>
                       <span className="text-gray-900 font-semibold">
                         {car?.car?.modelYear || "-"}
+                      </span>
+                    </div>
+                     <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500 font-medium">
+                        Car Model
+                      </span>
+                      <span className="text-gray-900 font-semibold">
+                        {car?.car?.carModel || "-"}
                       </span>
                     </div>
 
@@ -384,6 +392,13 @@ const CompactCarCard = ({ car }: CompactCarCardProps) => {
                         {car?.car?.doors || "-"}
                       </span>
                     </div>
+                     <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500 font-medium">Toll Charges</span>
+                      <span className="text-gray-900 font-semibold">
+                        {car?.tollCharges ?? "-"}
+                      </span>
+                    </div>
+                   
                   </div>
 
                   {/* Specs Part 2 */}
@@ -416,6 +431,36 @@ const CompactCarCard = ({ car }: CompactCarCardProps) => {
                         AED {(car?.securityDeposit || 0).toLocaleString()}
                       </span>
                     </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500 font-medium">
+                        Extra Mileage Rate
+                      </span>
+                      <span className="text-gray-900 font-semibold">
+                        AED {(car?.extraMileageRate || 0).toLocaleString()}
+                      </span>
+                    </div>
+                      <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500 font-medium">
+                        Location
+                      </span>
+                      <span className="text-gray-900 font-semibold">
+                        {car?.location || "-"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500 font-medium">
+                        Minimum Rental Days
+                      </span>
+                      <span className="text-gray-900 font-semibold">
+                        {car?.minRentalDays || "-"}
+                      </span>
+                    </div>
+                     <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500 font-medium">Horse Power</span>
+                      <span className="text-gray-900 font-semibold">
+                        {car?.car?.horsePower || "-"}
+                      </span>
+                    </div>
                   </div>
                 </div>
               )}
@@ -427,7 +472,7 @@ const CompactCarCard = ({ car }: CompactCarCardProps) => {
               )}
 
               {activeTab === "features" && (
-                <div className="max-h-[220px] overflow-y-auto pr-2 space-y-4">
+                <div className="max-h-[300px] overflow-y-auto pr-2 space-y-4">
                   {/* Technical Features */}
                   {(car?.car?.techFeatures || []).length > 0 && (
                     <div>
@@ -557,7 +602,7 @@ const CompactCarCard = ({ car }: CompactCarCardProps) => {
 
                 <Link
                   href="/contact"
-                  className="text-black/60 hover:text-slate-teal transition-colors text-sm"
+                  className="text-black/60 hover:text-slate-teal transition-colors text-sm font-semibold underline"
                 >
                   Contact Support
                 </Link>

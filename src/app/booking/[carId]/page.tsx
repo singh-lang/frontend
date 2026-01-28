@@ -37,6 +37,7 @@ import {
 import { getCar } from "@/lib/api/car";
 import type { CarTypes } from "@/types/homePageTypes";
 import { useGetDepositFreePricingFrontendQuery } from "@/lib/api/depositFreeFrontendApi";
+import { useGetAddonsByCarQuery } from "@/lib/api/carAddonsApi";
 
 type PriceType = "daily" | "weekly" | "monthly";
 
@@ -52,14 +53,7 @@ interface ApiError {
   };
 }
 
-const ADDONS = {
-  childSeat: { label: "Child Seat", price: 50 },
-  babySeat: { label: "Baby Seat", price: 50 },
-  gps: { label: "GPS Navigation", price: 30 },
-  additionalDriver: { label: "Additional Driver", price: 100 },
-};
 
-type AddonKey = keyof typeof ADDONS;
 
 const EMIRATES = [
   { id: "6953ce30ad7fb6b0b43ee72c", name: "Dubai" },
@@ -90,6 +84,7 @@ const [agree, setAgree] = useState(false);
   const [addonsOpen, setAddonsOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
   const [depositFree, setDepositFree] = useState(false);
+const [mobileAddonsOpen, setMobileAddonsOpen] = useState(false);
 
   // ---------- FORM STATES ----------
   const [priceType, setPriceType] = useState<PriceType>("daily");
@@ -117,7 +112,7 @@ const [endTime, setEndTime] = useState("10:00");
   const [babySeat, setBabySeat] = useState(false);
   const [gps, setGps] = useState(false);
   const [additionalDriver, setAdditionalDriver] = useState(false);
-const [detailsOpen, setDetailsOpen] = useState(true);
+const [detailsOpen, setDetailsOpen] = useState(false);
   // ---------- DATA ----------
   const [carLoading, setCarLoading] = useState(true);
   const [carData, setCarData] = useState<CarTypes | null>(null);
@@ -138,12 +133,7 @@ const [mobileStep, setMobileStep] = useState<1 | 2 | 3>(1);
   const [createBooking, { isLoading: createLoading }] =
     useCreateBookingMutation();
 
-  const { data: depositFreeRes } = useGetDepositFreePricingFrontendQuery(
-    carId,
-    {
-      skip: !carId,
-    },
-  );
+
 const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([
   null,
   null,
@@ -163,7 +153,20 @@ const handleConfirmBooking = () => {
   // API call / submit booking
   console.log("Booking Confirmed!");
 };
+  const { data: addonRes, isLoading: addonsLoading } = useGetAddonsByCarQuery(
+    carId,
+    {
+      skip: !carId,
+    }
+  );
 
+  const vendorAddons = addonRes?.data || [];
+  const { data: depositFreeRes } = useGetDepositFreePricingFrontendQuery(
+    carId,
+    {
+      skip: !carId,
+    }
+  );
 
   // ---------- DESIGN HELPERS ----------
   const pageWrap = "min-h-screen bg-[#f5f7fb]";
@@ -233,24 +236,51 @@ const handleConfirmBooking = () => {
     return Math.max(diffDays, 1);
   }, [pickupDate, dropoffDate]);
 
-  // ---------- ADDONS TOTAL ----------
-  const addonsTotal = useMemo(() => {
-    let total = 0;
-    if (childSeat) total += ADDONS.childSeat.price;
-    if (babySeat) total += ADDONS.babySeat.price;
-    if (gps) total += ADDONS.gps.price;
-    if (additionalDriver) total += ADDONS.additionalDriver.price;
-    return total;
-  }, [childSeat, babySeat, gps, additionalDriver]);
+
+  // 2️⃣ STATE
+  const [selectedAddons, setSelectedAddons] = useState<Record<string, boolean>>(
+    {}
+  );
+  useEffect(() => {
+    if (!vendorAddons.length) return;
+
+    const map: Record<string, boolean> = {};
+    vendorAddons.forEach((a) => {
+      map[a._id] = false; // ✅ default unchecked
+    });
+
+    setSelectedAddons(map);
+  }, [vendorAddons]); const addonsTotal = useMemo(() => {
+    return vendorAddons.reduce((sum, addon) => {
+      if (!selectedAddons[addon._id]) return sum;
+
+      switch (addon.priceType) {
+        case "per_day":
+          return sum + addon.price;
+        case "per_week":
+          return sum + addon.price;
+        case "per_month":
+          return sum + addon.price;
+        case "per_booking":
+        default:
+          return sum + addon.price;
+      }
+    }, 0);
+  }, [vendorAddons, selectedAddons]);
+  const toggleAddon = (id: string) => {
+    setSelectedAddons((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+  const depositFreeDailyFee = depositFreeRes?.data?.daily || 0;
+
 
   // ---------- DEPOSIT FREE ----------
-  const depositFreeDailyFee = depositFreeRes?.data?.daily || 0;
-  const depositFreeFee = depositFree ? depositFreeDailyFee * rentalDays : 0;
-
-  // ---------- SUMMARY TOTAL ----------
-  const rentalAmount = calc?.totalAmount ?? 0;
+   const rentalAmount = calc?.totalAmount ?? 0;
   const pickupFee = pickupReturnCharges.pickup;
   const returnFee = pickupReturnCharges.return;
+  const depositFreeFee = depositFree ? depositFreeDailyFee : 0;
 
   const frontendTotal =
     rentalAmount + pickupFee + returnFee + addonsTotal + depositFreeFee;
@@ -486,8 +516,6 @@ const rangeDays =
     return "Dates selected";
   }, [startDate, endDate]);
 
- 
-
   return (
     <div className={pageWrap}>
       <div className={container}>
@@ -573,14 +601,14 @@ const rangeDays =
                       <DatePicker
                         selected={pickupDate ? new Date(pickupDate) : null}
                       onChange={(date: Date | null) => {
-  if (!date) return setPickupDate("");
+                      if (!date) return setPickupDate("");
 
-  const yyyy = date.getFullYear();
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
-  const dd = String(date.getDate()).padStart(2, "0");
+                      const yyyy = date.getFullYear();
+                      const mm = String(date.getMonth() + 1).padStart(2, "0");
+                      const dd = String(date.getDate()).padStart(2, "0");
 
-  setPickupDate(`${yyyy}-${mm}-${dd}`); // ✅ local date (no -1 day issue)
-}}
+                      setPickupDate(`${yyyy}-${mm}-${dd}`); // ✅ local date (no -1 day issue)
+                    }}
 
                         minDate={new Date()}
                         placeholderText="dd-mm-yyyy"
@@ -882,12 +910,13 @@ const rangeDays =
                     </div>
 
                     <p
-                      className={`text-lg font-semibold ${
-                        depositFree ? "text-site-accent" : "text-gray-900"
-                      }`}
-                    >
-                      AED {depositFree ? "0" : securityDeposit.toLocaleString()}
-                    </p>
+              className={`text-lg font-semibold ${
+                depositFree ? "text-gray-900" : "text-site-accent"
+              }`}
+            >
+              AED {depositFree ? securityDeposit.toLocaleString() : "0"}
+            </p>
+
                   </div>
                 </div>
 
@@ -974,85 +1003,85 @@ const rangeDays =
 
                 {/* Addons */}
                 <div className={card}>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-extrabold text-gray-900">
-                        Add-ons
-                      </p>
-                      <p className="text-xs font-semibold text-gray-500">
-                        {addonsTotal > 0
-                          ? `AED ${formatMoney(addonsTotal)}`
-                          : "Optional"}
-                      </p>
-                    </div>
+  <div className="flex items-center justify-between mb-4">
+    <div>
+      <p className="font-semibold text-dark-base">Add-ons</p>
+      <p className="text-xs text-grey">
+        {addonsTotal > 0
+          ? `AED ${formatMoney(addonsTotal)}`
+          : vendorAddons.length === 0
+          ? "No add-ons available"
+          : "Optional"}
+      </p>
+    </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setAddonsOpen((prev) => !prev)}
-                      className={`relative w-11 h-6 rounded-full transition-colors ${
-                        addonsOpen ? "bg-site-accent" : "bg-gray-300"
-                      }`}
-                    >
-                      <span
-                        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
-                          addonsOpen ? "translate-x-5" : ""
-                        }`}
-                      />
-                    </button>
-                  </div>
+    <button
+      type="button"
+      disabled={vendorAddons.length === 0}
+      onClick={() => setAddonsOpen((prev) => !prev)}
+      className={`relative w-11 h-6 rounded-full transition-colors ${
+        vendorAddons.length === 0
+          ? "bg-gray-200 cursor-not-allowed"
+          : addonsOpen
+          ? "bg-site-accent"
+          : "bg-gray-300"
+      }`}
+    >
+      <span
+        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+          addonsOpen ? "translate-x-5" : ""
+        }`}
+      />
+    </button>
+  </div>
 
-                  {addonsOpen && (
-                    <div className="mt-4 space-y-3">
-                      {Object.entries(ADDONS).map(([key, item]) => {
-                        const map: Record<
-                          AddonKey,
-                          [
-                            boolean,
-                            React.Dispatch<React.SetStateAction<boolean>>,
-                          ]
-                        > = {
-                          childSeat: [childSeat, setChildSeat],
-                          babySeat: [babySeat, setBabySeat],
-                          gps: [gps, setGps],
-                          additionalDriver: [
-                            additionalDriver,
-                            setAdditionalDriver,
-                          ],
-                        };
 
-                        const [checked, setter] = map[key as AddonKey];
+              {addonsOpen && (
+    <div className="space-y-2">
+      {vendorAddons.length === 0 ? (
+        <p className="text-sm text-gray-500 text-center py-4">
+          No add-ons available for this car
+        </p>
+      ) : (
+        vendorAddons.map((addon) => {
+          const checked = !!selectedAddons[addon._id];
 
-                        return (
-                          <label
-                            key={key}
-                            className={`flex items-center justify-between rounded-2xl border border-gray-200 p-4 cursor-pointer transition ${
-                              checked
-                                ? "bg-site-accent/5"
-                                : "bg-gray-50 hover:bg-gray-100"
-                            }`}
-                          >
-                            <div>
-                              <p className="text-sm font-extrabold text-gray-900">
-                                {item.label}
-                              </p>
-                              <p className="text-xs font-semibold text-gray-500">
-                                AED {formatMoney(item.price)}
-                              </p>
-                            </div>
+          return (
+            <label
+              key={addon._id}
+              className={`flex justify-between items-center rounded-2xl p-4 cursor-pointer transition ${
+                checked
+                  ? "bg-site-accent/5"
+                  : "bg-soft-grey/30 hover:bg-soft-grey/45"
+              }`}
+            >
+              <div>
+                <p className="font-medium text-sm text-dark-base">
+                  {addon.name}
+                </p>
+                <p className="text-xs text-grey">
+                  AED {addon.price}
+                  {addon.priceType === "per_day" && " / day"}
+                  {addon.priceType === "per_week" && " / week"}
+                  {addon.priceType === "per_month" && " / month"}
+                </p>
+              </div>
 
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={(e) => setter(e.target.checked)}
-                              className="h-5 w-5 accent-[var(--site-accent)]"
-                            />
-                          </label>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
+              <input
+                type="checkbox"
+                checked={checked}
+                onChange={() => toggleAddon(addon._id)}
+                className="h-5 w-5 accent-[var(--site-accent)]"
+              />
+            </label>
+          );
+        })
+      )}
+    </div>
+  )}
+</div>
 
+           
                 {/* Buttons */}
                 <div className="flex gap-4">
                   <button
@@ -1289,52 +1318,59 @@ const rangeDays =
         <p className="text-lg font-semibold text-gray-700 mt-6">
           Delivery Option
         </p>
-        <div className="mt-4">
+        <div className="mt-2">
        <p className="text-sm font-bold text-gray-600 mb-2">Pick-up</p>
 
-          <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={() => setPickupType("PICKUP")}
-            className={`flex-1 px-4 py-4 rounded-xl border-gray-400 border ${
-              pickupType === "PICKUP" ? "border-site-accent" : "border-gray-200"
-            }`}
-          >
-            <div className="flex flex-col items-center justify-center ">
-              <div className="w-12 h-12 rounded-full bg-site-accent flex items-center justify-center">
-                <Store className="w-6 h-6 text-white" />
-              </div>
-              <p className="font-semibold text-sm text-gray-900 text-center">
-                Pick up
-              </p>
-              <p className="text-xs font-semibold text-gray-500 text-center">
-                Free
-              </p>
-            </div>
-          </button>
+         <div className="flex gap-3">
+        <button
+          type="button"
+          onClick={() => setPickupType("PICKUP")}
+          className={`flex-1 px-1 py-1 rounded-lg border transition ${
+            pickupType === "PICKUP"
+              ? "border-site-accent"
+              : "border-gray-400"
+          }`}
+        >
+    <div className="flex flex-col items-center justify-center ">
+      <div className="w-9 h-9 rounded-full bg-site-accent flex items-center justify-center">
+        <Store className="w-4 h-4 text-white" />
+      </div>
 
-          <button
-            type="button"
-            onClick={() => setPickupType("DELIVERY")}
-            className={`flex-1 px-4 py-4 rounded-xl border-gray-400 border ${
-              pickupType === "DELIVERY" ? "border-site-accent" : "border-gray-200"
-            }`}
-          >
-            <div className="flex flex-col items-center justify-center">
-              <div className="w-12 h-12 rounded-full bg-site-accent flex items-center justify-center">
-                <Truck className="w-6 h-6 text-white" />
-              </div>
-              <p className="font-semibold text-sm text-gray-900 text-center">
-                Delivery
-              </p>
-              <p className="text-xs font-semibold text-gray-500 text-center">
-                      Paid(By Emirate)
+      <p className="font-semibold text-sm text-gray-900 text-center">
+        Pick up At Vendor
+      </p>
 
-              </p>
-            </div>
-          </button>
+      <p className="text-xs font-medium text-gray-500 text-center">
+        Free
+      </p>
+    </div>
+  </button>
 
-          </div>
+  <button
+    type="button"
+    onClick={() => setPickupType("DELIVERY")}
+    className={`flex-1 px-3 py-3 rounded-lg border transition ${
+      pickupType === "DELIVERY"
+        ? "border-site-accent"
+        : "border-gray-400"
+    }`}
+  >
+    <div className="flex flex-col items-center justify-center ">
+      <div className="w-9 h-9 rounded-full bg-site-accent flex items-center justify-center">
+        <Truck className="w-4 h-4 text-white" />
+      </div>
+
+      <p className="font-semibold text-sm text-gray-900 text-center">
+        Delivery At Address
+      </p>
+
+      <p className="text-xs font-medium text-gray-500 text-center">
+        Paid (By Emirate)
+      </p>
+    </div>
+  </button>
+</div>
+
 
 
           {(pickupType === "DELIVERY" || returnType === "RETURN") && (
@@ -1344,7 +1380,7 @@ const rangeDays =
               </label>
 
               <select
-                className="w-full rounded-2xl border border-gray-200  px-4 py-3 text-sm font-semibold text-gray-800 outline-none focus:ring-2 focus:ring-site-accent/30"
+                className="w-full rounded-2xl border border-gray-300  px-4 py-3 text-sm font-semibold text-gray-800 outline-none focus:ring-2 focus:ring-site-accent/30"
                 value={emirateId}
                 onChange={(e) => setEmirateId(e.target.value)}
               >
@@ -1378,58 +1414,59 @@ const rangeDays =
         <div className="mt-6">
           <p className="text-sm font-bold text-gray-700 mb-2">Drop-off</p>
 
-          <div className="flex gap-2">
-            <button
+        <div className="flex gap-3">
+      <button
         type="button"
         onClick={() => setReturnType("DROPOFF")}
-        className={`flex-1 px-4 py-4 rounded-xl border-gray-400 border ${
-          returnType === "DROPOFF" ? "border-site-accent" : "border-gray-200"
+        className={`flex-1 px-3 py-3 rounded-lg border transition ${
+          returnType === "DROPOFF"
+            ? "border-site-accent"
+            : "border-gray-400"
         }`}
       >
-        <div className="flex flex-col items-center justify-center">
-          <div className="w-12 h-12 rounded-full  bg-site-accent flex items-center justify-center">
-            <Store className="w-6 h-6 text-white" />
+        <div className="flex flex-col items-center justify-center ">
+          <div className="w-9 h-9 rounded-full bg-site-accent flex items-center justify-center">
+            <Store className="w-4 h-4 text-white" />
           </div>
+
           <p className="font-semibold text-sm text-gray-900 text-center">
-            Dropoff to vendor
+            Dropoff To Vendor
           </p>
 
-          <p className="text-xs font-semibold text-gray-500 text-center">
+          <p className="text-xs font-medium text-gray-500 text-center">
             Free
           </p>
         </div>
       </button>
 
-
       <button
-          type="button"
-          onClick={() => setReturnType("RETURN")}
-          className={`flex-1 px-4 py-4 rounded-xl border-gray-400 border ${
-            returnType === "RETURN" ? "border-site-accent" : "border-gray-200"
-          }`}
-        >
-          <div className="flex flex-col items-center justify-center">
-            {/* Icon Circle */}
-            <div className="w-12 h-12 rounded-full bg-site-accent flex items-center justify-center">
-              <Truck className="w-6 h-6 text-white" />
-            </div>
-
-            {/* Center Text */}
-            <p className="font-semibold text-sm text-gray-900 text-center">
-              Vendor collects car
-            </p>
-
-            <p className="text-xs font-semibold text-gray-500 text-center">
-              Paid(By Emirate)
-            </p>
+        type="button"
+        onClick={() => setReturnType("RETURN")}
+        className={`flex-1 px-3 py-3 rounded-lg border transition ${
+          returnType === "RETURN"
+            ? "border-site-accent"
+            : "border-gray-400"
+        }`}
+      >
+        <div className="flex flex-col items-center justify-center">
+          <div className="w-9 h-9 rounded-full bg-site-accent flex items-center justify-center">
+            <Truck className="w-4 h-4 text-white" />
           </div>
-        </button>
 
-          </div>
+          <p className="font-semibold text-sm text-gray-900 text-center">
+            Vendor Collects Car
+          </p>
+
+          <p className="text-xs font-medium text-gray-500 text-center">
+            Paid (By Emirate)
+          </p>
+        </div>
+      </button>
+    </div>
         </div>
 
         <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-3">
-          <p className="text-base font-extrabold text-gray-900">Select Date& Time</p>
+          <p className="text-base font-extrabold text-gray-900">Select Date & Time</p>
 
           <div className="rounded-2xl bg-gray-100 p-4 mt-3">
             <div className="grid grid-cols-2 gap-4">
@@ -1447,7 +1484,6 @@ const rangeDays =
                         className={inputBase}
                       />
               </div>
-
               <div>
                 <p className="text-xs font-semibold text-gray-500">End Date</p>
                 <p className="text-lg font-extrabold text-gray-900 mb-4">
@@ -1463,10 +1499,7 @@ const rangeDays =
                       />
               </div>
             </div>
-
-         
           </div>
-
           <div className="mt-4">
            <DatePicker
               inline
@@ -1503,8 +1536,8 @@ const rangeDays =
       </>
     )}
 
-{mobileStep === 2 && (
-  <>
+    {mobileStep === 2 && (
+    <>
     <div>
       <p className="text-sm font-extrabold text-gray-900 mb-3 ">
         Booking Summary
@@ -1627,78 +1660,81 @@ const rangeDays =
             </p>
           </div>
         )}
+        {vendorAddons.length > 0 && (
+        <>
+          {/* ADD-ONS HEADER */}
+          <div className="flex items-center justify-between border-b border-gray-200 py-3">
+            <div className="flex items-center gap-3">
+              <div className="w-5 h-5 flex items-center justify-center rounded-full border border-site-accent text-site-accent">
+                <Plus className="w-3 h-3" />
+              </div>
 
-        {/* ADDONS HEADER */}
-        <div className="flex items-center justify-between border-b border-gray-200 py-3">
-          <div className="flex items-center gap-2">
-          <Plus className="w-4 h-4 text-site-accent rounded-2xl border border-site-accent" />
               <div>
-              <p className="text-sm font-extrabold text-gray-900">Add-ons</p>
-              <p className="text-xs font-semibold text-gray-500">
-                {addonsTotal > 0 ? `AED ${formatMoney(addonsTotal)}` : "Optional"}
-              </p>
+                <p className="font-semibold text-dark-base">Add-ons</p>
+                <p className="text-xs text-grey">
+                  {addonsTotal > 0
+                    ? `AED ${formatMoney(addonsTotal)}`
+                    : "Optional"}
+                </p>
+              </div>
             </div>
+
+            {/* TOGGLE */}
+            <button
+              type="button"
+              onClick={() => setMobileAddonsOpen((prev) => !prev)}
+              className={`relative w-11 h-6 rounded-full transition-colors ${
+                mobileAddonsOpen ? "bg-site-accent" : "bg-gray-300"
+              }`}
+            >
+              <span
+                className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                  mobileAddonsOpen ? "translate-x-5" : ""
+                }`}
+              />
+            </button>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setAddonsOpen((prev) => !prev)}
-            className="h-9 w-9 rounded-full  flex items-center justify-center"
-          >
-            {addonsOpen ? (
-              <Minus className="w-5 h-5 text-gray-800" />
-            ) : (
-              <Plus className="w-5 h-5 text-gray-800" />
-            )}
-          </button>
-        </div>
+          {/* ADD-ONS LIST */}
+          {mobileAddonsOpen && (
+            <div className="mt-3 space-y-2">
+              {vendorAddons.map((addon) => {
+                const checked = !!selectedAddons[addon._id];
 
-        {/* ADDONS LIST */}
-        {addonsOpen && (
-          <div className="mt-3 space-y-3">
-            {Object.entries(ADDONS).map(([key, item]) => {
-              const map: Record<
-                AddonKey,
-                [boolean, React.Dispatch<React.SetStateAction<boolean>>]
-              > = {
-                childSeat: [childSeat, setChildSeat],
-                babySeat: [babySeat, setBabySeat],
-                gps: [gps, setGps],
-                additionalDriver: [additionalDriver, setAdditionalDriver],
-              };
+                return (
+                  <label
+                    key={addon._id}
+                    className={`flex justify-between items-center rounded-2xl p-4 cursor-pointer transition ${
+                      checked
+                        ? "bg-site-accent/5 border border-site-accent"
+                        : "bg-soft-grey/30 hover:bg-soft-grey/45 border border-transparent"
+                    }`}
+                  >
+                    <div>
+                      <p className="font-medium text-sm text-dark-base">
+                        {addon.name}
+                      </p>
+                      <p className="text-xs text-grey">
+                        AED {addon.price}
+                        {addon.priceType === "per_day" && " / day"}
+                        {addon.priceType === "per_week" && " / week"}
+                        {addon.priceType === "per_month" && " / month"}
+                      </p>
+                    </div>
 
-              const [checked, setter] = map[key as AddonKey];
-
-              return (
-                <label
-                  key={key}
-                  className={`flex items-center justify-between rounded-2xl border p-4 cursor-pointer transition ${
-                    checked
-                      ? "bg-site-accent/5 border-site-accent/30"
-                      : "bg-gray-50 border-gray-200 hover:bg-gray-100"
-                  }`}
-                >
-                  <div>
-                    <p className="text-sm font-extrabold text-gray-900">
-                      {item.label}
-                    </p>
-                    <p className="text-xs font-semibold text-gray-500">
-                      AED {formatMoney(item.price)}
-                    </p>
-                  </div>
-
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={(e) => setter(e.target.checked)}
-                    className="h-5 w-5 accent-[var(--site-accent)]"
-                  />
-                </label>
-              );
-            })}
-          </div>
-        )}
-
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleAddon(addon._id)}
+                      className="h-5 w-5 accent-[var(--site-accent)]"
+                    />
+                  </label>
+                );
+              })}
+            </div>
+          )}
+        </>
+      )}
         {/* YOUR DETAILS HEADER */}
         <div className="flex items-center justify-between pt-2">
           <div className="flex items-center gap-2">
@@ -1768,59 +1804,63 @@ const rangeDays =
             </div>
           </div>
         )}
-                  <div className="flex items-center justify-between border-t border-gray-200 pb-3 mt-4">
-                    <div>
-                      <p className="font-semibold text-gray-900 pt-3">
-                       security Deposit 
-                      </p>
+               {/* SECURITY DEPOSIT TOGGLE */}
+      <div className="flex items-center justify-between border-t border-gray-200 pb-3 mt-4">
+        <div>
+          <p className="font-semibold text-gray-900 pt-3">
+            Security Deposit
+          </p>
 
-                      <p className="text-sm text-gray-600 p-2">
-                          Refunded within 21 days after you return the car
-                      </p>
-                    </div>
+          <p className="text-sm text-gray-600 p-2">
+            Refunded within 21 days after you return the car
+          </p>
+        </div>
 
-                    <button
-                      onClick={() => setDepositFree(!depositFree)}
-                      className={`relative w-12 h-6 rounded-full transition-colors ${
-                        depositFree ? "bg-site-accent" : "bg-gray-300"
-                      }`}
-                    >
-                      <span
-                        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                          depositFree ? "translate-x-6" : ""
-                        }`}
-                      />
-                    </button>
-                  </div>
+        <button
+          type="button"
+          onClick={() => setDepositFree((prev) => !prev)}
+          className={`relative w-12 h-6 rounded-full transition-colors ${
+            depositFree ? "bg-site-accent" : "bg-gray-300"
+          }`}
+        >
+          <span
+            className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+              depositFree ? "translate-x-6" : ""
+            }`}
+          />
+        </button>
+      </div>
+        {/* SECURITY DEPOSIT AMOUNT */}
+        <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
+              💳
+            </div>
 
-                  <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
-                        💳
-                      </div>
-
-                      <div>
-                        <p className="font-semibold text-gray-900">Deposit</p>
-                      
-                      </div>
-                    </div>
-
-                    <p
-                      className={`text-lg font-semibold ${
-                        depositFree ? "text-site-accent" : "text-gray-900"
-                      }`}
-                    >
-                      AED {depositFree ? "0" : securityDeposit.toLocaleString()}
-                    </p>
-                  </div>
-            
+            <div>
+              <p className="font-semibold text-gray-900">
+                Deposit Amount
+              </p>
+              <p className="text-xs text-gray-500">
+                {depositFree ? "Deposit-free enabled" : "Refundable security deposit"}
+              </p>
+            </div>
+          </div>
+            <p
+            className={`text-lg font-extrabold ${
+              depositFree ? "text-gray-900" : "text-site-accent"
+            }`}
+          >
+            AED {depositFree ? securityDeposit.toLocaleString() : "0"}
+          </p>
+          </div>
       </div>
     </div>
   </>
 )}
-{mobileStep === 3 && (
-  <>
-   <div className="mt-3 rounded-2xl border border-gray-200 bg-gray-50 p-4 space-y-2">
+          {mobileStep === 3 && (
+             <>
+              <div className="mt-3 rounded-2xl border border-gray-200 bg-gray-50 p-4 space-y-2">
                   <div className="flex justify-between">
                     <span className="text-gray-500 text-sm font-semibold">
                       Rental Plan
@@ -1899,44 +1939,40 @@ const rangeDays =
                     <span>AED {formatMoney(frontendTotal)}</span>
                   </div>
                 </div>
+          <div className="mt-5 rounded-2xl border bg-gray-50 border-gray-200  p-4">
+            <h3 className="text-base font-extrabold text-gray-900 mb-3">Agreement</h3>
 
-               
-                    {/* Agreement Section */}
- <div className="mt-5 rounded-2xl border bg-gray-50 border-gray-200  p-4">
-  <h3 className="text-base font-extrabold text-gray-900 mb-3">Agreement</h3>
-
-  <label className="flex items-start gap-3 cursor-pointer">
-    <input
-      type="checkbox"
-      checked={agree}
-      onChange={(e) => setAgree(e.target.checked)}
-      className="mt-1 h-5 w-5 rounded border-gray-300 text-site-accent focus:ring-site-accent"
-    />
-    <div>
-      <p className="text-sm font-semibold  text-gray-900 flex items-center gap-2">
-        I agree to the terms and conditions
-        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 text-gray-600 text-xs font-bold">
-          i
-        </span>
-      </p>
-      <p className="text-xs text-gray-500 mt-1">
-        I have reviewed the rental agreement and agree to all stated terms and conditions
-      </p>
-    </div>
-  </label>
-
-  <div className="mt-4  border-t border-gray-200  p-3 flex gap-3">
-    <div className="text-yellow-500 text-lg">✍️</div>
-    <div>
-      <p className="text-sm font-bold text-gray-900">Physical Signature Required</p>
-      <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-        A physical copy of this agreement must be signed upon pickup or delivery of the vehicle.
-        This digital approval is for your convenience and does not replace the physical signature requirement.
-      </p>
-    </div>
-  </div>
-</div>
- <div className="mt-4 space-y-2">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={agree}
+                onChange={(e) => setAgree(e.target.checked)}
+                className="mt-1 h-5 w-5 rounded border-gray-300 text-site-accent focus:ring-site-accent"
+              />
+              <div>
+                <p className="text-sm font-semibold  text-gray-900 flex items-center gap-2">
+                  I agree to the terms and conditions
+                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 text-gray-600 text-xs font-bold">
+                    i
+                  </span>
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  I have reviewed the rental agreement and agree to all stated terms and conditions
+                </p>
+              </div>
+            </label>
+                <div className="mt-4  border-t border-gray-200  p-3 flex gap-3">
+                  <div className="text-yellow-500 text-lg">✍️</div>
+                  <div>
+                    <p className="text-sm font-bold text-gray-900">Physical Signature Required</p>
+                    <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                      A physical copy of this agreement must be signed upon pickup or delivery of the vehicle.
+                      This digital approval is for your convenience and does not replace the physical signature requirement.
+                    </p>
+                  </div>
+                </div>
+              </div>
+                <div className="mt-4 space-y-2">
                   <div className="flex justify-between text-sm font-bold text-site-accent">
                     <span>Pay Now</span>
                     <span>AED {formatMoney(frontendPayNow)}</span>
@@ -1948,17 +1984,10 @@ const rangeDays =
                       AED {formatMoney(frontendPayLater)}
                     </span>
                   </div>
-                </div>
-            
-
-             
-  </>
-)}
-
-
-
-
-</div>
+                </div>           
+            </>
+         )}
+  </div>
 <div className="border-t border-gray-200 bg-white p-4">
   {mobileStep === 1 && (
     <button
@@ -1990,29 +2019,23 @@ const rangeDays =
       </button>
     </div>
   )}
+  {mobileStep === 3 && (    
+    <div className="mt-4 flex items-center justify-between gap-3">
+        <button
+          onClick={handleCreateBooking}
+          disabled={!canPay || createLoading || !agree}
+          className={`${primaryBtn} mt-0 whitespace-nowrap ${
+            !agree ? "opacity-50 cursor-not-allowed" : ""
+          }`}
+        >
+          {createLoading ? "Redirecting..." : "Confirm & Pay"}
+        </button>
+      </div>
+        )}
+      </div>
 
-  {mobileStep === 3 && (
-    
-<div className="mt-4 flex items-center justify-between gap-3">
- 
-
-  <button
-    onClick={handleCreateBooking}
-    disabled={!canPay || createLoading || !agree}
-    className={`${primaryBtn} mt-0 whitespace-nowrap ${
-      !agree ? "opacity-50 cursor-not-allowed" : ""
-    }`}
-  >
-    {createLoading ? "Redirecting..." : "Confirm & Pay"}
-  </button>
-</div>
-  )}
-</div>
-
-</div>
-</div>
-
-        {/* Modal (optional) */}
+      </div>
+      </div>
         {showDeliveryPolicy && (
           <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center px-4">
             <div className="bg-white w-full max-w-md rounded-3xl p-6 border border-gray-200 shadow-xl">

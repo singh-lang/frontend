@@ -17,7 +17,6 @@ import {
 
 import type { SearchParams } from "@/types/catalog";
 import TopFiltersBar from "@/components/catalogue/TopFilterBar";
-
 interface PageProps {
   params: Promise<{ filterType: string; filterId: string }>;
   searchParams: Promise<SearchParams>;
@@ -35,6 +34,7 @@ export async function generateMetadata({
     robots: { index: true, follow: true },
   };
 }
+
 
 /* --------------------- PAGE --------------------- */
 export default async function Page({ params, searchParams }: PageProps) {
@@ -55,8 +55,7 @@ export default async function Page({ params, searchParams }: PageProps) {
     sp.startDate,
     sp.endDate,
   ].some(Boolean);
-
-  /* --------------------- FETCH CARS --------------------- */
+ 
   const apiRes = hasFilters
     ? await getFilteredData({ ...sp, page: String(currentPage) })
     : await getCatalogData(filterType, filterId, String(currentPage));
@@ -80,7 +79,7 @@ export default async function Page({ params, searchParams }: PageProps) {
         <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6">
           {/* LEFT SIDE FILTER PANEL */}
           <div className="w-full">
-            <SideFilterPanel />
+            <SideFilterPanel data={masterData} />
           </div>
 
           {/* RIGHT SIDE CAR LIST */}

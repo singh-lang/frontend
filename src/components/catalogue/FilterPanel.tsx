@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { MapPin, CalendarDays, User, ChevronDown } from "lucide-react";
+import { CarTypes } from "@/types/homePageTypes";
 
-export default function SideFilterPanel() {
+export default function SideFilterPanel({data}) {
   const [returnLocation, setReturnLocation] = useState(
     "Different return location",
   );
@@ -13,9 +14,21 @@ export default function SideFilterPanel() {
     "Jul 12, 11:00 AM - Jul 19, 11:00 AM",
   );
 
-  const tabs = ["All", "Economy", "Compact", "SUV"];
+const tabs = ["All", ...(data?.categories?.map(c => c.name) || [])];
   const [activeTab, setActiveTab] = useState("All");
+ useEffect(() => {
+  console.log("Cars:", data?.cars);
+}, [data]);
 
+  const filteredCars =
+  activeTab === "All"
+    ? data?.cars
+    : data?.cars?.filter(
+        (item) =>
+          item?.car?.category?.name
+            ?.toLowerCase()
+            ?.trim() === activeTab.toLowerCase().trim()
+      );
   return (
     <div className="w-full max-w-sm rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
       {/* Title */}
@@ -73,7 +86,7 @@ export default function SideFilterPanel() {
             get AED 100!
           </h4>
 
-          <p className="text-sm font-semibold text-white/90 mt-2">
+          <p className="text-sm font-semibold text-white mt-2">
             Earn AED 100 Dubai credit when you complete your first booking.
           </p>
 
@@ -82,23 +95,73 @@ export default function SideFilterPanel() {
           </button>
         </div>
       </div>
+    {filteredCars?.map((carItem) => (
+      <div key={carItem._id}>
+        <p className="text-xs text-gray-500">
+          {carItem?.car?.category || "Car"}
+        </p>
+      </div>
+    ))}
 
-      {/* Tabs */}
-      <div className="mt-6 flex items-center gap-5 border-b border-gray-200">
-        {tabs.map((t) => (
+    <div className="mt-6 border-b border-gray-200">
+      <div
+        className="
+          flex gap-6
+          overflow-x-auto
+          whitespace-nowrap
+          max-w-full
+          scrollbar-hide
+        "
+      >
+        {tabs.map((tab) => (
           <button
-            key={t}
-            onClick={() => setActiveTab(t)}
-            className={`pb-2 text-sm font-bold transition ${
-              activeTab === t
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`pb-2 text-sm font-bold flex-shrink-0 transition ${
+              activeTab === tab
                 ? "text-gray-900 border-b-2 border-site-accent"
                 : "text-gray-500 hover:text-gray-800"
             }`}
           >
-            {t}
+            {tab}
           </button>
         ))}
       </div>
+    </div>
+   <div className="mt-4 space-y-3">
+  {/* {filteredCars?.length > 0 ? (
+    filteredCars.map((carItem) => (
+      <div
+        key={carItem._id}
+        className="flex items-center gap-3 rounded-xl border p-3"
+      >
+        <img
+          src={carItem?.car?.image}
+          alt={carItem?.car?.name}
+          className="h-16 w-24 rounded-lg object-cover"
+        />
+
+        <div>
+          <p className="font-bold text-sm">
+            {carItem?.car?.name}
+          </p>
+
+          <p className="text-xs text-gray-500">
+            {carItem?.car?.category || "Car"}
+          </p>
+
+          <p className="text-xs font-semibold text-gray-700">
+            AED {carItem?.car?.price} / day
+          </p>
+        </div>
+      </div>
+    ))
+  ) : (
+    <p className="text-sm text-gray-500">
+      No cars found for this category
+    </p>
+  )} */}
+     </div>
     </div>
   );
 }

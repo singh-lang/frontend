@@ -155,7 +155,7 @@ export default function TopFiltersBar({ data }) {
   return (
     <>
       {/* TOP BAR */}
-      <div className="relative z-[9999] backdrop-blur-md">
+      <div className="relative z-10 backdrop-blur-md">
         <div className="w-full">
           <div className="max-w-[1100px] mx-auto px-4 sm:px-6">
             <div className="flex items-center justify-between gap-4">
@@ -167,12 +167,12 @@ export default function TopFiltersBar({ data }) {
                 type="button"
                 onClick={() => setOpenFullFilter(true)}
                 className="
-        flex items-center gap-2
-        bg-gradient-to-r from-site-accent to-slate-teal text-white
-        px-6 py-3 rounded-full
-        text-sm font-semibold
-        shadow-md hover:opacity-95 transition
-      "
+                flex items-center gap-2
+                bg-gradient-to-r from-site-accent to-slate-teal text-white
+                px-6 py-3 rounded-full
+                text-sm font-semibold
+                shadow-md hover:opacity-95 transition
+              "
               >
                 <SlidersHorizontal className="w-4 h-4" />
                 Filter
@@ -183,16 +183,15 @@ export default function TopFiltersBar({ data }) {
           <div
             ref={dropdownRef}
             className="
-    
-    rounded-[28px]
-    px-4 py-3
-    flex items-center gap-6
-    overflow-x-auto overflow-y-visible
-    whitespace-nowrap
-    scrollbar-hide  overscroll-x-contain 
-    md:flex-wrap md:overflow-visible md:whitespace-normal
-    relative z-50
-  "
+          rounded-[28px]
+          px-4 py-3
+          flex items-center gap-6
+          overflow-x-auto overflow-y-visible
+          whitespace-nowrap
+          scrollbar-hide  overscroll-x-contain 
+          md:flex-wrap md:overflow-visible md:whitespace-normal
+          relative z-50
+        "
           >
             {/* Deposit */}
             <div className="relative shrink-0 p-1 rounded-2xl">
@@ -217,25 +216,25 @@ export default function TopFiltersBar({ data }) {
               </button>
 
              {openDesktop.deposit && (
-  <div
-    onClick={(e) => e.stopPropagation()}
-    className="absolute left-0 top-full z-[9999] bg-white w-[220px] rounded-2xl shadow-xl border border-gray-100 p-4 ml-1"
-  >
-    <label className="flex items-center gap-1 py-1 text-sm text-gray-700">
-      <input
-        type="checkbox"
-        checked={noDeposit}
-        onChange={(e) => {
-          const checked = e.target.checked;
-          dispatch(setCatalogFilters({ noDeposit: checked }));
-          applyFilters({ noDeposit: checked });
-        }}
-        className="accent-site-primary"
-      />
-      No Deposit
-    </label>
-  </div>
-)}
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="absolute left-0 top-full z-[9999] bg-white w-[220px] rounded-2xl shadow-xl border border-gray-100 p-4 ml-1"
+            >
+              <label className="flex items-center gap-1 py-1 text-sm text-gray-700">
+                <input
+                  type="checkbox"
+                  checked={noDeposit}
+                  onChange={(e) => {
+                    const checked = e.target.checked;
+                    dispatch(setCatalogFilters({ noDeposit: checked }));
+                    applyFilters({ noDeposit: checked });
+                  }}
+                  className="accent-site-primary"
+                />
+                No Deposit
+              </label>
+            </div>
+          )}
 
             </div>
             <div className="relative shrink-0">
@@ -249,10 +248,10 @@ export default function TopFiltersBar({ data }) {
               >
                 <span
                   className="flex items-center justify-between
-               w-[220px] h-11 px-5
-               rounded-full border border-gray-200 bg-white
-               text-gray-800 text-sm font-medium
-               shadow-sm hover:shadow-md transition"
+                    w-[220px] h-11 px-5
+                    rounded-full border border-gray-200 bg-white
+                    text-gray-800 text-sm font-medium
+                    shadow-sm hover:shadow-md transition"
                 >
                   <span className="flex items-center gap-2">
                     <span className="text-sm font-medium text-gray-800">
@@ -262,9 +261,9 @@ export default function TopFiltersBar({ data }) {
                     {bodyType.length > 0 && (
                       <span
                         className="min-w-[22px] h-[22px] px-2
-                 flex items-center justify-center
-                 rounded-full bg-site-accent text-white
-                 text-xs font-semibold"
+                      flex items-center justify-center
+                      rounded-full bg-site-accent text-white
+                      text-xs font-semibold"
                       >
                         {bodyType.length}
                       </span>
@@ -342,7 +341,7 @@ export default function TopFiltersBar({ data }) {
           {/* LEFT DRAWER */}
           <div
             className="fixed left-0 top-0 h-screen w-[92%] max-w-[420px] bg-white flex flex-col shadow-2xl rounded-r-3xl overflow-hidden
-translate-x-0 transition-transform duration-300"
+              translate-x-0 transition-transform duration-300"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b bg-white sticky top-0 z-50">
@@ -359,7 +358,7 @@ translate-x-0 transition-transform duration-300"
             </div>
 
             {/* Body (scrollable) */}
-<div className="flex-1 overflow-y-auto px-5 py-5 space-y-3 bg-gray-50">
+            <div className="flex-1 overflow-y-auto px-5 py-5 space-y-3 bg-gray-50">
               <div className="relative bg-white rounded-3xl border border-gray-200 p-5 shadow-sm">
                 <button
                   type="button"
