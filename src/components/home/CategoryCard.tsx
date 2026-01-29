@@ -47,7 +47,7 @@ const CategoryCard = ({ category,  image, index }: CategoryCardProps) => {
   return (
     <Link
       href={`catalog/categories/${category._id}`}
-      className="flex-shrink-0 group relative h-[280px] sm:h-[320px] lg:h-[360px] w-full sm:w-[285px] rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-[1.02] animate-scale-in"
+      className="flex-shrink-0 group relative h-[280px] sm:h-[320px] lg:h-[360px] w-[250px] sm:w-[285px] rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-[1.02] animate-scale-in"
       style={{ animationDelay: `${index * 0.1}s` }}
     >
       <div
@@ -69,9 +69,10 @@ const CategoryCard = ({ category,  image, index }: CategoryCardProps) => {
             <div className="inline-block px-3 py-1 bg-gradient-to-r from-site-accent to-slate-teal backdrop-blur-sm rounded-full text-white text-xs font-semibold mb-4">
               {`${getCarCountLabel(category.totalCars)} Cars`}
             </div>
-            <h3 className="text-2xl font-bold text-white mb-3 leading-tight">
-              {category.name}
-            </h3>
+          <h3 className="text-lg sm:text-2xl font-bold text-white mb-3 leading-tight">
+          {category.name}
+        </h3>
+
             {/* <p className="text-white/90 text-base mb-4 font-medium">
               {category.description}
             </p> */}

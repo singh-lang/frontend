@@ -134,7 +134,7 @@ const CategoriesSection = ({ data }: CategoriesProps) => {
           <span className="text-site-accent font-bold text-xs uppercase tracking-wider mb-2 block">
             Explore Our Collection
           </span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-dark-base mb-4 tracking-tight leading-tight">
+          <h2 className="text-2xl sm:text-4xl lg:text-5xl font-semibold text-dark-base mb-4 tracking-tight leading-tight">
             Browse by Category
           </h2>
           <p className="text-sm sm:text-base md:text-lg text-grey mx-auto">

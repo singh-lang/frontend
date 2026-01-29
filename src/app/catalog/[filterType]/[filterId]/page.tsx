@@ -75,7 +75,7 @@ export default async function Page({ params, searchParams }: PageProps) {
       <CatalogHeader data={masterData} />
 
       {/* Main Layout */}
-      <div className="w-full max-w-[1500px] mx-auto px-4 py-8">
+      <div className="w-full max-w-[1400px] mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6">
           {/* LEFT SIDE FILTER PANEL */}
           <div className="w-full max-w-[400px] lg:max-w-none mx-auto lg:mx-0">

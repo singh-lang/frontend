@@ -109,7 +109,7 @@ const HeroFormLayout = ({ brands, bodyTypes }: SearchFormProps) => {
         <div className="relative w-full">
           {/* Search Icon */}
           <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 z-10">
-            <Search className="w-5 h-5" />
+            <Search className="hidden sm:inline  w-5 h-5" />
           </div>
 
           {/* Input */}
@@ -119,49 +119,54 @@ const HeroFormLayout = ({ brands, bodyTypes }: SearchFormProps) => {
             render={({ field }) => (
               <input
                 {...field}
-                placeholder="Search Your Dream Car..."
+                placeholder="Search Your Dream Car"
                 onFocus={() => {
                   if (field.value?.trim()) setIsSearchOpen(true);
                 }}
-                className="
-                  placeholder:text-white/70
-                  w-full
-                  h-14 sm:h-16
-                  rounded-2xl
-                  border border-gray-200
-                  bg-white/30 backdrop-blur-md
-                  pl-12
-                  pr-[135px] sm:pr-44
-                  text-sm sm:text-base font-medium
-                  text-gray-800
-                  outline-none
-                  shadow-sm
-                  focus:ring-2 focus:ring-site-accent/40
-                "
+               className="
+  placeholder:text-white/70
+  w-full
+  h-14 sm:h-16
+  rounded-2xl
+  border border-gray-200
+  bg-white/30 backdrop-blur-md
+  pl-12
+  pr-16 sm:pr-44
+  text-sm sm:text-base font-medium
+  text-gray-800
+  outline-none
+  shadow-sm
+  focus:ring-2 focus:ring-site-accent/40
+"
+
               />
             )}
           />
 
           {/* Button */}
-          <button
-            type="submit"
-            className="
-              absolute right-2 top-1/2 -translate-y-1/2
-              h-11 sm:h-14
-              px-3 sm:px-6
-              rounded-2xl
-              bg-gradient-to-r from-site-accent to-slate-teal
-              text-white font-semibold
-              shadow-md hover:shadow-lg
-              transition
-              flex items-center gap-2
-              whitespace-nowrap
-              text-xs sm:text-sm
-            "
-          >
-            <Search className="w-4 h-4" />
-            Explore Cars
-          </button>
+     <button
+  type="submit"
+  className="
+    absolute right-2 top-1/2 -translate-y-1/2
+    h-11 sm:h-14
+    px-3 sm:px-6
+    rounded-full sm:rounded-2xl
+    bg-transparent sm:bg-gradient-to-r sm:from-site-accent sm:to-slate-teal
+    text-gray-600 sm:text-white
+    font-semibold
+    shadow-none sm:shadow-md
+    hover:shadow-none sm:hover:shadow-lg
+    transition
+    flex items-center gap-2
+  "
+>
+  <Search className="w-5 h-5" />
+  <span className="hidden sm:inline text-sm">
+    Explore Cars
+  </span>
+</button>
+
+
 
           {/* Dropdown */}
           {isSearchOpen && (

@@ -148,10 +148,10 @@ const BrandCarousel = ({ data, speed = 60 }: BrandCarouselProps) => {
         <span className="text-site-accent font-bold text-xs uppercase tracking-wider mb-2 block">
           Explore Our Collection
         </span>
-        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-semibold text-dark-base tracking-tight leading-tight mb-6">
+        <h2 className="text-2xl sm:text-4xl lg:text-5xl font-semibold text-dark-base tracking-tight leading-tight mb-6">
           Browse by Brand
         </h2>
-        <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
+        <p className="text-base sm:text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
           Find the perfect vehicle from our curated collection of premium
           brands.
         </p>

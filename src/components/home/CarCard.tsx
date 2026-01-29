@@ -109,13 +109,13 @@ const CarCard = ({ car }: CarCardProps) => {
   );
 
   return (
-    <div className="shrink-0 h-fit w-full sm:w-85 bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 ease-out-cubic group border border-soft-grey/30">
+    <div className="shrink-0 h-fit w-[300px] sm:w-85 bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 ease-out-cubic group border border-soft-grey/30">
       <Link
         href={`/car/${car?._id ?? null}`}
         className="block"
         prefetch={false}
       >
-        <div className="relative h-40 md:h-44 overflow-hidden bg-linear-to-br from-slate-teal/5 to-transparent">
+        <div className="relative h-40 md:h-44  overflow-hidden bg-linear-to-br from-slate-teal/5 to-transparent">
           <Image
             src={imgSrc}
             alt={car.title}
@@ -147,7 +147,7 @@ const CarCard = ({ car }: CarCardProps) => {
             </p>
 
             <Link href={`/car/${car?._id ?? ""}`} prefetch={false}>
-              <h3 className="text-sm font-bold text-dark-base leading-snug whitespace-nowrap">
+            <h3 className="text-xs sm:text-sm font-bold text-dark-base leading-snug whitespace-nowrap">
                 {car.title}
               </h3>
             </Link>

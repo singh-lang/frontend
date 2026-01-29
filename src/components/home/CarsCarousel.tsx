@@ -149,10 +149,10 @@ export default function CarsCarousel({
                 </span>
               </div>
             )}
-            <h2 className={"text-3xl font-bold  text-dark-base lg:text-4xl"}>
+            <h2 className={"text-2xl font-bold  text-dark-base lg:text-4xl"}>
               {sectionTitle}
             </h2>
-            <p className="text-grey text-base max-w-2xl">
+            <p className="text-grey mt-2 text-base max-w-2xl">
               {sectionDescription}
             </p>
           </div>

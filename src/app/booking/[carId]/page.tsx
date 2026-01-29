@@ -693,17 +693,23 @@ const rangeDays =
                   )}
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    const err = validateStep1();
-                    setStep(2);
-                    setMaxStepReached(2);
-                  }}
-                  className={primaryBtn}
-                >
-                  Next
-                </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const err = validateStep1();
+                  if (err) {
+                    toast.error(err); // ✅ error show hoga
+                    return;           // ❌ step aage nahi jayega
+                  }
+
+                  setStep(2);
+                  setMaxStepReached(2);
+                }}
+                className={primaryBtn}
+              >
+                Next
+              </button>
+
               </div>
             )}
 
@@ -931,21 +937,22 @@ const rangeDays =
                   </button>
 
                   <button
-                    type="button"
-                    onClick={() => {
-                      const err1 = validateStep1();
-                      if (err1) return toast.error(err1);
+                  type="button"
+                  onClick={() => {
+                    const err1 = validateStep1();
+                    if (err1) return toast.error(err1);
 
-                      const err2 = validateStep2();
-                      if (err2) return toast.error(err2);
+                    const err2 = validateStep2();
+                    if (err2) return toast.error(err2);
 
-                      setStep(3);
-                      setMaxStepReached(3);
-                    }}
-                    className={`${primaryBtn} h-12 w-1/2`}
-                  >
-                    Next
-                  </button>
+                    setStep(3);
+                    setMaxStepReached(3);
+                  }}
+                  className={`${primaryBtn} h-12 w-1/2`}
+                >
+                  Next
+                </button>
+
                 </div>
               </div>
             )}
