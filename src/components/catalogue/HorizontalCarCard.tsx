@@ -31,6 +31,7 @@ const CompactCarCard = ({ car }: CompactCarCardProps) => {
   const [showDetails, setShowDetails] = useState(false);
   const [activeTab, setActiveTab] = useState<DetailTabType>("carInfo");
   const [createClick] = useCreateClickMutation();
+  const [isHovering, setIsHovering] = useState(false);
 
   const imageUrl = car?.car?.images?.[0]?.url || "/assets/car_placeholder.png";
 
@@ -108,19 +109,29 @@ const CompactCarCard = ({ car }: CompactCarCardProps) => {
       return next;
     });
   };
-
+const handleMouseEnter = () => setIsHovering(true);
+  const handleMouseLeave = () => {
+    setIsHovering(false);
+  };
   return (
-    <div className="w-full rounded-2xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition overflow-hidden">
+    <div className="w-full group rounded-2xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition overflow-hidden">
       <div className="flex flex-col md:flex-row">
         {/* Image */}
-        <div className="relative w-full md:w-[34%] h-[190px] md:h-[180px] bg-gray-100">
+<div
+  className="relative w-full md:w-[34%] h-[190px] md:h-[180px] bg-gray-100 overflow-hidden"
+  onMouseEnter={handleMouseEnter}
+  onMouseLeave={handleMouseLeave}
+>
           <Image
-            src={imageUrl}
-            alt={car?.title || "car"}
-            fill
-            className="object-cover"
-            sizes="(max-width:768px) 100vw, 35vw"
-          />
+  src={imageUrl}
+  alt={car?.title || "car"}
+  fill
+  className={`object-cover transition-transform duration-500 ease-out ${
+    isHovering ? "scale-[1.1]" : "scale-100"
+  }`}
+  sizes="(max-width:768px) 100vw, 35vw"
+/>
+
 
           {/* Tag */}
           <div className="absolute top-3 left-3 bg-white/90 px-3 py-1 rounded-full text-xs font-semibold text-gray-700">

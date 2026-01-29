@@ -340,7 +340,7 @@ export default function TopFiltersBar({ data }) {
         <div className="fixed inset-0 z-[99999] bg-black/50 backdrop-blur-[2px] flex">
           {/* LEFT DRAWER */}
           <div
-            className="fixed left-0 top-0 h-screen w-[92%] max-w-[420px] bg-white flex flex-col shadow-2xl rounded-r-3xl overflow-hidden
+            className="fixed left-0 top-0 h-screen w-[100%] max-w-[420px] bg-white flex flex-col shadow-2xl rounded-r-3xl overflow-hidden
               translate-x-0 transition-transform duration-300"
           >
             {/* Header */}

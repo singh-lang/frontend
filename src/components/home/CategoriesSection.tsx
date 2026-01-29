@@ -137,7 +137,7 @@ const CategoriesSection = ({ data }: CategoriesProps) => {
           <h2 className="text-2xl sm:text-4xl lg:text-5xl font-semibold text-dark-base mb-4 tracking-tight leading-tight">
             Browse by Category
           </h2>
-          <p className="text-sm sm:text-base md:text-lg text-grey mx-auto">
+          <p className="text-base sm:text-base md:text-lg text-grey mx-auto">
             Find the perfect vehicle from our curated collection of premium
             automobiles
           </p>
