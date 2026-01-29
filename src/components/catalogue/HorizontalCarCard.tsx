@@ -117,20 +117,20 @@ const handleMouseEnter = () => setIsHovering(true);
     <div className="w-full group rounded-2xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition overflow-hidden">
       <div className="flex flex-col md:flex-row">
         {/* Image */}
-<div
-  className="relative w-full md:w-[34%] h-[190px] md:h-[180px] bg-gray-100 overflow-hidden"
-  onMouseEnter={handleMouseEnter}
-  onMouseLeave={handleMouseLeave}
->
-          <Image
-  src={imageUrl}
-  alt={car?.title || "car"}
-  fill
-  className={`object-cover transition-transform duration-500 ease-out ${
-    isHovering ? "scale-[1.1]" : "scale-100"
-  }`}
-  sizes="(max-width:768px) 100vw, 35vw"
-/>
+        <div
+          className="relative w-full md:w-[34%] h-[190px] md:h-[180px] bg-gray-100 overflow-hidden"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+        >
+                  <Image
+          src={imageUrl}
+          alt={car?.title || "car"}
+          fill
+          className={`object-cover transition-transform duration-500 ease-out ${
+            isHovering ? "scale-[1.1]" : "scale-100"
+          }`}
+          sizes="(max-width:768px) 100vw, 35vw"
+        />
 
 
           {/* Tag */}
@@ -142,34 +142,39 @@ const handleMouseEnter = () => setIsHovering(true);
         {/* Content */}
         <div className="w-full md:w-[66%] p-4 flex flex-col gap-2 relative pb-2">
           {/* Title + Period Buttons */}
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-site-accent">
-                {car?.car?.carBrand?.name || ""}
-              </p>
+         <div className="flex flex-col gap-1">
+  {/* Row 1: Brand + Period */}
+        <div className="flex items-center justify-between gap-2">
+          {/* Brand */}
+          <p className="text-xs font-semibold text-site-accent truncate">
+            {car?.car?.carBrand?.name || ""}
+          </p>
 
-              <h3 className="text-base font-extrabold text-gray-900 truncate leading-tight">
-                {car?.title}
-              </h3>
-            </div>
-
-            <div className="flex items-center gap-2 mt-2">
-              {(["daily", "weekly", "monthly"] as const).map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setPeriod(p)}
-                  className={`px-3 py-1 rounded-full text-xs font-semibold transition ${
-                    period === p
-                      ? "bg-gradient-to-r from-site-accent to-slate-teal text-white shadow"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
-                >
-                  {p.charAt(0).toUpperCase() + p.slice(1)}
-                </button>
-              ))}
-            </div>
+          {/* Period buttons */}
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {(["daily", "weekly", "monthly"] as const).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPeriod(p)}
+                className={`px-2.5 py-1 rounded-full text-[11px] font-semibold transition whitespace-nowrap ${
+                  period === p
+                    ? "bg-gradient-to-r from-site-accent to-slate-teal text-white shadow"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+              >
+                {p.charAt(0).toUpperCase() + p.slice(1)}
+              </button>
+            ))}
           </div>
+        </div>
+
+        {/* Row 2: Car Name */}
+        <h3 className="text-base font-extrabold text-gray-900 leading-tight line-clamp-2">
+          {car?.title}
+        </h3>
+      </div>
+
 
           {/* Specs */}
           <div className="flex flex-wrap gap-3">

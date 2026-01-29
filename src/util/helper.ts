@@ -166,8 +166,6 @@ export function fetchCars(args: {
 
   const finalUrl = `?${params.toString()}`;
 
-  const loadingToast = toast.loading("Loading Cars...");
-
   /* FILTER MODE */
   if (hasActive || Object.keys(searchFilters).length > 0) {
     const sendFilters = hasActive ? filters : { ...searchFilters, page, sort };
@@ -177,8 +175,7 @@ export function fetchCars(args: {
       .then((res) => {
         setCars(res.data);
         router.push(finalUrl, { scroll: false });
-      })
-      .finally(() => toast.dismiss(loadingToast));
+      });
 
     return;
   }
@@ -189,6 +186,5 @@ export function fetchCars(args: {
     .then((res) => {
       setCars(res.data);
       router.push(finalUrl, { scroll: false });
-    })
-    .finally(() => toast.dismiss(loadingToast));
+    });
 }

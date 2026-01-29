@@ -139,12 +139,38 @@ const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([
   null,
 ]);
 const [startDate, endDate] = dateRange;
+const validateMobileStep1 = (): string | null => {
+  if (!startDate) return "Please select pickup date";
+  if (!endDate) return "Please select drop-off date";
+  if (!pickupTime) return "Please select pickup time";
+  if (!dropoffTime) return "Please select drop-off time";
+   if ((pickupType === "DELIVERY" || returnType === "RETURN") && !emirateId)
+      return "Please select emirate for delivery/return pricing";
+    if (pickupType === "DELIVERY" && !address.trim())
+      return "Delivery address is required";
+  return null;
+};
+
 const handleContinue = () => {
-  if (!startDate || !endDate) return;
+  const err = validateMobileStep1();
+  if (err) {
+    toast.error(err);   // ✅ ab aayega
+    return;
+  }
   setMobileStep(2);
 };
+const validateMobileStep2 = (): string | null => {
+   if (!guestName.trim()) return "Full name is required";
+    if (!guestPhone.trim()) return "Phone number is required";
+    if (!guestEmail.trim()) return "Email address is required";
+  return null;
+};
 const handleNextStep = async () => {
-  
+   const err = validateMobileStep2();
+  if (err) {
+    toast.error(err);   // ✅ ab aayega
+    return;
+  }
   await handleCalculate();
   setMobileStep(3);
 };
@@ -916,12 +942,12 @@ const rangeDays =
                     </div>
 
                     <p
-              className={`text-lg font-semibold ${
-                depositFree ? "text-gray-900" : "text-site-accent"
-              }`}
-            >
-              AED {depositFree ? securityDeposit.toLocaleString() : "0"}
-            </p>
+                    className={`text-lg font-semibold ${
+                      depositFree ? "text-gray-900" : "text-site-accent"
+                    }`}
+                  >
+                    AED {depositFree ? securityDeposit.toLocaleString() : "0"}
+                  </p>
 
                   </div>
                 </div>
@@ -1007,9 +1033,7 @@ const rangeDays =
                     </div>
                   </div>
                 </div>
-
-                {/* Addons */}
-                <div className={card}>
+ <div className={card}>
   <div className="flex items-center justify-between mb-4">
     <div>
       <p className="font-semibold text-dark-base">Add-ons</p>
@@ -1021,7 +1045,6 @@ const rangeDays =
           : "Optional"}
       </p>
     </div>
-
     <button
       type="button"
       disabled={vendorAddons.length === 0}
@@ -1041,9 +1064,7 @@ const rangeDays =
       />
     </button>
   </div>
-
-
-              {addonsOpen && (
+  {addonsOpen && (
     <div className="space-y-2">
       {vendorAddons.length === 0 ? (
         <p className="text-sm text-gray-500 text-center py-4">
@@ -1087,36 +1108,30 @@ const rangeDays =
     </div>
   )}
 </div>
-
-           
-                {/* Buttons */}
-                <div className="flex gap-4">
-                  <button
-                    type="button"
-                    onClick={() => setStep(2)}
-                    className="h-12 w-1/2 rounded-2xl border border-gray-200 font-bold text-gray-700 hover:bg-gray-50 transition"
-                  >
-                    Back
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={async () => {
-                      const err = validateAll();
-
-                      await handleCalculate();
-                      setMaxStepReached(4); // ✅ Your Details completed
-                    }}
-                    disabled={calcLoading}
-                    className={`${primaryBtn} h-12 w-1/2`}
-                  >
-                    {calcLoading ? "Calculating..." : "Calculate Price"}
-                  </button>
-                </div>
-              </div>
-            )}
+      <div className="flex gap-4">
+        <button
+          type="button"
+          onClick={() => setStep(2)}
+            className="h-12 w-1/2 rounded-2xl border border-gray-200 font-bold text-gray-700 hover:bg-gray-50 transition"
+            >
+            Back
+        </button>
+          <button
+              type="button"
+              onClick={async () => {
+                const err = validateAll();
+                await handleCalculate();
+                  setMaxStepReached(4); // ✅ Your Details completed
+                }}
+                disabled={calcLoading}
+                className={`${primaryBtn} h-12 w-1/2`}
+                >
+              {calcLoading ? "Calculating..." : "Calculate Price"}
+          </button>
           </div>
-
+        </div>
+        )}
+    </div>                         
           {/* RIGHT SUMMARY */}
           <div className="hidden md:block lg:sticky lg:top-6 h-fit">
             <div className="bg-white rounded-3xl border border-gray-200 shadow-[0_12px_40px_rgba(15,23,42,0.06)] p-5">
@@ -1240,7 +1255,7 @@ const rangeDays =
                 <button
                   onClick={handleCreateBooking}
                   disabled={!canPay || createLoading}
-                  className={`mt-4 ${primaryBtn}`}
+                  className={`mt-4 text-white ${primaryBtn}`}
                 >
                   {createLoading ? "Redirecting..." : "Confirm & Pay"}
                 </button>
@@ -1253,51 +1268,50 @@ const rangeDays =
                 )}
               </div>
             </div>
-          </div>
-        
-<div className="lg:hidden fixed inset-0 bg-white z-40 flex flex-col">
-  <div className="p-4 border-b border-gray-200 bg-white">
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-3">
-      <div className="flex items-start gap-3">
-        {carImages.length > 0 ? (
-          <img
-            src={carImages[0]}
-            alt="car"
-            className="w-[120px] h-[90px] rounded-xl object-cover border border-gray-200"
-          />
-        ) : (
-          <div className="w-[120px] h-[90px] rounded-xl flex items-center justify-center bg-gray-100 text-gray-400 font-bold border border-gray-200">
-            No Image
-          </div>
-        )}
+          </div>      
+      <div className="lg:hidden fixed inset-0 bg-white z-40 flex flex-col">
+        <div className="p-4 border-b border-gray-200 bg-white">
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-3">
+            <div className="flex items-start gap-3">
+              {carImages.length > 0 ? (
+                <img
+                  src={carImages[0]}
+                  alt="car"
+                  className="w-[120px] h-[90px] rounded-xl object-cover border border-gray-200"
+                />
+              ) : (
+                <div className="w-[120px] h-[90px] rounded-xl flex items-center justify-center bg-gray-100 text-gray-400 font-bold border border-gray-200">
+                  No Image
+                </div>
+              )}
 
-        <div className="flex-1">
-          <p className="text-xs font-bold text-site-accent uppercase tracking-wide">
-            {carData?.car?.carBrand?.name || "Brand"}
-          </p>
+              <div className="flex-1">
+                <p className="text-xs font-bold text-site-accent uppercase tracking-wide">
+                  {carData?.car?.carBrand?.name || "Brand"}
+                </p>
 
-          <p className="text-base font-extrabold text-gray-900 leading-snug">
-            {carLoading ? "Loading..." : carData?.title || "Car Name"}
-          </p>
+                <p className="text-base font-extrabold text-gray-900 leading-snug">
+                  {carLoading ? "Loading..." : carData?.title || "Car Name"}
+                </p>
 
-          <p className="text-sm font-bold text-gray-700">
-            {carLoading ? "" : carData?.car?.modelYear || ""}
-          </p>
-          <div className="flex items-center gap-6">
-            <p className="text-xs font-extrabold text-gray-600 leading-snug flex items-center gap-2">
-              <Users className="w-3 h-3 text-site-accent" />
-              {carLoading ? "Loading..." : carData?.car?.seatingCapacity || "Car Name"}
-            </p>
+                <p className="text-sm font-bold text-gray-700">
+                  {carLoading ? "" : carData?.car?.modelYear || ""}
+                </p>
+                <div className="flex items-center gap-6">
+                  <p className="text-xs font-extrabold text-gray-600 leading-snug flex items-center gap-2">
+                    <Users className="w-3 h-3 text-site-accent" />
+                    {carLoading ? "Loading..." : carData?.car?.seatingCapacity || "Car Name"}
+                  </p>
 
-            <p className="text-xs font-extrabold text-gray-600 leading-snug flex items-center gap-2">
-              <Settings className="w-3 h-3 text-site-accent" />
-              {carLoading ? "Loading..." : carData?.car?.transmission || "Car Name"}
-            </p>
+                  <p className="text-xs font-extrabold text-gray-600 leading-snug flex items-center gap-2">
+                    <Settings className="w-3 h-3 text-site-accent" />
+                    {carLoading ? "Loading..." : carData?.car?.transmission || "Car Name"}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
-  </div>
   <div className="flex-1 overflow-y-auto p-4 ">
 
     {mobileStep === 1 && (
@@ -1537,7 +1551,6 @@ const rangeDays =
               minDate={new Date()}
               calendarClassName="mobileRangeCalendar"
             />
-
           </div>
         </div>
       </>
@@ -1550,7 +1563,6 @@ const rangeDays =
         Booking Summary
       </p>
     </div>
-
     <div className="rounded-2xl border border-gray-200  p-4">
       <div className="space-y-3 text-sm font-semibold text-gray-700">
 
@@ -1701,7 +1713,6 @@ const rangeDays =
               />
             </button>
           </div>
-
           {/* ADD-ONS LIST */}
           {mobileAddonsOpen && (
             <div className="mt-3 space-y-2">
@@ -1812,59 +1823,59 @@ const rangeDays =
           </div>
         )}
                {/* SECURITY DEPOSIT TOGGLE */}
-      <div className="flex items-center justify-between border-t border-gray-200 pb-3 mt-4">
-        <div>
-          <p className="font-semibold text-gray-900 pt-3">
-            Security Deposit
-          </p>
+              <div className="flex items-center justify-between border-t border-gray-200 pb-3 mt-4">
+                <div>
+                  <p className="font-semibold text-gray-900 pt-3">
+                    Security Deposit
+                  </p>
 
-          <p className="text-sm text-gray-600 p-2">
-            Refunded within 21 days after you return the car
-          </p>
-        </div>
+                  <p className="text-sm text-gray-600 p-2">
+                    Refunded within 21 days after you return the car
+                  </p>
+                </div>
 
-        <button
-          type="button"
-          onClick={() => setDepositFree((prev) => !prev)}
-          className={`relative w-12 h-6 rounded-full transition-colors ${
-            depositFree ? "bg-site-accent" : "bg-gray-300"
-          }`}
-        >
-          <span
-            className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-              depositFree ? "translate-x-6" : ""
-            }`}
-          />
-        </button>
-      </div>
-        {/* SECURITY DEPOSIT AMOUNT */}
-        <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
-              💳
+                <button
+                  type="button"
+                  onClick={() => setDepositFree((prev) => !prev)}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${
+                    depositFree ? "bg-site-accent" : "bg-gray-300"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                      depositFree ? "translate-x-6" : ""
+                    }`}
+                  />
+                </button>
+              </div>
+                {/* SECURITY DEPOSIT AMOUNT */}
+                <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
+                      💳
+                    </div>
+
+                    <div>
+                      <p className="font-semibold text-gray-900">
+                        Deposit Amount
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {depositFree ? "Deposit-free enabled" : "Refundable security deposit"}
+                      </p>
+                    </div>
+                  </div>
+                    <p
+                    className={`text-lg font-extrabold ${
+                      depositFree ? "text-gray-900" : "text-site-accent"
+                    }`}
+                  >
+                    AED {depositFree ? securityDeposit.toLocaleString() : "0"}
+                  </p>
+                  </div>
+              </div>
             </div>
-
-            <div>
-              <p className="font-semibold text-gray-900">
-                Deposit Amount
-              </p>
-              <p className="text-xs text-gray-500">
-                {depositFree ? "Deposit-free enabled" : "Refundable security deposit"}
-              </p>
-            </div>
-          </div>
-            <p
-            className={`text-lg font-extrabold ${
-              depositFree ? "text-gray-900" : "text-site-accent"
-            }`}
-          >
-            AED {depositFree ? securityDeposit.toLocaleString() : "0"}
-          </p>
-          </div>
-      </div>
-    </div>
-  </>
-)}
+          </>
+        )}
           {mobileStep === 3 && (
              <>
               <div className="mt-3 rounded-2xl border border-gray-200 bg-gray-50 p-4 space-y-2">
@@ -1876,7 +1887,6 @@ const rangeDays =
                       {priceType}
                     </span>
                   </div>
-
                   <div className="flex justify-between items-center text-sm font-semibold w-full">
                     <span className="text-gray-500">Method</span>
                     <span className="font-semibold text-gray-900">
@@ -1889,7 +1899,6 @@ const rangeDays =
                             : "Pickup"}
                     </span>
                   </div>
-
                   {pickupType === "DELIVERY" && address && (
                     <div className="text-xs text-gray-500 bg-soft-grey/30 rounded-xl p-2">
                       {address}
@@ -1903,7 +1912,6 @@ const rangeDays =
                         AED {formatMoney(calc?.totalAmount || 0)}
                       </span>
                     </div>
-
                     {pickupReturnCharges.pickup > 0 && (
                       <div className="flex justify-between text-sm font-semibold text-gray-700">
                         <span>Pickup charge:</span>
@@ -1912,7 +1920,6 @@ const rangeDays =
                         </span>
                       </div>
                     )}
-
                     {pickupReturnCharges.return > 0 && (
                       <div className="flex justify-between text-sm font-semibold text-gray-700">
                         <span>Return charge:</span>
@@ -1921,7 +1928,6 @@ const rangeDays =
                         </span>
                       </div>
                     )}
-
                     {depositFreeFee > 0 && (
                       <div className="flex justify-between text-sm font-semibold text-gray-700">
                         <span>Deposit-free fee:</span>
@@ -1930,7 +1936,6 @@ const rangeDays =
                         </span>
                       </div>
                     )}
-
                     {addonsTotal > 0 && (
                       <div className="flex justify-between text-sm font-semibold text-gray-700">
                         <span>Add-ons:</span>
@@ -1940,7 +1945,6 @@ const rangeDays =
                       </div>
                     )}
                   </div>
-
                   <div className="flex justify-between text-base font-extrabold text-gray-900 pt-3 border-t border-gray-200">
                     <span>Total Price:</span>
                     <span>AED {formatMoney(frontendTotal)}</span>
@@ -1948,7 +1952,6 @@ const rangeDays =
                 </div>
           <div className="mt-5 rounded-2xl border bg-gray-50 border-gray-200  p-4">
             <h3 className="text-base font-extrabold text-gray-900 mb-3">Agreement</h3>
-
             <label className="flex items-start gap-3 cursor-pointer">
               <input
                 type="checkbox"
@@ -1956,7 +1959,6 @@ const rangeDays =
                 onChange={(e) => setAgree(e.target.checked)}
                 className="mt-1 h-5 w-5 rounded border-gray-300 text-site-accent focus:ring-site-accent"
               />
-              <div>
                 <p className="text-sm font-semibold  text-gray-900 flex items-center gap-2">
                   I agree to the terms and conditions
                   <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 text-gray-600 text-xs font-bold">
@@ -1966,7 +1968,6 @@ const rangeDays =
                 <p className="text-xs text-gray-500 mt-1">
                   I have reviewed the rental agreement and agree to all stated terms and conditions
                 </p>
-              </div>
             </label>
                 <div className="mt-4  border-t border-gray-200  p-3 flex gap-3">
                   <div className="text-yellow-500 text-lg">✍️</div>
@@ -1978,7 +1979,7 @@ const rangeDays =
                     </p>
                   </div>
                 </div>
-              </div>
+             </div>
                 <div className="mt-4 space-y-2">
                   <div className="flex justify-between text-sm font-bold text-site-accent">
                     <span>Pay Now</span>
@@ -1992,56 +1993,63 @@ const rangeDays =
                     </span>
                   </div>
                 </div>           
-            </>
-         )}
-  </div>
-<div className="border-t border-gray-200 bg-white p-4">
-  {mobileStep === 1 && (
-    <button
-      type="button"
-      disabled={!startDate || !endDate}
-      onClick={handleContinue}
-      className="w-full rounded-2xl bg-site-accent py-4 text-white font-extrabold text-lg shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-    >
-      Continue {startDate && endDate ? `(${rangeDays} days)` : ""}
-    </button>
-  )}
-
-  {mobileStep === 2 && (
-    <div className="flex gap-3">
+             </>
+          )}
+       </div>
+    <div className="border-t border-gray-200 bg-white p-4">
+    {mobileStep === 1 && (
       <button
         type="button"
-        onClick={() => setMobileStep(1)}
-        className="w-1/2 rounded-2xl border border-gray-200 py-4 text-gray-800 font-extrabold text-lg"
+        onClick={handleContinue}   
+        className="w-full rounded-2xl  bg-gradient-to-r from-site-accent to-slate-teal py-4 text-white font-extrabold text-lg shadow-md"
       >
-        Back
+        Continue {startDate && endDate ? `(${rangeDays} days)` : ""}
       </button>
-
-      <button
-        type="button"
-        onClick={handleNextStep}
-        className="w-1/2 rounded-2xl bg-site-accent py-4 text-white font-extrabold text-lg shadow-md"
-      >
-        Next
-      </button>
-    </div>
-  )}
-  {mobileStep === 3 && (    
-    <div className="mt-4 flex items-center justify-between gap-3">
+    )}
+    {mobileStep === 2 && (
+      <div className="flex gap-3">
         <button
-          onClick={handleCreateBooking}
-          disabled={!canPay || createLoading || !agree}
-          className={`${primaryBtn} mt-0 whitespace-nowrap ${
-            !agree ? "opacity-50 cursor-not-allowed" : ""
-          }`}
+          type="button"
+          onClick={() => setMobileStep(1)}
+          className="w-1/2 rounded-2xl border border-gray-200 py-4 text-gray-800 font-extrabold text-lg"
         >
-          {createLoading ? "Redirecting..." : "Confirm & Pay"}
+          Back
+        </button>
+        <button
+          type="button"
+          onClick={handleNextStep}
+          className="w-1/2 rounded-2xl  bg-gradient-to-r from-site-accent to-slate-teal py-4 text-white font-extrabold text-lg shadow-md"
+        >
+          Next
         </button>
       </div>
-        )}
-      </div>
-
-      </div>
+    )}
+      {mobileStep === 3 && (
+        <div className="mt-4 flex gap-3">
+           <button
+             type="button"
+              onClick={() => setMobileStep(2)}
+              className="flex-1 rounded-2xl border border-gray-200 py-4 text-gray-800 font-extrabold text-lg"
+              >
+               Back
+            </button>
+              <button
+                onClick={handleCreateBooking}
+                disabled={!canPay || createLoading || !agree}
+                className={`flex-1 rounded-2xl py-4 text-lg font-extrabold whitespace-nowrap transition
+                  ${
+                    !agree || !canPay
+                      ? "bg-site-accent opacity-50  text-white cursor-not-allowed"
+                      : " bg-gradient-to-r from-site-accent to-slate-teal text-white shadow-md"
+                  }
+                `}
+              >
+                {createLoading ? "Redirecting..." : "Confirm & Pay"}
+              </button>
+            </div>
+          )}
+          </div>
+        </div>
       </div>
         {showDeliveryPolicy && (
           <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center px-4">
@@ -2077,8 +2085,6 @@ const rangeDays =
           </div>
         )}
       </div>
-
-    
     </div>
   );
 }
