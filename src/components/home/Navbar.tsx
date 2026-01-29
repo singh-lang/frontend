@@ -37,17 +37,17 @@ export default function Navbar() {
         <div className="px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between py-5">
            <Link href="/" className="flex items-center group">
-          <Image
-            src="/assets/logoo.svg"
-            alt="The Drive Hub"
-            height={40}
-            width={40}
-            className="h-10 sm:h-12 w-auto transition-transform duration-300 group-hover:scale-105"
-          />
-        </Link>
+            <Image
+              src="/assets/logoo.svg"
+              alt="The Drive Hub"
+              height={40}
+              width={40}
+              className="h-10 sm:h-12 w-auto transition-transform duration-300 group-hover:scale-105"
+            />
+          </Link>
 
 
-            {/* Desktop Menu */}
+          {/* Desktop Menu */}
             <div className="hidden lg:flex items-center gap-1">
               <Link
                 href="/catalog/all/cars"

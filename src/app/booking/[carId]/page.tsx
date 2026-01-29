@@ -1959,15 +1959,24 @@ const rangeDays =
                 onChange={(e) => setAgree(e.target.checked)}
                 className="mt-1 h-5 w-5 rounded border-gray-300 text-site-accent focus:ring-site-accent"
               />
-                <p className="text-sm font-semibold  text-gray-900 flex items-center gap-2">
-                  I agree to the terms and conditions
-                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 text-gray-600 text-xs font-bold">
-                    i
-                  </span>
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  I have reviewed the rental agreement and agree to all stated terms and conditions
-                </p>
+               <div className="flex flex-col">
+  {/* Row 1 */}
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-semibold text-gray-900">
+              I agree to the terms and conditions
+            </p>
+
+            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 text-gray-600 text-xs font-bold">
+              i
+            </span>
+          </div>
+
+          {/* Row 2 */}
+          <p className="text-xs text-gray-500 mt-1">
+            I have reviewed the rental agreement and agree to all stated terms and conditions
+          </p>
+        </div>
+
             </label>
                 <div className="mt-4  border-t border-gray-200  p-3 flex gap-3">
                   <div className="text-yellow-500 text-lg">✍️</div>

@@ -439,14 +439,7 @@ const handleMouseEnter = () => setIsHovering(true);
                       </span>
                     </div>
 
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500 font-medium">
-                        Security Deposit
-                      </span>
-                      <span className="text-gray-900 font-semibold">
-                        AED {(car?.securityDeposit || 0).toLocaleString()}
-                      </span>
-                    </div>
+                   
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-500 font-medium">
                         Extra Mileage Rate
@@ -549,37 +542,36 @@ const handleMouseEnter = () => setIsHovering(true);
             {/* RIGHT BOX */}
             <div className="bg-white rounded-2xl border border-gray-200 p-4">
               <h3 className="text-base font-bold text-gray-900 mb-3">
-                Car info
+                 Important Information
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="rounded-2xl border border-gray-200 bg-gray-50 p-3">
-                  <p className="text-xs text-gray-500 font-semibold">Mileage</p>
+                  <p className="text-xs text-gray-500 font-semibold">Security Deposit</p>
                   <p className="text-sm font-bold text-gray-900">
-                    {price?.mileage || 250} km/day
+                     AED {(car?.securityDeposit || 0).toLocaleString()}
+
                   </p>
                 </div>
+ 
+                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-3">
+                  <p className="text-xs text-gray-500 font-semibold">
+                    Minimum Rental Days
+                  </p>
+                  <p className="text-sm font-bold text-gray-900">
+                        {car?.minRentalDays || "-"}
+                  </p>
+                </div>  
 
                 <div className="rounded-2xl border border-gray-200 bg-gray-50 p-3">
                   <p className="text-xs text-gray-500 font-semibold">
-                    Transmission
+                    Extra Mileage Rate
                   </p>
                   <p className="text-sm font-bold text-gray-900">
-                    {car?.car?.transmission || "-"}
+                    AED {(car?.extraMileageRate || 0).toLocaleString()}
                   </p>
                 </div>
-
-                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-3">
-                  <p className="text-xs text-gray-500 font-semibold">
-                    Insurance
-                  </p>
-                  <p className="text-sm font-bold text-gray-900">
-                    {car?.car?.carInsurance === "yes"
-                      ? "Insurance Included"
-                      : "Not Included"}
-                  </p>
-                </div>
-
+                
                 <div className="rounded-2xl border border-gray-200 bg-gray-50 p-3">
                   <p className="text-xs text-gray-500 font-semibold">
                     Body Type

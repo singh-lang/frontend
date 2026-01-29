@@ -51,7 +51,7 @@ export default function TopFiltersBar({ data }) {
   const [openDesktop, setOpenDesktop] = useState({
     deposit: false,
     price: false,
-    bodyType: false,
+    brand: false,
     sort: false,
   });
 
@@ -65,7 +65,7 @@ export default function TopFiltersBar({ data }) {
     setOpenDesktop({
       deposit: false,
       price: false,
-      bodyType: false,
+      brand: false,
       sort: false,
       [key]: true,
     });
@@ -75,7 +75,7 @@ export default function TopFiltersBar({ data }) {
     setOpenDesktop({
       deposit: false,
       price: false,
-      bodyType: false,
+      brand: false,
       sort: false,
     });
   };
@@ -242,7 +242,7 @@ export default function TopFiltersBar({ data }) {
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  openDesktop.bodyType ? closeAll() : openFilter("bodyType");
+                  openDesktop.brand ? closeAll() : openFilter("brand");
                 }}
                 className="flex items-center"
               >
@@ -255,17 +255,17 @@ export default function TopFiltersBar({ data }) {
                 >
                   <span className="flex items-center gap-2">
                     <span className="text-sm font-medium text-gray-800">
-                      Body Type
+                      Brand
                     </span>
 
-                    {bodyType.length > 0 && (
+                    {brand.length > 0 && (
                       <span
                         className="min-w-[22px] h-[22px] px-2
                       flex items-center justify-center
                       rounded-full bg-site-accent text-white
                       text-xs font-semibold"
                       >
-                        {bodyType.length}
+                        {brand.length}
                       </span>
                     )}
                   </span>
@@ -273,32 +273,32 @@ export default function TopFiltersBar({ data }) {
                   <ChevronDown
                     size={16}
                     className={`transition-transform duration-200 ${
-                      openDesktop.bodyType ? "rotate-180" : ""
+                      openDesktop.brand ? "rotate-180" : ""
                     }`}
                   />
                 </span>
               </button>
 
-              {openDesktop.bodyType && (
+              {openDesktop.brand && (
                 <div
                   onClick={(e) => e.stopPropagation()}
                   className="hidden md:block absolute left-0 top-full  mt-1 z-[9999] bg-white w-56 shadow-xl rounded-2xl p-4 border border-gray-100 max-h-72 overflow-y-auto"
                 >
-                  {data?.bodyTypes?.map((bt) => (
+                  {data?.brands?.map((bt) => (
                     <label
                       key={bt._id}
                       className="flex items-center gap-2 py-1 text-sm text-gray-700"
                     >
                       <input
                         type="checkbox"
-                        checked={bodyType.includes(bt._id)}
+                        checked={brand.includes(bt._id)}
                         onChange={() => {
-                          const updated = bodyType.includes(bt._id)
-                            ? bodyType.filter((x: string) => x !== bt._id)
-                            : [...bodyType, bt._id];
+                          const updated = brand.includes(bt._id)
+                            ? brand.filter((x: string) => x !== bt._id)
+                            : [...brand, bt._id];
 
-                          dispatch(setCatalogFilters({ bodyType: updated }));
-                          applyFilters({ bodyType: updated });
+                          dispatch(setCatalogFilters({ brand: updated }));
+                          applyFilters({ brand: updated });
                         }}
                         className="accent-site-primary"
                       />
