@@ -1,4 +1,3 @@
-import { toast } from "sonner";
 import type { ApiCarResponse, FilterValues } from "@/lib/api/catalog";
 
 /* -------------------------------------------------------

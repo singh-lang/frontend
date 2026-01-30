@@ -159,7 +159,7 @@ export default function TopFiltersBar({ data }) {
         <div className="w-full">
           <div className="max-w-[1100px] mx-auto px-4 sm:px-6">
             <div className="flex items-center justify-between gap-4">
-              <h2 className="text-3xl font-extrabold text-gray-900">
+              <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900">
                 Choose a car
               </h2>
 
@@ -182,19 +182,25 @@ export default function TopFiltersBar({ data }) {
 
           <div
             ref={dropdownRef}
-            className="
-          rounded-[28px]
-          px-4 py-3
-          flex items-center gap-6
-          overflow-x-auto overflow-y-visible
-          whitespace-nowrap
-          scrollbar-hide  overscroll-x-contain 
-          md:flex-wrap md:overflow-visible md:whitespace-normal
-          relative z-50
-        "
+          className="
+  rounded-[28px]
+  px-4 py-3
+  flex items-center gap-6
+
+  overflow-y-visible
+  whitespace-nowrap
+overflow-auto
+  scrollbar-hide
+  overscroll-x-contain
+
+  md:flex-wrap md:overflow-visible md:whitespace-normal
+
+  relative z-50
+"
+
           >
             {/* Deposit */}
-            <div className="relative shrink-0 p-1 rounded-2xl">
+             <div className="relative shrink-0 p-1 rounded-2xl">
               <button
                 type="button"
                 onClick={(e) => {
@@ -205,7 +211,7 @@ export default function TopFiltersBar({ data }) {
               >
                 <span
                   className="flex items-center justify-between
-               w-[220px] h-11 px-5
+              w-[220px] h-11 px-5
                rounded-full border border-gray-200 bg-white
                text-gray-800 text-sm font-medium
                shadow-sm hover:shadow-md transition"
@@ -248,7 +254,7 @@ export default function TopFiltersBar({ data }) {
               >
                 <span
                   className="flex items-center justify-between
-                    w-[220px] h-11 px-5
+                   w-[220px] h-11 px-5
                     rounded-full border border-gray-200 bg-white
                     text-gray-800 text-sm font-medium
                     shadow-sm hover:shadow-md transition"
@@ -282,7 +288,7 @@ export default function TopFiltersBar({ data }) {
               {openDesktop.brand && (
                 <div
                   onClick={(e) => e.stopPropagation()}
-                  className="hidden md:block absolute left-0 top-full  mt-1 z-[9999] bg-white w-56 shadow-xl rounded-2xl p-4 border border-gray-100 max-h-72 overflow-y-auto"
+                  className="absolute left-0 top-full  mt-1 z-[9999] bg-white w-56 shadow-xl rounded-2xl p-4 border border-gray-100 max-h-72 overflow-y-auto"
                 >
                   {data?.brands?.map((bt) => (
                     <label
@@ -309,7 +315,7 @@ export default function TopFiltersBar({ data }) {
               )}
             </div>
 
-            <div className="flex items-center gap-3 shrink-0">
+            <div className=" flex items-center gap-3 shrink-0">
               <span className="text-sm font-semibold text-gray-900">Sort</span>
               <select
                 value={sort}
@@ -320,7 +326,7 @@ export default function TopFiltersBar({ data }) {
                   applyFilters({ sort: newSort });
                 }}
                 className="flex items-center justify-between
-               w-[220px] h-11 px-5
+               sm:w-[220px] h-11 px-5
                rounded-full border border-gray-200 bg-white
                text-gray-800 text-sm font-medium
                shadow-sm hover:shadow-md transition"

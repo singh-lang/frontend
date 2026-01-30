@@ -131,26 +131,16 @@ const handleMouseEnter = () => setIsHovering(true);
           }`}
           sizes="(max-width:768px) 100vw, 35vw"
         />
-
-
-          {/* Tag */}
           <div className="absolute top-3 left-3 bg-white/90 px-3 py-1 rounded-full text-xs font-semibold text-gray-700">
             {car?.car?.category || "Car"}
           </div>
         </div>
-
-        {/* Content */}
         <div className="w-full md:w-[66%] p-4 flex flex-col gap-2 relative pb-2">
-          {/* Title + Period Buttons */}
          <div className="flex flex-col gap-1">
-  {/* Row 1: Brand + Period */}
         <div className="flex items-center justify-between gap-2">
-          {/* Brand */}
           <p className="text-xs font-semibold text-site-accent truncate">
             {car?.car?.carBrand?.name || ""}
           </p>
-
-          {/* Period buttons */}
           <div className="flex items-center gap-1 flex-shrink-0">
             {(["daily", "weekly", "monthly"] as const).map((p) => (
               <button
@@ -169,14 +159,10 @@ const handleMouseEnter = () => setIsHovering(true);
           </div>
         </div>
 
-        {/* Row 2: Car Name */}
         <h3 className="text-base font-extrabold text-gray-900 leading-tight line-clamp-2">
           {car?.title}
         </h3>
       </div>
-
-
-          {/* Specs */}
           <div className="flex flex-wrap gap-3">
             {specs.map((s, i) => (
               <div
@@ -247,8 +233,6 @@ const handleMouseEnter = () => setIsHovering(true);
                   <Phone className="w-4 h-4" />
                   Call
                 </a>
-
-                {/* WhatsApp */}
                 <a
                   href={whatsappUrl}
                   onClick={(e) => {
@@ -275,7 +259,7 @@ const handleMouseEnter = () => setIsHovering(true);
                 {/* Rent Now */}
                 <Link
                   href={`/booking/${car._id}`}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-site-accent to-slate-teal px-3 py-2 text-sm font-semibold text-white shadow hover:shadow-md transition"
+                  className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-site-accent to-slate-teal px-3 py-2 text-xs  md:text-sm font-semibold text-white shadow hover:shadow-md transition"
                 >
                   Rent Now
                 </Link>
@@ -314,312 +298,189 @@ const handleMouseEnter = () => setIsHovering(true);
         </div>
       </div>
 
-      {/* DETAILS SECTION */}
-      {showDetails && (
-        <div className="border-t border-gray-200 bg-gray-50 px-4 py-4">
-          {/* Tabs */}
-          <div className="flex items-center gap-6 border-b border-gray-200 pb-3 mb-4">
-            {(["carInfo", "overview", "features"] as const).map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setActiveTab(t)}
-                className={`text-sm font-semibold transition ${
-                  activeTab === t
-                    ? "text-gray-900 border-b-2 border-site-accent pb-2"
-                    : "text-gray-500 hover:text-gray-900"
-                }`}
-              >
-                {t === "carInfo"
-                  ? "Car info"
-                  : t.charAt(0).toUpperCase() + t.slice(1)}
-              </button>
-            ))}
-          </div>
+   {showDetails && (
+  <div className="border-t border-gray-200 bg-gray-50 px-4 py-4 h-[500px] overflow-y-auto">
 
-          {/* MAIN GRID */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* LEFT BOX */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-4">
-              <h3 className="text-base font-bold text-gray-900 mb-3">
-                {activeTab === "carInfo"
-                  ? "Car info"
-                  : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
-              </h3>
+    {/* TABS */}
+    <div className="flex items-center gap-6 border-b border-gray-200 mb-4">
+      {(["carInfo", "overview", "features"] as const).map((t) => (
+        <button
+          key={t}
+          onClick={() => setActiveTab(t)}
+          className={`pb-3 text-sm font-semibold transition relative
+            ${
+              activeTab === t
+                ? "text-gray-900 after:absolute after:left-0 after:-bottom-[1px] after:h-[2px] after:w-full after:bg-site-accent"
+                : "text-gray-500 hover:text-gray-900"
+            }
+          `}
+        >
+          {t === "carInfo"
+            ? "Important Info"
+            : t.charAt(0).toUpperCase() + t.slice(1)}
+        </button>
+      ))}
+    </div>
 
-              {activeTab === "carInfo" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {/* Specs Part 1 */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500 font-medium">
-                        Model Year
-                      </span>
-                      <span className="text-gray-900 font-semibold">
-                        {car?.car?.modelYear || "-"}
-                      </span>
-                    </div>
-                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500 font-medium">
-                        Car Model
-                      </span>
-                      <span className="text-gray-900 font-semibold">
-                        {car?.car?.carModel || "-"}
-                      </span>
-                    </div>
+    {/* MAIN GRID */}
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500 font-medium">
-                        Body Type
-                      </span>
-                      <span className="text-gray-900 font-semibold">
-                        {car?.car?.bodyType || "-"}
-                      </span>
-                    </div>
+      {/* LEFT PANEL */}
+      <div className="bg-white rounded-2xl border border-gray-200 p-4">
+        <h3 className="text-base font-bold text-gray-900 mb-4">
+          {activeTab === "carInfo"
+            ? "Important Information"
+            : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
+        </h3>
 
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500 font-medium">
-                        Transmission
-                      </span>
-                      <span className="text-gray-900 font-semibold">
-                        {car?.car?.transmission || "-"}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500 font-medium">Seats</span>
-                      <span className="text-gray-900 font-semibold">
-                        {car?.car?.seatingCapacity || "-"}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500 font-medium">
-                        Fuel Type
-                      </span>
-                      <span className="text-gray-900 font-semibold">
-                        {car?.car?.fuelType || "-"}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500 font-medium">Doors</span>
-                      <span className="text-gray-900 font-semibold">
-                        {car?.car?.doors || "-"}
-                      </span>
-                    </div>
-                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500 font-medium">Toll Charges</span>
-                      <span className="text-gray-900 font-semibold">
-                        {car?.tollCharges ?? "-"}
-                      </span>
-                    </div>
-                   
-                  </div>
-
-                  {/* Specs Part 2 */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500 font-medium">
-                        Insurance
-                      </span>
-                      <span className="text-gray-900 font-semibold">
-                        {car?.car?.carInsurance === "yes"
-                          ? "Included"
-                          : "Not Included"}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500 font-medium">
-                        Warranty
-                      </span>
-                      <span className="text-gray-900 font-semibold">
-                        {car?.car?.warranty === "yes" ? "Yes" : "No"}
-                      </span>
-                    </div>
-
-                   
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500 font-medium">
-                        Extra Mileage Rate
-                      </span>
-                      <span className="text-gray-900 font-semibold">
-                        AED {(car?.extraMileageRate || 0).toLocaleString()}
-                      </span>
-                    </div>
-                      <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500 font-medium">
-                        Location
-                      </span>
-                      <span className="text-gray-900 font-semibold">
-                        {car?.location || "-"}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500 font-medium">
-                        Minimum Rental Days
-                      </span>
-                      <span className="text-gray-900 font-semibold">
-                        {car?.minRentalDays || "-"}
-                      </span>
-                    </div>
-                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-500 font-medium">Horse Power</span>
-                      <span className="text-gray-900 font-semibold">
-                        {car?.car?.horsePower || "-"}
-                      </span>
-                    </div>
-                  </div>
+        {/* IMPORTANT INFO */}
+        {activeTab === "carInfo" && (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                ["Price", `AED ${car?.rentPerDay?.toLocaleString() || "-"}/day`],
+                ["Security Deposit", `AED ${(car?.securityDeposit || 0).toLocaleString()}`],
+                ["Minimum Rental Days", car?.minRentalDays || "-"],
+                ["Extra Mileage Rate", `AED ${(car?.extraMileageRate || 0).toLocaleString()}`],
+                ["Toll Charges", car?.tollCharges ?? "-"],
+                ["Mileage", `${price?.mileage} km ${price?.label?.replace("/", "")}`],
+              ].map(([label, value], i) => (
+                <div
+                  key={i}
+                  className="rounded-xl border border-gray-200 bg-gray-50 p-3"
+                >
+                  <p className="text-xs text-gray-500 font-medium">{label}</p>
+                  <p className="text-sm font-bold text-gray-900 mt-1">{value}</p>
                 </div>
-              )}
+              ))}
+            </div>
 
-              {activeTab === "overview" && (
-                <p className="text-sm font-medium text-gray-600 leading-relaxed">
-                  {car?.description || "No overview available."}
+            <div className="mt-4 flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 p-4">
+              <div>
+                <p className="text-sm font-bold text-gray-900">
+                  Still have questions?
+                </p>
+                <p className="text-xs text-gray-500">
+                  Our support team is here to help
+                </p>
+              </div>
+              <Link
+                href="/contact"
+                className="text-sm font-semibold text-site-accent underline hover:opacity-80"
+              >
+                Contact Support
+              </Link>
+            </div>
+          </>
+        )}
+
+        {/* OVERVIEW */}
+   {activeTab === "overview" && (
+  <div className="h-[320px] overflow-y-auto pr-2">
+    <p className="text-sm font-medium text-gray-600 leading-relaxed">
+      {car?.description || "No overview available."}
+    </p>
+  </div>
+)}
+
+
+        {/* FEATURES */}
+        {activeTab === "features" && (
+          <div className="max-h-[320px] overflow-y-auto pr-2 space-y-4">
+
+            {(car?.car?.techFeatures || []).length > 0 && (
+              <div>
+                <p className="text-sm font-bold text-gray-900 mb-2">
+                  Technical Features
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {car.car.techFeatures.map((f: string, idx: number) => (
+                    <div
+                      key={idx}
+                      className="flex items-center gap-2 text-sm text-gray-700"
+                    >
+                      <CheckCircle className="w-4 h-4 text-site-accent shrink-0" />
+                      <span>{f}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {(car?.car?.otherFeatures || []).length > 0 && (
+              <div>
+                <p className="text-sm font-bold text-gray-900 mb-2">
+                  Other Features
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {car.car.otherFeatures.map((f: string, idx: number) => (
+                    <div
+                      key={idx}
+                      className="flex items-center gap-2 text-sm text-gray-700"
+                    >
+                      <CheckCircle className="w-4 h-4 text-site-accent shrink-0" />
+                      <span>{f}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {!car?.car?.techFeatures?.length &&
+              !car?.car?.otherFeatures?.length && (
+                <p className="text-sm text-gray-500">
+                  No features available.
                 </p>
               )}
-
-              {activeTab === "features" && (
-                <div className="max-h-[300px] overflow-y-auto pr-2 space-y-4">
-                  {/* Technical Features */}
-                  {(car?.car?.techFeatures || []).length > 0 && (
-                    <div>
-                      <p className="text-sm font-bold text-gray-900 mb-2">
-                        Technical Features
-                      </p>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {(car?.car?.techFeatures || []).map(
-                          (f: string, idx: number) => (
-                            <div
-                              key={`tech-${idx}`}
-                              className="flex items-center gap-2 text-sm text-gray-700"
-                            >
-                              <CheckCircle className="w-4 h-4 text-site-accent shrink-0" />
-                              <span className="break-words">{f}</span>
-                            </div>
-                          ),
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Other Features */}
-                  {(car?.car?.otherFeatures || []).length > 0 && (
-                    <div>
-                      <p className="text-sm font-bold text-gray-900 mb-2">
-                        Other Features
-                      </p>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {(car?.car?.otherFeatures || []).map(
-                          (f: string, idx: number) => (
-                            <div
-                              key={`other-${idx}`}
-                              className="flex items-center gap-2 text-sm text-gray-700"
-                            >
-                              <CheckCircle className="w-4 h-4 text-site-accent shrink-0" />
-                              <span className="break-words">{f}</span>
-                            </div>
-                          ),
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Fallback */}
-                  {!car?.car?.techFeatures?.length &&
-                    !car?.car?.otherFeatures?.length && (
-                      <p className="text-sm text-gray-500">
-                        No features available.
-                      </p>
-                    )}
-                </div>
-              )}
-            </div>
-
-            {/* RIGHT BOX */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-4">
-              <h3 className="text-base font-bold text-gray-900 mb-3">
-                 Important Information
-              </h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-3">
-                  <p className="text-xs text-gray-500 font-semibold">Security Deposit</p>
-                  <p className="text-sm font-bold text-gray-900">
-                     AED {(car?.securityDeposit || 0).toLocaleString()}
-
-                  </p>
-                </div>
- 
-                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-3">
-                  <p className="text-xs text-gray-500 font-semibold">
-                    Minimum Rental Days
-                  </p>
-                  <p className="text-sm font-bold text-gray-900">
-                        {car?.minRentalDays || "-"}
-                  </p>
-                </div>  
-
-                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-3">
-                  <p className="text-xs text-gray-500 font-semibold">
-                    Extra Mileage Rate
-                  </p>
-                  <p className="text-sm font-bold text-gray-900">
-                    AED {(car?.extraMileageRate || 0).toLocaleString()}
-                  </p>
-                </div>
-                
-                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-3">
-                  <p className="text-xs text-gray-500 font-semibold">
-                    Body Type
-                  </p>
-                  <p className="text-sm font-bold text-gray-900">
-                    {car?.car?.bodyType || "-"}
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-3">
-                  <p className="text-xs text-gray-500 font-semibold">
-                    Fuel Type
-                  </p>
-                  <p className="text-sm font-bold text-gray-900">
-                    {car?.car?.fuelType || "-"}
-                  </p>
-                </div>
-
-                <div className="rounded-2xl border border-gray-200 bg-gray-50 p-3">
-                  <p className="text-xs text-gray-500 font-semibold">Price</p>
-                  <p className="text-sm font-bold text-gray-900">
-                    AED {price?.final?.toLocaleString() || "-"} {price?.label}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-4 rounded-2xl border border-gray-200 bg-gray-50 p-4 flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-bold text-gray-900">
-                    Still have questions?
-                  </p>
-                  <p className="text-xs text-gray-500 font-medium">
-                    Contact support for help
-                  </p>
-                </div>
-
-                <Link
-                  href="/contact"
-                  className="text-black/60 hover:text-slate-teal transition-colors text-sm font-semibold underline"
-                >
-                  Contact Support
-                </Link>
-              </div>
-            </div>
           </div>
+        )}
+      </div>
+
+      {/* RIGHT PANEL – CAR INFO */}
+      <div className="bg-white rounded-2xl max-h-[700px] border border-gray-200 p-4">
+        <h3 className="text-base font-bold text-gray-900 mb-4">
+          Car Information
+        </h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {[[
+            ["Model Year", car?.car?.modelYear],
+            ["Car Model", car?.car?.carModel],
+            ["Body Type", car?.car?.bodyType],
+            ["Regional Specs", car?.car?.regionalSpecs],
+            ["Transmission", car?.car?.transmission],
+            ["Seats", car?.car?.seatingCapacity],
+            ["Fuel Type", car?.car?.fuelType],
+            ["Doors", car?.car?.doors],
+          ], [
+            ["Insurance", car?.car?.carInsurance === "yes" ? "Included" : "Not Included"],
+            ["Warranty", car?.car?.warranty === "yes" ? "Yes" : "No"],
+            ["Location", car?.location],
+            ["Horse Power", car?.car?.horsePower],
+            ["Air Bags", car?.car?.airBags],
+            ["Tank Capacity", car?.car?.tankCapacity],
+            ["Interior Color", car?.car?.interiorColor],
+            ["Exterior Color", car?.car?.exteriorColor],
+          ]].map((group, idx) => (
+            <div key={idx} className="space-y-3">
+              {group.map(([label, value], i) => (
+                <div key={i} className="flex justify-between text-sm">
+                  <span className="text-gray-500 font-medium">{label}</span>
+                  <span className="font-semibold text-gray-900">
+                    {value || "-"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ))}
         </div>
-      )}
+      </div>
+
     </div>
+  </div>
+)}
+
+  </div>  
   );
 };
 

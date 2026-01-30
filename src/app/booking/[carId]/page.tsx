@@ -8,8 +8,6 @@ import "react-datepicker/dist/react-datepicker.css";
 import { useRouter } from "next/navigation";
 import {
   CheckCircle2,
-  ChevronRight,
-  ChevronLeft,
   CalendarDays,
   Clock,
   Timer,
@@ -18,7 +16,6 @@ import {
   Store,
   RotateCcw,
   Plus,
-  Minus,
   User,
   Phone,
   Mail,
@@ -117,7 +114,6 @@ const [detailsOpen, setDetailsOpen] = useState(false);
   const [carLoading, setCarLoading] = useState(true);
   const [carData, setCarData] = useState<CarTypes | null>(null);
 
-  const [canPay, setCanPay] = useState(false);
   const [calc, setCalc] = useState<BookingCalculation | null>(null);
 const [showSummary, setShowSummary] = useState(false);
 const [mobileStep, setMobileStep] = useState<1 | 2 | 3>(1);
@@ -132,7 +128,6 @@ const [mobileStep, setMobileStep] = useState<1 | 2 | 3>(1);
     useCalculateBookingMutation();
   const [createBooking, { isLoading: createLoading }] =
     useCreateBookingMutation();
-
 
 const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([
   null,
@@ -150,6 +145,35 @@ const validateMobileStep1 = (): string | null => {
       return "Delivery address is required";
   return null;
 };
+const canPayFinal = useMemo(() => {
+  // price must exist
+  if (!calc || calc.totalAmount <= 0) return false;
+
+  // user details
+  if (!guestName.trim()) return false;
+  if (!guestPhone.trim()) return false;
+  if (!guestEmail.trim()) return false;
+
+  // delivery rules
+  if (
+    (pickupType === "DELIVERY" || returnType === "RETURN") &&
+    !emirateId
+  )
+    return false;
+
+  if (pickupType === "DELIVERY" && !address.trim()) return false;
+
+  return true;
+}, [
+  calc,
+  guestName,
+  guestPhone,
+  guestEmail,
+  pickupType,
+  returnType,
+  emirateId,
+  address,
+]);
 
 const handleContinue = () => {
   const err = validateMobileStep1();
@@ -160,24 +184,35 @@ const handleContinue = () => {
   setMobileStep(2);
 };
 const validateMobileStep2 = (): string | null => {
-   if (!guestName.trim()) return "Full name is required";
+   
+  return null;
+};
+const handleNextStep = async () => {
+  const err1 = validateMobileStep1();
+  if (err1) {
+    toast.error(err1);
+    return;
+  }
+
+  const err2 = validateMobileStep2();
+  setMobileStep(3);
+};
+const validateMobileStep3 = (): string | null => {
+  if (!guestName.trim()) return "Full name is required";
     if (!guestPhone.trim()) return "Phone number is required";
     if (!guestEmail.trim()) return "Email address is required";
   return null;
 };
-const handleNextStep = async () => {
-   const err = validateMobileStep2();
-  if (err) {
-    toast.error(err);   // ✅ ab aayega
+const handleConfirmPayMobile = async () => {
+  if (!agree) {
+    toast.error("Please accept terms and conditions");
     return;
   }
-  await handleCalculate();
-  setMobileStep(3);
-};
-
-const handleConfirmBooking = () => {
-  // API call / submit booking
-  console.log("Booking Confirmed!");
+  if (!canPayFinal) {
+    toast.error("Please complete all required fields");
+    return;
+  }
+  await handleCreateBooking(); // ✅ only after all validations
 };
   const { data: addonRes, isLoading: addonsLoading } = useGetAddonsByCarQuery(
     carId,
@@ -185,7 +220,6 @@ const handleConfirmBooking = () => {
       skip: !carId,
     }
   );
-
   const vendorAddons = addonRes?.data || [];
   const { data: depositFreeRes } = useGetDepositFreePricingFrontendQuery(
     carId,
@@ -193,31 +227,19 @@ const handleConfirmBooking = () => {
       skip: !carId,
     }
   );
-
-  // ---------- DESIGN HELPERS ----------
   const pageWrap = "min-h-screen bg-[#f5f7fb]";
   const container = "mx-auto max-w-6xl px-4 py-8";
-
   const card =
     "bg-white rounded-3xl border border-gray-200 shadow-[0_12px_40px_rgba(15,23,42,0.06)] p-6 mb-5";
-
   const sectionTitle = "text-sm font-semibold text-gray-700 mb-4 mt-4";
-
   const inputBase =
     "w-full font-semibold rounded-full border border-gray-200 bg-soft-grey/40 px-4 py-3 text-sm font-medium text-gray-800 outline-none transition focus:bg-white focus:ring-2 focus:ring-site-accent/30";
-
   const fieldLabel = "text-sm font-semibold text-gray-500 mb-1 block";
-
   const primaryBtn =
     "w-full rounded-2xl bg-gradient-to-r from-site-accent to-slate-teal py-3 text-sm font-bold text-white shadow-[0_12px_28px_rgba(0,0,0,0.12)] hover:opacity-95 transition disabled:opacity-50 disabled:cursor-not-allowed";
-
-  // ---------- UTILS ----------
   const formatMoney = (n: number) =>
     Number.isFinite(n) ? Math.round(n).toLocaleString() : "0";
-
   const hhmmValid = (t: string) => /^\d{2}:\d{2}$/.test(t);
-
-  // ---------- VALIDATIONS ----------
   const validateStep1 = (): string | null => {
     if (!pickupDate) return "Pickup date is required";
     if (!dropoffDate) return "Dropoff date is required";
@@ -231,10 +253,8 @@ const handleConfirmBooking = () => {
   const validateStep2 = (): string | null => {
     if ((pickupType === "DELIVERY" || returnType === "RETURN") && !emirateId)
       return "Please select emirate for delivery/return pricing";
-
     if (pickupType === "DELIVERY" && !address.trim())
       return "Delivery address is required";
-
     return null;
   };
 
@@ -249,37 +269,64 @@ const handleConfirmBooking = () => {
     return validateStep1() || validateStep2() || validateStep3();
   };
 
-  // ---------- RENTAL DAYS ----------
-  const rentalDays = useMemo(() => {
-    if (!pickupDate || !dropoffDate) return 0;
-    const start = new Date(pickupDate);
-    const end = new Date(dropoffDate);
+ const rentalDays = useMemo(() => {
+  if (!pickupDate || !pickupTime || !dropoffDate || !dropoffTime) return 0;
+  const start = new Date(`${pickupDate}T${pickupTime}`);
+  const end = new Date(`${dropoffDate}T${dropoffTime}`);
+  if (end <= start) return 0;
+  const diffMs = end.getTime() - start.getTime();
+  const diffDays = diffMs / (1000 * 60 * 60 * 24);
+  return Math.max(Math.ceil(diffDays), 1);
+}, [pickupDate, pickupTime, dropoffDate, dropoffTime]);
 
-    const diffDays = Math.ceil(
-      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
-    );
+useEffect(() => {
+  if (rentalDays <= 0) {
+    setCalc(null);
+    return;
+  }
 
-    return Math.max(diffDays, 1);
-  }, [pickupDate, dropoffDate]);
+  const timer = setTimeout(() => {
+    calculateBooking({
+      carId,
+      pickupDate,
+      pickupTime,
+      dropoffDate,
+      dropoffTime,
+      priceType,
+      deliveryRequired: pickupType === "DELIVERY" || returnType === "RETURN",
+      address: pickupType === "DELIVERY" ? address : undefined,
+    })
+      .unwrap()
+      .then((res) => {
+        setCalc(res.data);   
+      })
+      .catch(() => {
+        setCalc(null);
+      });
+  }, 300); 
+  return () => clearTimeout(timer);
+}, [
+  rentalDays,
+  pickupDate,
+  pickupTime,
+  dropoffDate,
+  dropoffTime,
+  priceType,
+]);
 
-
-  // 2️⃣ STATE
   const [selectedAddons, setSelectedAddons] = useState<Record<string, boolean>>(
     {}
   );
   useEffect(() => {
     if (!vendorAddons.length) return;
-
     const map: Record<string, boolean> = {};
     vendorAddons.forEach((a) => {
       map[a._id] = false; // ✅ default unchecked
     });
-
     setSelectedAddons(map);
   }, [vendorAddons]); const addonsTotal = useMemo(() => {
     return vendorAddons.reduce((sum, addon) => {
       if (!selectedAddons[addon._id]) return sum;
-
       switch (addon.priceType) {
         case "per_day":
           return sum + addon.price;
@@ -301,26 +348,19 @@ const handleConfirmBooking = () => {
   };
   const depositFreeDailyFee = depositFreeRes?.data?.daily || 0;
 
-
-  // ---------- DEPOSIT FREE ----------
    const rentalAmount = calc?.totalAmount ?? 0;
   const pickupFee = pickupReturnCharges.pickup;
   const returnFee = pickupReturnCharges.return;
   const depositFreeFee = depositFree ? depositFreeDailyFee : 0;
-
   const frontendTotal =
     rentalAmount + pickupFee + returnFee + addonsTotal + depositFreeFee;
-
   const frontendPayNow = calc
     ? Math.round((rentalAmount * calc.prepaymentPercent) / 100)
     : 0;
 
   const frontendPayLater = frontendTotal - frontendPayNow;
-
-  // ---------- FETCH CAR ----------
   useEffect(() => {
     if (!carId) return;
-
     const fetchCar = async () => {
       try {
         setCarLoading(true);
@@ -332,7 +372,6 @@ const handleConfirmBooking = () => {
         setCarLoading(false);
       }
     };
-
     fetchCar();
   }, [carId]);
 
@@ -365,7 +404,6 @@ const handleConfirmBooking = () => {
         }
       });
     }
-
     return images;
   }, [carData, BASE_URL]);
   const loadPickupReturnCharges = async () => {
@@ -393,16 +431,12 @@ const handleConfirmBooking = () => {
 
   useEffect(() => {
     loadPickupReturnCharges();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pickupType, returnType, emirateId]);
 
-  // reset calculation when user changes inputs
-  useEffect(() => {
-    setCalc(null);
-    setCanPay(false);
-    setPickupReturnCharges({ pickup: 0, return: 0 });
-  }, [pickupDate, pickupTime, dropoffDate, dropoffTime, priceType, address]);
-
+useEffect(() => {
+  if (!pickupDate || !dropoffDate) return;
+  setCalc(null);
+}, [pickupDate, pickupTime, dropoffDate, dropoffTime, priceType]);
 const rangeDays =
   startDate && endDate
     ? Math.max(
@@ -416,7 +450,6 @@ const rangeDays =
     toast.error(err);
     return false;
   }
-
   try {
     const pricing = await calculatePickupReturn({
       carId,
@@ -424,12 +457,10 @@ const rangeDays =
       pickupType,
       returnType,
     }).unwrap();
-
     setPickupReturnCharges({
       pickup: pricing.pickupCharge || 0,
       return: pricing.returnCharge || 0,
     });
-
     const res = await calculateBooking({
       carId,
       pickupDate,
@@ -442,7 +473,6 @@ const rangeDays =
     }).unwrap();
 
     setCalc(res?.data ?? null);
-    setCanPay(true);
     toast.success("Price calculated");
     return true;
   } catch (error: unknown) {
@@ -452,13 +482,10 @@ const rangeDays =
   }
 };
 
- 
- 
-
   const handleCreateBooking = async () => {
-    if (!calc || !canPay) {
-      return toast.error("Please complete booking details first");
-    }
+   if (!calc || calc.totalAmount <= 0) {
+  return toast.error("Please calculate price first");
+}
     try {
       const res = await createBooking({
         carId,
@@ -479,11 +506,9 @@ const rangeDays =
         prepaymentPercent: calc.prepaymentPercent,
         prepaymentAmount: frontendPayNow,
         remainingAmount: frontendPayLater,
-      }).unwrap(); // ✅ REQUIRED
-
+      }).unwrap(); 
       const bookingId = res?.data?._id;
       if (!bookingId) return toast.error("Booking created but ID missing");
-
       const paymentUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/payments/rental/${bookingId}?token=${res.data.paymentToken}`;
       window.location.href = paymentUrl;
     } catch (error: unknown) {
@@ -494,10 +519,8 @@ const rangeDays =
   const getStepCircle = (id: number) => {
     if (id === 1)
       return "bg-gradient-to-r from-site-accent to-slate-teal text-white";
-
     if (maxStepReached >= id)
       return "bg-gradient-to-r from-site-accent to-slate-teal text-white";
-
     if (step === id) return "bg-site-accent text-white border-site-accent";
     return "bg-white text-gray-600 border-gray-200";
   };
@@ -515,7 +538,6 @@ const rangeDays =
 
     const loadAllPickupCharges = async () => {
       const charges: Record<string, number> = {};
-
       for (const emirate of EMIRATES) {
         try {
           const res = await calculatePickupReturn({
@@ -524,28 +546,18 @@ const rangeDays =
             pickupType: "DELIVERY",
             returnType: "DROPOFF",
           }).unwrap();
-
           charges[emirate.id] = res.pickupCharge || 0;
         } catch {
           charges[emirate.id] = 0;
         }
       }
-
       setCityPickupCharges(charges);
     };
-
     loadAllPickupCharges();
   }, [carId]);
-   const selectingText = useMemo(() => {
-    if (!startDate) return "Selecting start date";
-    if (startDate && !endDate) return "Selecting end date";
-    return "Dates selected";
-  }, [startDate, endDate]);
-
   return (
     <div className={pageWrap}>
       <div className={container}>
-        {/* Stepper */}
         <div className="flex items-center justify-center mb-8">
           <div className="hidden md:flex items-center gap-6 text-sm font-semibold">
             {steps.map((s, index) => (
@@ -579,19 +591,13 @@ const rangeDays =
             ))}
           </div>
         </div>
-
-        {/* Main Grid */}
         <div className=" grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
-          {/* LEFT */}
           <div className=" hidden md:block space-y-6">
-            {/* Rental Plan Card */}
             <div className={card}>
               <h2 className="text-2xl font-medium text-gray-700">
                 Book Your Rental Car
               </h2>
-
               <p className={sectionTitle}>Select Rental Plan</p>
-
               <div className="grid grid-cols-3 bg-gray-100 p-1.5 rounded-2xl border border-gray-200">
                 {(["daily", "weekly", "monthly"] as PriceType[]).map((t) => (
                   <button
@@ -610,7 +616,6 @@ const rangeDays =
               </div>
             </div>
 
-            {/* STEP 1 */}
             {step === 1 && (
               <div className="space-y-6">
                 <div className={card}>
@@ -620,7 +625,6 @@ const rangeDays =
                   <p className="text-sm font-semibold text-gray-500">
                     Choose pick-up and drop-off date & time.
                   </p>
-
                   <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className={fieldLabel}>Pick-up Date</label>
@@ -628,21 +632,17 @@ const rangeDays =
                         selected={pickupDate ? new Date(pickupDate) : null}
                       onChange={(date: Date | null) => {
                       if (!date) return setPickupDate("");
-
                       const yyyy = date.getFullYear();
                       const mm = String(date.getMonth() + 1).padStart(2, "0");
                       const dd = String(date.getDate()).padStart(2, "0");
-
                       setPickupDate(`${yyyy}-${mm}-${dd}`); // ✅ local date (no -1 day issue)
                     }}
-
                         minDate={new Date()}
                         placeholderText="dd-mm-yyyy"
                         dateFormat="dd-MM-yyyy"
                         customInput={<DateInput />}
                       />
                     </div>
-
                     <div>
                       <label className={fieldLabel}>Pick-up Time</label>
                       <input
@@ -652,28 +652,23 @@ const rangeDays =
                         className={inputBase}
                       />
                     </div>
-
                     <div>
                       <label className={fieldLabel}>Drop-off Date</label>
                       <DatePicker
                         selected={dropoffDate ? new Date(dropoffDate) : null}
                         onChange={(date: Date | null) => {
                         if (!date) return setDropoffDate("");
-
                         const yyyy = date.getFullYear();
                         const mm = String(date.getMonth() + 1).padStart(2, "0");
                         const dd = String(date.getDate()).padStart(2, "0");
-
                         setDropoffDate(`${yyyy}-${mm}-${dd}`);
                       }}
-
                         minDate={pickupDate ? new Date(pickupDate) : new Date()}
                         placeholderText="dd-mm-yyyy"
                         dateFormat="dd-MM-yyyy"
                         customInput={<DateInput />}
                       />
                     </div>
-
                     <div>
                       <label className={fieldLabel}>Drop-off Time</label>
                       <input
@@ -724,10 +719,9 @@ const rangeDays =
                 onClick={() => {
                   const err = validateStep1();
                   if (err) {
-                    toast.error(err); // ✅ error show hoga
-                    return;           // ❌ step aage nahi jayega
+                    toast.error(err); 
+                    return;           
                   }
-
                   setStep(2);
                   setMaxStepReached(2);
                 }}
@@ -735,11 +729,9 @@ const rangeDays =
               >
                 Next
               </button>
-
               </div>
             )}
 
-            {/* STEP 2 */}
             {step === 2 && (
               <div className="space-y-6">
                 <div className={card}>
@@ -762,7 +754,6 @@ const rangeDays =
                     </button>
                   </div>
 
-                  {/* Pick-up */}
                   <div className="mt-4">
                     <p className="text-xs font-bold text-gray-500 mb-2">
                       Pick-up
@@ -856,7 +847,6 @@ const rangeDays =
                     )}
                   </div>
 
-                  {/* Drop-off */}
                   <div className="mt-6">
                     <p className="text-xs font-bold text-gray-500 mb-2">
                       Drop-off
@@ -898,7 +888,6 @@ const rangeDays =
                   </div>
                 </div>
 
-                {/* Deposit Free */}
                 <div className={card}>
                   <div className="flex items-center justify-between">
                     <div>
@@ -906,7 +895,6 @@ const rangeDays =
                         Enjoy a deposit-free ride for AED {depositFreeDailyFee}{" "}
                         Per day
                       </p>
-
                       <p className="text-sm text-gray-600 p-2">
                         You can rent a car without any deposit by including the
                         additional service fee <br /> in your rental price
@@ -951,15 +939,13 @@ const rangeDays =
 
                   </div>
                 </div>
-
-                {/* Next */}
                 <div className="flex gap-4">
                   <button
-                    type="button"
-                    onClick={() => setStep(1)}
-                    className="h-12 w-1/2 rounded-2xl border border-gray-200 font-bold text-gray-700 hover:bg-gray-50 transition"
-                  >
-                    Back
+                      type="button"
+                      onClick={() => setStep(1)}
+                      className="h-12 w-1/2 rounded-2xl border border-gray-200 font-bold text-gray-700 hover:bg-gray-50 transition"
+                    >
+                      Back
                   </button>
 
                   <button
@@ -967,10 +953,8 @@ const rangeDays =
                   onClick={() => {
                     const err1 = validateStep1();
                     if (err1) return toast.error(err1);
-
                     const err2 = validateStep2();
                     if (err2) return toast.error(err2);
-
                     setStep(3);
                     setMaxStepReached(3);
                   }}
@@ -978,17 +962,14 @@ const rangeDays =
                 >
                   Next
                 </button>
-
                 </div>
               </div>
             )}
 
-            {/* STEP 3 */}
             {step === 3 && (
               <div className="space-y-6">
                 <div className={card}>
                   <p className={sectionTitle}>Your Details</p>
-
                   <div className="space-y-4">
                     <div>
                       <label className={fieldLabel}>Full Name</label>
@@ -999,7 +980,6 @@ const rangeDays =
                         className={inputBase}
                       />
                     </div>
-
                     <div>
                       <label className={fieldLabel}>Mobile Number</label>
                       <div className="flex items-center rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 focus-within:bg-white focus-within:ring-2 focus-within:ring-site-accent/30">
@@ -1020,7 +1000,6 @@ const rangeDays =
                         />
                       </div>
                     </div>
-
                     <div>
                       <label className={fieldLabel}>Email Address</label>
                       <input
@@ -1033,90 +1012,88 @@ const rangeDays =
                     </div>
                   </div>
                 </div>
- <div className={card}>
-  <div className="flex items-center justify-between mb-4">
-    <div>
-      <p className="font-semibold text-dark-base">Add-ons</p>
-      <p className="text-xs text-grey">
-        {addonsTotal > 0
-          ? `AED ${formatMoney(addonsTotal)}`
-          : vendorAddons.length === 0
-          ? "No add-ons available"
-          : "Optional"}
-      </p>
-    </div>
-    <button
-      type="button"
-      disabled={vendorAddons.length === 0}
-      onClick={() => setAddonsOpen((prev) => !prev)}
-      className={`relative w-11 h-6 rounded-full transition-colors ${
-        vendorAddons.length === 0
-          ? "bg-gray-200 cursor-not-allowed"
-          : addonsOpen
-          ? "bg-site-accent"
-          : "bg-gray-300"
-      }`}
-    >
-      <span
-        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
-          addonsOpen ? "translate-x-5" : ""
-        }`}
-      />
-    </button>
-  </div>
-  {addonsOpen && (
-    <div className="space-y-2">
-      {vendorAddons.length === 0 ? (
-        <p className="text-sm text-gray-500 text-center py-4">
-          No add-ons available for this car
-        </p>
-      ) : (
-        vendorAddons.map((addon) => {
-          const checked = !!selectedAddons[addon._id];
-
-          return (
-            <label
-              key={addon._id}
-              className={`flex justify-between items-center rounded-2xl p-4 cursor-pointer transition ${
-                checked
-                  ? "bg-site-accent/5"
-                  : "bg-soft-grey/30 hover:bg-soft-grey/45"
-              }`}
-            >
-              <div>
-                <p className="font-medium text-sm text-dark-base">
-                  {addon.name}
-                </p>
-                <p className="text-xs text-grey">
-                  AED {addon.price}
-                  {addon.priceType === "per_day" && " / day"}
-                  {addon.priceType === "per_week" && " / week"}
-                  {addon.priceType === "per_month" && " / month"}
-                </p>
+              <div className={card}>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <p className="font-semibold text-dark-base">Add-ons</p>
+                    <p className="text-xs text-grey">
+                      {addonsTotal > 0
+                        ? `AED ${formatMoney(addonsTotal)}`
+                        : vendorAddons.length === 0
+                        ? "No add-ons available"
+                        : "Optional"}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={vendorAddons.length === 0}
+                    onClick={() => setAddonsOpen((prev) => !prev)}
+                    className={`relative w-11 h-6 rounded-full transition-colors ${
+                      vendorAddons.length === 0
+                        ? "bg-gray-200 cursor-not-allowed"
+                        : addonsOpen
+                        ? "bg-site-accent"
+                        : "bg-gray-300"
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                        addonsOpen ? "translate-x-5" : ""
+                      }`}
+                    />
+                  </button>
+                </div>
+                {addonsOpen && (
+                  <div className="space-y-2">
+                    {vendorAddons.length === 0 ? (
+                      <p className="text-sm text-gray-500 text-center py-4">
+                        No add-ons available for this car
+                      </p>
+                    ) : (
+                      vendorAddons.map((addon) => {
+                        const checked = !!selectedAddons[addon._id];
+                        return (
+                          <label
+                            key={addon._id}
+                            className={`flex justify-between items-center rounded-2xl p-4 cursor-pointer transition ${
+                              checked
+                                ? "bg-site-accent/5"
+                                : "bg-soft-grey/30 hover:bg-soft-grey/45"
+                            }`}
+                          >
+                            <div>
+                              <p className="font-medium text-sm text-dark-base">
+                                {addon.name}
+                              </p>
+                              <p className="text-xs text-grey">
+                                AED {addon.price}
+                                {addon.priceType === "per_day" && " / day"}
+                                {addon.priceType === "per_week" && " / week"}
+                                {addon.priceType === "per_month" && " / month"}
+                              </p>
+                            </div>
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => toggleAddon(addon._id)}
+                              className="h-5 w-5 accent-[var(--site-accent)]"
+                            />
+                          </label>
+                        );
+                   })
+                 )}
               </div>
-
-              <input
-                type="checkbox"
-                checked={checked}
-                onChange={() => toggleAddon(addon._id)}
-                className="h-5 w-5 accent-[var(--site-accent)]"
-              />
-            </label>
-          );
-        })
-      )}
-    </div>
-  )}
-</div>
-      <div className="flex gap-4">
-        <button
-          type="button"
-          onClick={() => setStep(2)}
-            className="h-12 w-1/2 rounded-2xl border border-gray-200 font-bold text-gray-700 hover:bg-gray-50 transition"
-            >
-            Back
-        </button>
+            )}
+        </div>
+        <div className="flex gap-4">
           <button
+            type="button"
+            onClick={() => setStep(2)}
+              className="h-12 w-full rounded-2xl border border-gray-200 font-bold text-gray-700 hover:bg-gray-50 transition"
+              >
+              Back
+          </button>
+          {/* <button
               type="button"
               onClick={async () => {
                 const err = validateAll();
@@ -1127,18 +1104,16 @@ const rangeDays =
                 className={`${primaryBtn} h-12 w-1/2`}
                 >
               {calcLoading ? "Calculating..." : "Calculate Price"}
-          </button>
+          </button> */}
           </div>
         </div>
         )}
     </div>                         
-          {/* RIGHT SUMMARY */}
           <div className="hidden md:block lg:sticky lg:top-6 h-fit">
             <div className="bg-white rounded-3xl border border-gray-200 shadow-[0_12px_40px_rgba(15,23,42,0.06)] p-5">
               <p className="text-sm font-extrabold text-gray-900 mb-4">
                 Booking Summary
               </p>
-
               {carImages.length > 0 ? (
                 <div className="rounded-2xl overflow-hidden border border-gray-200 bg-gray-50">
                   <img
@@ -1152,12 +1127,10 @@ const rangeDays =
                   No image
                 </div>
               )}
-
               <div className="mt-4">
                 <p className="text-lg font-extrabold text-gray-900">
                   {carLoading ? "Loading..." : carData?.title || "Car Name"}
                 </p>
-
                 <div className="mt-3 rounded-2xl border border-gray-200 bg-gray-50 p-4 space-y-2">
                   <div className="flex justify-between">
                     <span className="text-gray-500 text-sm font-semibold">
@@ -1167,7 +1140,6 @@ const rangeDays =
                       {priceType}
                     </span>
                   </div>
-
                   <div className="flex justify-between items-center text-sm font-semibold w-full">
                     <span className="text-gray-500">Method</span>
                     <span className="font-semibold text-gray-900">
@@ -1180,21 +1152,18 @@ const rangeDays =
                             : "Pickup"}
                     </span>
                   </div>
-
                   {pickupType === "DELIVERY" && address && (
                     <div className="text-xs text-gray-500 bg-soft-grey/30 rounded-xl p-2">
                       {address}
                     </div>
                   )}
-
                   <div className="pt-3 border-t border-gray-200 space-y-2">
-                    <div className="flex justify-between text-sm font-semibold text-gray-700">
-                      <span>Base Rental:</span>
-                      <span className="text-gray-900">
-                        AED {formatMoney(calc?.totalAmount || 0)}
-                      </span>
-                    </div>
-
+                   <div className="flex justify-between text-sm font-semibold text-gray-700">
+                    <span>Base Rental:</span>
+                    <span className="text-gray-900">
+                      AED {formatMoney(rentalDays > 0 ? calc?.totalAmount ?? 0 : 0)}
+                    </span>
+                  </div>
                     {pickupReturnCharges.pickup > 0 && (
                       <div className="flex justify-between text-sm font-semibold text-gray-700">
                         <span>Pickup charge:</span>
@@ -1252,13 +1221,14 @@ const rangeDays =
                   </div>
                 </div>
 
-                <button
-                  onClick={handleCreateBooking}
-                  disabled={!canPay || createLoading}
-                  className={`mt-4 text-white ${primaryBtn}`}
-                >
-                  {createLoading ? "Redirecting..." : "Confirm & Pay"}
-                </button>
+              <button
+  onClick={handleCreateBooking}
+  disabled={!canPayFinal || createLoading}
+  className={`mt-4 ${primaryBtn}`}
+>
+  {createLoading ? "Redirecting..." : "Confirm & Pay"}
+</button>
+
 
                 {frontendTotal === 0 && (
                   <p className="mt-3 text-xs font-semibold text-gray-500">
@@ -1753,77 +1723,8 @@ const rangeDays =
           )}
         </>
       )}
-        {/* YOUR DETAILS HEADER */}
-        <div className="flex items-center justify-between pt-2">
-          <div className="flex items-center gap-2">
-            <User className="w-4 h-4 text-site-accent" />
-            <p className="text-sm font-extrabold text-gray-900">Your Details</p>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setDetailsOpen((prev) => !prev)}
-            className="h-9 w-9 rounded-full  flex items-center justify-center"
-          >
-            {detailsOpen ? (
-              <Minus className="w-5 h-5 text-gray-800" />
-            ) : (
-              <Plus className="w-5 h-5 text-gray-800" />
-            )}
-          </button>
-        </div>
-
-        {/* DETAILS BODY */}
-        {detailsOpen && (
-          <div className="space-y-4 mt-3">
-            <div>
-              <label className="text-gray-700 text-sm">Full Name</label>
-              <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 focus-within:bg-white focus-within:ring-2 focus-within:ring-site-accent/30">
-                <User className="w-4 h-4 text-site-accent" />
-                <input
-                  value={guestName}
-                  onChange={(e) => setGuestName(e.target.value)}
-                  placeholder="Enter your full name"
-                  className="flex-1 bg-transparent outline-none text-sm font-semibold"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-gray-700 text-sm">Mobile Number</label>
-              <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 focus-within:bg-white focus-within:ring-2 focus-within:ring-site-accent/30">
-                <Phone className="w-4 h-4 text-site-accent" />
-                <span className="text-sm font-extrabold text-gray-900">+971</span>
-                <input
-                  type="tel"
-                  value={guestPhone}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, "").slice(0, 9);
-                    setGuestPhone(val);
-                  }}
-                  placeholder="50XXXXXXX"
-                  className="flex-1 bg-transparent outline-none text-sm font-semibold"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-gray-700 text-sm">Email Address</label>
-              <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 focus-within:bg-white focus-within:ring-2 focus-within:ring-site-accent/30">
-                <Mail className="w-4 h-4 text-site-accent" />
-                <input
-                  type="email"
-                  value={guestEmail}
-                  onChange={(e) => setGuestEmail(e.target.value)}
-                  placeholder="Enter your email address"
-                  className="flex-1 bg-transparent outline-none text-sm font-semibold"
-                />
-              </div>
-            </div>
-          </div>
-        )}
-               {/* SECURITY DEPOSIT TOGGLE */}
-              <div className="flex items-center justify-between border-t border-gray-200 pb-3 mt-4">
+    
+              <div className="flex items-center justify-between  border-gray-200 pb-3 mt-4">
                 <div>
                   <p className="font-semibold text-gray-900 pt-3">
                     Security Deposit
@@ -1878,6 +1779,74 @@ const rangeDays =
         )}
           {mobileStep === 3 && (
              <>
+                 <div className="flex items-center justify-between pt-2">
+          <div className="flex items-center gap-2">
+            <User className="w-4 h-4 text-site-accent" />
+            <p className="text-sm font-extrabold text-gray-900">Your Details</p>
+          </div>
+{/* 
+          <button
+            type="button"
+            onClick={() => setDetailsOpen((prev) => !prev)}
+            className="h-9 w-9 rounded-full  flex items-center justify-center"
+          >
+            {detailsOpen ? (
+              <Minus className="w-5 h-5 text-gray-800" />
+            ) : (
+              <Plus className="w-5 h-5 text-gray-800" />
+            )}
+          </button> */}
+        </div>
+
+        {/* DETAILS BODY */}
+        {/* {detailsOpen && ( */}
+          <div className="space-y-4 mt-3">
+            <div>
+              <label className="text-gray-700 font-semibold text-sm">Full Name</label>
+              <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 focus-within:bg-white focus-within:ring-2 focus-within:ring-site-accent/30">
+                <User className="w-4 h-4 text-site-accent" />
+                <input
+                  value={guestName}
+                  onChange={(e) => setGuestName(e.target.value)}
+                  placeholder="Enter your full name"
+                  className="flex-1 bg-transparent outline-none text-sm font-semibold"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-gray-700 font-semibold text-sm">Mobile Number</label>
+              <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 focus-within:bg-white focus-within:ring-2 focus-within:ring-site-accent/30">
+                <Phone className="w-4 h-4 text-site-accent" />
+                <span className="text-sm font-extrabold text-gray-900">+971</span>
+                <input
+                  type="tel"
+                  value={guestPhone}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, "").slice(0, 9);
+                    setGuestPhone(val);
+                  }}
+                  placeholder="50XXXXXXX"
+                  className="flex-1 bg-transparent outline-none text-sm font-semibold"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-gray-700 font-semibold text-sm">Email Address</label>
+              <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 focus-within:bg-white focus-within:ring-2 focus-within:ring-site-accent/30">
+                <Mail className="w-4 h-4 text-site-accent" />
+                <input
+                  type="email"
+                  value={guestEmail}
+                  onChange={(e) => setGuestEmail(e.target.value)}
+                  placeholder="Enter your email address"
+                  className="flex-1 bg-transparent outline-none text-sm font-semibold"
+                />
+              </div>
+            </div>
+          </div>
+        {/* )} */}
               <div className="mt-3 rounded-2xl border border-gray-200 bg-gray-50 p-4 space-y-2">
                   <div className="flex justify-between">
                     <span className="text-gray-500 text-sm font-semibold">
@@ -2042,19 +2011,24 @@ const rangeDays =
               >
                Back
             </button>
-              <button
-                onClick={handleCreateBooking}
-                disabled={!canPay || createLoading || !agree}
-                className={`flex-1 rounded-2xl py-4 text-lg font-extrabold whitespace-nowrap transition
-                  ${
-                    !agree || !canPay
-                      ? "bg-site-accent opacity-50  text-white cursor-not-allowed"
-                      : " bg-gradient-to-r from-site-accent to-slate-teal text-white shadow-md"
-                  }
-                `}
-              >
-                {createLoading ? "Redirecting..." : "Confirm & Pay"}
-              </button>
+            <button
+  onClick={handleConfirmPayMobile}
+ 
+  className={`flex-1 rounded-2xl py-4 text-lg font-extrabold transition
+    ${
+      !guestName.trim() ||
+      !guestPhone.trim() ||
+      !guestEmail.trim() ||
+      !agree ||
+      !canPayFinal
+        ? "bg-site-accent opacity-50 text-white cursor-not-allowed"
+        : "bg-gradient-to-r from-site-accent to-slate-teal text-white shadow-md"
+    }
+  `}
+>
+  {createLoading ? "Redirecting..." : "Confirm & Pay"}
+</button>
+
             </div>
           )}
           </div>
