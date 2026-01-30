@@ -1459,38 +1459,82 @@ const rangeDays =
         <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-3">
           <p className="text-base font-extrabold text-gray-900">Select Date & Time</p>
 
-          <div className="rounded-2xl bg-gray-100 p-4 mt-3">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xs font-semibold text-gray-500">Start Date</p>
-                <p className="text-lg font-extrabold text-gray-900 mb-4">
-                  {startDate
-                    ? startDate.toLocaleString("en-US", { month: "short", day: "numeric" })
-                    : ""}
-                </p>
-                <input
-                        type="time"
-                        value={pickupTime}
-                        onChange={(e) => setPickupTime(e.target.value)}
-                        className={inputBase}
-                      />
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-gray-500">End Date</p>
-                <p className="text-lg font-extrabold text-gray-900 mb-4">
-                  {endDate
-                    ? endDate.toLocaleString("en-US", { month: "short", day: "numeric" })
-                    : ""}
-                </p>
-                    <input
-                        type="time"
-                        value={dropoffTime}
-                        onChange={(e) => setDropoffTime(e.target.value)}
-                        className={inputBase}
-                      />
-              </div>
-            </div>
-          </div>
+      <div className="rounded bg-gray-100 p-2 md:p-3 mt-3">
+  <div className="grid grid-cols-2 gap-2 md:gap-3">
+    
+    {/* Start Date */}
+    <div>
+      <p className="text-[10px] md:text-xs font-semibold text-gray-500">
+        Start Date
+      </p>
+
+      <p className="text-base md:text-lg font-extrabold text-gray-900 mb-2 md:mb-4">
+        {startDate
+          ? startDate.toLocaleString("en-US", {
+              month: "short",
+              day: "numeric",
+            })
+          : ""}
+      </p>
+
+      <input
+        type="time"
+        value={pickupTime}
+        onChange={(e) => setPickupTime(e.target.value)}
+        className="
+          w-full
+          rounded-full
+          border border-gray-200
+          bg-soft-grey/40
+          px-3 py-2
+          md:px-4 md:py-3
+          text-xs md:text-sm
+          font-medium text-gray-800
+          outline-none transition
+          focus:bg-white
+          focus:ring-2 focus:ring-site-accent/30
+        "
+      />
+    </div>
+
+    {/* End Date */}
+    <div>
+      <p className="text-[10px] md:text-xs font-semibold text-gray-500">
+        End Date
+      </p>
+
+      <p className="text-base md:text-lg font-extrabold text-gray-900 mb-2 md:mb-4">
+        {endDate
+          ? endDate.toLocaleString("en-US", {
+              month: "short",
+              day: "numeric",
+            })
+          : ""}
+      </p>
+
+      <input
+        type="time"
+        value={dropoffTime}
+        onChange={(e) => setDropoffTime(e.target.value)}
+        className="
+          w-full
+          rounded-full
+          border border-gray-200
+          bg-soft-grey/40
+          px-3 py-2
+          md:px-4 md:py-3
+          text-xs md:text-sm
+          font-medium text-gray-800
+          outline-none transition
+          focus:bg-white
+          focus:ring-2 focus:ring-site-accent/30
+        "
+      />
+    </div>
+
+  </div>
+</div>
+
           <div className="mt-4">
            <DatePicker
               inline
@@ -1974,12 +2018,12 @@ const rangeDays =
              </>
           )}
        </div>
-    <div className="border-t border-gray-200 bg-white p-4">
+    <div className="border-t border-gray-200 bg-white p-2">
     {mobileStep === 1 && (
       <button
         type="button"
         onClick={handleContinue}   
-        className="w-full rounded-2xl  bg-gradient-to-r from-site-accent to-slate-teal py-4 text-white font-extrabold text-lg shadow-md"
+        className="w-full rounded-full  bg-gradient-to-r from-site-accent to-slate-teal py-3 text-white font-extrabold text-sm shadow-md"
       >
         Continue {startDate && endDate ? `(${rangeDays} days)` : ""}
       </button>
@@ -1989,32 +2033,32 @@ const rangeDays =
         <button
           type="button"
           onClick={() => setMobileStep(1)}
-          className="w-1/2 rounded-2xl border border-gray-200 py-4 text-gray-800 font-extrabold text-lg"
+          className="w-1/2 rounded-full border border-gray-200 py-3 text-gray-800 font-extrabold text-sm"
         >
           Back
         </button>
         <button
           type="button"
           onClick={handleNextStep}
-          className="w-1/2 rounded-2xl  bg-gradient-to-r from-site-accent to-slate-teal py-4 text-white font-extrabold text-lg shadow-md"
+          className="w-1/2 rounded-full  bg-gradient-to-r from-site-accent to-slate-teal py-3 text-white font-extrabold text-sm shadow-md"
         >
           Next
         </button>
       </div>
     )}
       {mobileStep === 3 && (
-        <div className="mt-4 flex gap-3">
+        <div className="mt-1 flex gap-3">
            <button
              type="button"
               onClick={() => setMobileStep(2)}
-              className="flex-1 rounded-2xl border border-gray-200 py-4 text-gray-800 font-extrabold text-lg"
+              className="flex-1 rounded-full border border-gray-200 py-3 text-gray-800 font-extrabold text-sm"
               >
                Back
             </button>
             <button
   onClick={handleConfirmPayMobile}
  
-  className={`flex-1 rounded-2xl py-4 text-lg font-extrabold transition
+  className={`flex-1 rounded-full py-3 text-sm font-extrabold transition
     ${
       !guestName.trim() ||
       !guestPhone.trim() ||

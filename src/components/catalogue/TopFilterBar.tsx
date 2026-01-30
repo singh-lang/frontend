@@ -187,20 +187,22 @@ export default function TopFiltersBar({ data }) {
   px-4 py-3
   flex items-center gap-6
 
-  overflow-y-visible
+  overflow-visible
   whitespace-nowrap
-overflow-auto
   scrollbar-hide
   overscroll-x-contain
 
-  md:flex-wrap md:overflow-visible md:whitespace-normal
+  md:flex-wrap
+  md:overflow-visible
+  md:whitespace-normal
 
   relative z-50
 "
 
+
           >
             {/* Deposit */}
-             <div className="relative shrink-0 p-1 rounded-2xl">
+             <div className="hidden md:block relative shrink-0 p-1 rounded-2xl">
               <button
                 type="button"
                 onClick={(e) => {
@@ -211,7 +213,9 @@ overflow-auto
               >
                 <span
                   className="flex items-center justify-between
-              w-[220px] h-11 px-5
+             w-[150px] h-9 px-3
+md:w-[220px] md:h-11 md:px-5
+
                rounded-full border border-gray-200 bg-white
                text-gray-800 text-sm font-medium
                shadow-sm hover:shadow-md transition"
@@ -254,7 +258,9 @@ overflow-auto
               >
                 <span
                   className="flex items-center justify-between
-                   w-[220px] h-11 px-5
+                   w-[120px] h-9 px-3
+md:w-[220px] md:h-11 md:px-5
+
                     rounded-full border border-gray-200 bg-white
                     text-gray-800 text-sm font-medium
                     shadow-sm hover:shadow-md transition"
@@ -266,7 +272,7 @@ overflow-auto
 
                     {brand.length > 0 && (
                       <span
-                        className="min-w-[22px] h-[22px] px-2
+                        className="w-[10px] sm:min-w-[22px] h-[22px] px-2
                       flex items-center justify-center
                       rounded-full bg-site-accent text-white
                       text-xs font-semibold"
@@ -288,7 +294,7 @@ overflow-auto
               {openDesktop.brand && (
                 <div
                   onClick={(e) => e.stopPropagation()}
-                  className="absolute left-0 top-full  mt-1 z-[9999] bg-white w-56 shadow-xl rounded-2xl p-4 border border-gray-100 max-h-72 overflow-y-auto"
+                  className="absolute left-0 top-full  mt-1 z-[9999] bg-white w-40 sm:w-56 shadow-xl rounded-2xl p-4 border border-gray-100 max-h-72 overflow-y-auto"
                 >
                   {data?.brands?.map((bt) => (
                     <label
@@ -326,7 +332,9 @@ overflow-auto
                   applyFilters({ sort: newSort });
                 }}
                 className="flex items-center justify-between
-               sm:w-[220px] h-11 px-5
+             w-[150px] h-9 px-3
+              md:w-[220px] md:h-11 md:px-5
+
                rounded-full border border-gray-200 bg-white
                text-gray-800 text-sm font-medium
                shadow-sm hover:shadow-md transition"
