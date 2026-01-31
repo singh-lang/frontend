@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState,useRef,useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -29,9 +29,13 @@ interface CompactCarCardProps {
 const CompactCarCard = ({ car }: CompactCarCardProps) => {
   const [period, setPeriod] = useState<PeriodType>("daily");
   const [showDetails, setShowDetails] = useState(false);
+    const [imgSrc, setImgSrc] = useState("/assets/car_placeholder.png");
+  
   const [activeTab, setActiveTab] = useState<DetailTabType>("carInfo");
   const [createClick] = useCreateClickMutation();
   const [isHovering, setIsHovering] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const imageContainerRef = useRef<HTMLDivElement>(null);
 
   const imageUrl = car?.car?.images?.[0]?.url || "/assets/car_placeholder.png";
 
@@ -109,28 +113,70 @@ const CompactCarCard = ({ car }: CompactCarCardProps) => {
       return next;
     });
   };
-const handleMouseEnter = () => setIsHovering(true);
+
+  const handleMouseEnter = () => setIsHovering(true);
   const handleMouseLeave = () => {
     setIsHovering(false);
+    setCurrentImageIndex(0);
   };
+   const handlePointerMove = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!car?.car?.images?.length) return;
+    const container = imageContainerRef.current;
+    if (!container) return;
+
+    const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+    const rect = container.getBoundingClientRect();
+    const relativeX = clientX - rect.left;
+    const percentage = Math.max(0, Math.min(1, relativeX / rect.width));
+    const newIndex = Math.min(
+      car.car.images.length - 1,
+      Math.floor(percentage * car.car.images.length)
+    );
+    if (newIndex !== currentImageIndex) setCurrentImageIndex(newIndex);
+  };
+    useEffect(() => {
+      if (car) {
+        setImgSrc(
+          car?.car?.images?.[currentImageIndex]?.url ||
+            "/assets/car_placeholder.png"
+        );
+      }
+    }, [car, currentImageIndex]);
   return (
     <div className="w-full group rounded-2xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition overflow-hidden">
       <div className="flex flex-col md:flex-row">
         {/* Image */}
-        <div
+      <div
+  ref={imageContainerRef}
           className="relative w-full md:w-[34%] h-[190px] md:h-[180px] bg-gray-100 overflow-hidden"
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-        >
-                  <Image
-          src={imageUrl}
-          alt={car?.title || "car"}
-          fill
-          className={`object-cover transition-transform duration-500 ease-out ${
-            isHovering ? "scale-[1.1]" : "scale-100"
-          }`}
-          sizes="(max-width:768px) 100vw, 35vw"
-        />
+  onMouseEnter={handleMouseEnter}
+  onMouseLeave={handleMouseLeave}
+  onMouseMove={handlePointerMove}
+  onTouchMove={handlePointerMove}
+>
+
+
+           <Image
+  src={imgSrc || "/assets/car_placeholder.png"}
+  alt={car?.title || "car"}
+  fill
+  className="object-cover"
+/>
+{/* {car?.car?.images?.length > 1 && (
+            <div className="absolute bottom-4 right-4 flex gap-1.5">
+              {car?.car?.images.map((_, index) => (
+                <div
+                  key={index}
+                  className={`w-2 h-2 rounded-full transition-all ${
+                    index === currentImageIndex
+                      ? "bg-site-accent w-6"
+                      : "bg-gray-100"
+                  }`}
+                />
+              ))}
+            </div>
+          )} */}
+
           <div className="absolute top-3 left-3 bg-white/90 px-3 py-1 rounded-full text-xs font-semibold text-gray-700">
             {car?.car?.category || "Car"}
           </div>

@@ -80,7 +80,7 @@ const [agree, setAgree] = useState(false);
   const [showDeliveryPolicy, setShowDeliveryPolicy] = useState(false);
   const [addonsOpen, setAddonsOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
-  const [depositFree, setDepositFree] = useState(false);
+  const [depositFree, setDepositFree] = useState(true);
 const [mobileAddonsOpen, setMobileAddonsOpen] = useState(false);
 
   // ---------- FORM STATES ----------
@@ -973,12 +973,26 @@ const rangeDays =
                   <div className="space-y-4">
                     <div>
                       <label className={fieldLabel}>Full Name</label>
-                      <input
-                        value={guestName}
-                        onChange={(e) => setGuestName(e.target.value)}
-                        placeholder="Enter your full name"
-                        className={inputBase}
-                      />
+ <input
+  value={guestName}
+  onChange={(e) => setGuestName(e.target.value)}
+  placeholder="Enter your full name"
+  className="
+    w-full min-w-0
+    rounded-full
+    border border-gray-200
+    bg-soft-grey/40
+    px-4 py-3
+    text-base md:text-sm
+    font-medium text-gray-800
+    outline-none transition
+    focus:bg-white
+    focus:ring-2 focus:ring-site-accent/30
+  "
+/>
+
+
+
                     </div>
                     <div>
                       <label className={fieldLabel}>Mobile Number</label>
@@ -1454,21 +1468,22 @@ const rangeDays =
         </div>
       </button>
     </div>
-        </div>
 
-        <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-3">
-          <p className="text-base font-extrabold text-gray-900">Select Date & Time</p>
+ <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-3">
+  <p className="text-base font-extrabold text-gray-900">
+    Select Date & Time
+  </p>
 
-      <div className="rounded bg-gray-100 p-2 md:p-3 mt-3">
-  <div className="grid grid-cols-2 gap-2 md:gap-3">
-    
-    {/* Start Date */}
-    <div>
-      <p className="text-[10px] md:text-xs font-semibold text-gray-500">
-        Start Date
-      </p>
-
-      <p className="text-base md:text-lg font-extrabold text-gray-900 mb-2 md:mb-4">
+  {/* Time pill */}
+  <div className="mt-3 rounded-2xl bg-gray-200 px-3 py-2">
+    <div className="grid grid-cols-2 gap-2 items-center">
+      
+      {/* Start */}
+      <div className="flex flex-col items-center">
+        <p className="text-sm font-semibold text-gray-500 mb-1">
+          Start Date
+        </p>
+        <p className="text-base md:text-lg font-extrabold text-gray-900 mb-2 md:mb-4">
         {startDate
           ? startDate.toLocaleString("en-US", {
               month: "short",
@@ -1477,33 +1492,30 @@ const rangeDays =
           : ""}
       </p>
 
-      <input
-        type="time"
-        value={pickupTime}
-        onChange={(e) => setPickupTime(e.target.value)}
-        className="
-          w-full
-          rounded-full
-          border border-gray-200
-          bg-soft-grey/40
-          px-3 py-2
-          md:px-4 md:py-3
-          text-xs md:text-sm
-          font-medium text-gray-800
-          outline-none transition
-          focus:bg-white
-          focus:ring-2 focus:ring-site-accent/30
-        "
-      />
-    </div>
+        <input
+          type="time"
+          value={pickupTime}
+          onChange={(e) => setPickupTime(e.target.value)}
+          className="
+            w-[150px]
+            bg-gray-100
+            text-sm
+            p-2
+            border-2 border-gray-300 rounded-2xl
+            font-semibold
+            text-gray-900
+            outline-none
+            text-center
+          "
+        />
+      </div>
 
-    {/* End Date */}
-    <div>
-      <p className="text-[10px] md:text-xs font-semibold text-gray-500">
-        End Date
-      </p>
-
-      <p className="text-base md:text-lg font-extrabold text-gray-900 mb-2 md:mb-4">
+      {/* End */}
+      <div className="flex flex-col items-center">
+        <p className="text-sm font-semibold text-gray-500 mb-1">
+          End Date
+        </p>
+         <p className="text-base md:text-lg font-extrabold text-gray-900 mb-2 md:mb-4">
         {endDate
           ? endDate.toLocaleString("en-US", {
               month: "short",
@@ -1511,31 +1523,30 @@ const rangeDays =
             })
           : ""}
       </p>
+        <input
+          type="time"
+          value={dropoffTime}
+          onChange={(e) => setDropoffTime(e.target.value)}
+          className="
+            w-[150px]
+            bg-gray-100
+            p-2
+            text-sm
+            border-2 border-gray-300 rounded-2xl
+            font-semibold
+            text-gray-900
+            outline-none
+            text-center
+          "
+        />
+      </div>
 
-      <input
-        type="time"
-        value={dropoffTime}
-        onChange={(e) => setDropoffTime(e.target.value)}
-        className="
-          w-full
-          rounded-full
-          border border-gray-200
-          bg-soft-grey/40
-          px-3 py-2
-          md:px-4 md:py-3
-          text-xs md:text-sm
-          font-medium text-gray-800
-          outline-none transition
-          focus:bg-white
-          focus:ring-2 focus:ring-site-accent/30
-        "
-      />
     </div>
-
   </div>
-</div>
 
-          <div className="mt-4">
+
+
+          <div className="flex justify-center mt-4">
            <DatePicker
               inline
               selectsRange
@@ -1566,6 +1577,7 @@ const rangeDays =
               calendarClassName="mobileRangeCalendar"
             />
           </div>
+        </div>
         </div>
       </>
     )}
@@ -1621,8 +1633,8 @@ const rangeDays =
                   })
                 : "-"}
             </p>
-            <p className="text-xs font-bold text-text-gray-900 mt-0.5 flex items-center justify-end gap-1">
-              <Clock className="w-3.5 h-3.5" />
+            <p className="text-xs font-bold text-text-gray-900  mt-0.5 flex items-center justify-end gap-1">
+              <Clock className="w-3.5 h-3.5 " />
               {endTime || "--:--"}
             </p>
           </div>
@@ -1849,12 +1861,19 @@ const rangeDays =
               <label className="text-gray-700 font-semibold text-sm">Full Name</label>
               <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 focus-within:bg-white focus-within:ring-2 focus-within:ring-site-accent/30">
                 <User className="w-4 h-4 text-site-accent" />
-                <input
-                  value={guestName}
-                  onChange={(e) => setGuestName(e.target.value)}
-                  placeholder="Enter your full name"
-                  className="flex-1 bg-transparent outline-none text-sm font-semibold"
-                />
+               <input
+                value={guestName}
+                onChange={(e) => setGuestName(e.target.value)}
+                placeholder="Enter your full name"
+                className="
+                  w-full min-w-0
+                  bg-transparent
+                  outline-none
+                  text-base md:text-sm
+                  font-semibold
+                "
+              />
+
               </div>
             </div>
 
@@ -1863,7 +1882,7 @@ const rangeDays =
               <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 focus-within:bg-white focus-within:ring-2 focus-within:ring-site-accent/30">
                 <Phone className="w-4 h-4 text-site-accent" />
                 <span className="text-sm font-extrabold text-gray-900">+971</span>
-                <input
+               <input
                   type="tel"
                   value={guestPhone}
                   onChange={(e) => {
@@ -1871,8 +1890,15 @@ const rangeDays =
                     setGuestPhone(val);
                   }}
                   placeholder="50XXXXXXX"
-                  className="flex-1 bg-transparent outline-none text-sm font-semibold"
+                  className="
+                    w-full min-w-0
+                    bg-transparent
+                    outline-none
+                    text-base md:text-sm
+                    font-semibold
+                  "
                 />
+
               </div>
             </div>
 
@@ -1881,12 +1907,19 @@ const rangeDays =
               <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 focus-within:bg-white focus-within:ring-2 focus-within:ring-site-accent/30">
                 <Mail className="w-4 h-4 text-site-accent" />
                 <input
-                  type="email"
-                  value={guestEmail}
-                  onChange={(e) => setGuestEmail(e.target.value)}
-                  placeholder="Enter your email address"
-                  className="flex-1 bg-transparent outline-none text-sm font-semibold"
-                />
+                type="email"
+                value={guestEmail}
+                onChange={(e) => setGuestEmail(e.target.value)}
+                placeholder="Enter your email address"
+                className="
+                  w-full min-w-0
+                  bg-transparent
+                  outline-none
+                  text-base md:text-sm
+                  font-semibold
+                "
+              />
+
               </div>
             </div>
           </div>
@@ -2020,13 +2053,16 @@ const rangeDays =
        </div>
     <div className="border-t border-gray-200 bg-white p-2">
     {mobileStep === 1 && (
-      <button
-        type="button"
-        onClick={handleContinue}   
-        className="w-full rounded-full  bg-gradient-to-r from-site-accent to-slate-teal py-3 text-white font-extrabold text-sm shadow-md"
-      >
-        Continue {startDate && endDate ? `(${rangeDays} days)` : ""}
-      </button>
+     <div className="px-4">
+  <button
+    type="button"
+    onClick={handleContinue}
+    className="w-full rounded-full bg-gradient-to-r from-site-accent to-slate-teal py-3 text-white font-extrabold text-sm shadow-md"
+  >
+    Continue {startDate && endDate ? `(${rangeDays} days)` : ""}
+  </button>
+</div>
+
     )}
     {mobileStep === 2 && (
       <div className="flex gap-3">

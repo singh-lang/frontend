@@ -335,7 +335,6 @@ background: linear-gradient(to right, #0f6176d6, #2564ebcd);
 /* Selected day */
 .react-datepicker__day--selected,
 .react-datepicker__day--keyboard-selected {
-  background: linear-gradient(to right, #0f766d, #2563eb);
   color: white !important;
   border-radius: 12px;
   font-weight: 700;
@@ -396,6 +395,7 @@ background: linear-gradient(to right, #0f6176d6, #2564ebcd);
 .mobileRangeCalendar,
 .mobileRangeCalendar .react-datepicker {
   width: 100% !important;
+  text-align: center !important;
   border: none !important;
   box-shadow: none !important;   /* ✅ remove shadow */
   background: transparent !important;
@@ -441,7 +441,6 @@ background: linear-gradient(to right, #0f6176d6, #2564ebcd);
   width: 40px !important;
   height: 40px !important;
   line-height: 40px !important;
-  margin: 0 !important;
   font-size: 14px !important;
   font-weight: 700 !important;
   border-radius: 12px !important;
@@ -484,7 +483,6 @@ background: linear-gradient(to right, #0f6176d6, #2564ebcd);
   color: #cbd5e1 !important;
 }
 .mobileRangeCalendar .react-datepicker__day--outside-month:hover {
-  background: transparent !important;
   cursor: not-allowed !important;
 }
 /* ✅ Month title show */
@@ -493,9 +491,8 @@ background: linear-gradient(to right, #0f6176d6, #2564ebcd);
   font-size: 16px !important;
   font-weight: 800 !important;
   color: #111827 !important; /* gray-900 */
-  text-align: left !important;
-  padding: 6px 12px !important;
   text-align: center !important;
+  padding: 6px 12px !important;
 }
 
 /* ✅ Month header proper */
@@ -525,4 +522,20 @@ background: linear-gradient(to right, #0f6176d6, #2564ebcd);
   color: black !important;
   border-radius: 12px;
   font-weight: 700;
+}
+@media (max-width: 640px) {
+  .react-datepicker {
+    transform: scale(0.95);
+    transform-origin: top center;
+  }
+}
+/* ✅ Desktop calendar – make date numbers bolder */
+@media (min-width: 641px) {
+  .react-datepicker__day {
+    font-weight: 600 !important;   /* bold */
+  }
+
+  .react-datepicker__day-name {
+    font-weight: 600 !important;   /* Su Mo Tu bhi bold */
+  }
 }

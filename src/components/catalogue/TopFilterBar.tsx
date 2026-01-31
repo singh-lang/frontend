@@ -15,14 +15,13 @@ import {
   SlidersHorizontal,
   X,
   LayoutGrid,
-  Car,
   Users,
   Palette,
   Settings2,
   Shapes,
 } from "lucide-react";
 
-export default function TopFiltersBar({ data }) {
+export default function TopFiltersBar({ data }: { data: any }) {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const [openCategory, setOpenCategory] = useState(false);
@@ -32,77 +31,49 @@ export default function TopFiltersBar({ data }) {
   const [openBodyType, setOpenBodyType] = useState(false);
   const [openInterior, setOpenInterior] = useState(false);
   const [openExterior, setOpenExterior] = useState(false);
-
   const filters = useAppSelector((s) => s.catalogFilters);
-
   const {
     noDeposit,
-    bodyType = [],
-    category = [],
     brand = [],
-    seatingCapacity = [],
+    category = [],
     transmission = [],
-    exteriorColor = [],
+    seatingCapacity = [],
+    bodyType = [],
     interiorColor = [],
+    exteriorColor = [],
   } = filters;
 
   const [sort, setSort] = useState(filters?.sort || "newest");
 
   const [openDesktop, setOpenDesktop] = useState({
     deposit: false,
-    price: false,
     brand: false,
-    sort: false,
   });
 
-  // ✅ Full screen filter modal state
   const [openFullFilter, setOpenFullFilter] = useState(false);
 
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const [getCars] = useLazyApplyFiltersQuery();
 
-  const openFilter = (key: keyof typeof openDesktop) => {
-    setOpenDesktop({
-      deposit: false,
-      price: false,
-      brand: false,
-      sort: false,
-      [key]: true,
-    });
+  /* ---------------- helpers ---------------- */
+
+  const openFilter = (key: "deposit" | "brand") => {
+    setOpenDesktop({ deposit: false, brand: false, [key]: true });
   };
 
   const closeAll = () => {
-    setOpenDesktop({
-      deposit: false,
-      price: false,
-      brand: false,
-      sort: false,
-    });
+    setOpenDesktop({ deposit: false, brand: false });
   };
 
-  // ✅ Outside click close (small dropdowns only)
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (!dropdownRef.current) return;
-      if (!dropdownRef.current.contains(e.target as Node)) {
-        closeAll();
-      }
+      if (!dropdownRef.current.contains(e.target as Node)) closeAll();
     };
-
     document.addEventListener("click", handler);
     return () => document.removeEventListener("click", handler);
   }, []);
 
-  // ✅ ESC close full filter
-  useEffect(() => {
-    const escHandler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpenFullFilter(false);
-    };
-    document.addEventListener("keydown", escHandler);
-    return () => document.removeEventListener("keydown", escHandler);
-  }, []);
-
-  // ✅ Apply API
   const applyFilters = async (extra = {}) => {
     const final = getFilters({
       ...filters,
@@ -111,246 +82,217 @@ export default function TopFiltersBar({ data }) {
       sort,
     });
 
-    try {
-      const res = await getCars(final).unwrap();
-
-      dispatch(
-        setCatalogCars({
-          carsData: res.data.docs,
-          page: res.data.page,
-          totalPages: res.data.totalPages,
-        }),
-      );
-
-      router.push(`/catalog/all/cars?page=1`, { scroll: false });
-    } catch (err) {
-      console.log("Apply Filter Error:", err);
-    }
+    const res = await getCars(final).unwrap();
+    dispatch(
+      setCatalogCars({
+        carsData: res.data.docs,
+        page: res.data.page,
+        totalPages: res.data.totalPages,
+      }),
+    );
+    router.push(`/catalog/all/cars?page=1`, { scroll: false });
   };
 
-  // ✅ Reset Filters
   const clearFilters = async () => {
     dispatch(removeCatalogFilters());
     setSort("newest");
 
-    try {
-      const res = await getCars({ page: 1 }).unwrap();
-
-      dispatch(
-        setCatalogCars({
-          carsData: res.data.docs,
-          page: res.data.page,
-          totalPages: res.data.totalPages,
-        }),
-      );
-
-      router.push(`/catalog/all/cars?page=1`, { scroll: false });
-      closeAll();
-      setOpenFullFilter(false);
-    } catch (err) {
-      console.log("Reset Error:", err);
-    }
+    const res = await getCars({ page: 1 }).unwrap();
+    dispatch(
+      setCatalogCars({
+        carsData: res.data.docs,
+        page: res.data.page,
+        totalPages: res.data.totalPages,
+      }),
+    );
+    setOpenFullFilter(false);
+    closeAll();
   };
+
+  /* ================= RENDER ================= */
 
   return (
     <>
-      {/* TOP BAR */}
-      <div className="relative z-10 backdrop-blur-md">
-        <div className="w-full">
-          <div className="max-w-[1100px] mx-auto px-4 sm:px-6">
-            <div className="flex items-center justify-between gap-4">
-              <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900">
-                Choose a car
-              </h2>
+      {/* HEADER */}
+      <div className="relative z-10">
+        <div className="max-w-[1100px] mx-auto px-4">
+          <div className="flex items-center justify-between py-4">
+            <h2 className="text-2xl md:text-3xl font-extrabold">
+              Choose a car
+            </h2>
 
-              <button
-                type="button"
-                onClick={() => setOpenFullFilter(true)}
-                className="
-                flex items-center gap-2
-                bg-gradient-to-r from-site-accent to-slate-teal text-white
-                px-6 py-3 rounded-full
-                text-sm font-semibold
-                shadow-md hover:opacity-95 transition
-              "
-              >
-                <SlidersHorizontal className="w-4 h-4" />
-                Filter
-              </button>
-            </div>
+            <button
+              onClick={() => setOpenFullFilter(true)}
+              className="flex items-center gap-2 px-6 py-3 rounded-full
+                         bg-gradient-to-r from-site-accent to-slate-teal
+                         text-white font-semibold"
+            >
+              <SlidersHorizontal size={16} />
+              Filter
+            </button>
           </div>
+        </div>
 
-          <div
-            ref={dropdownRef}
-          className="
-  rounded-[28px]
-  px-4 py-3
-  flex items-center gap-6
+        {/* FILTER BAR (DESKTOP + MOBILE) */}
+        <div ref={dropdownRef} className=" px-4 py-3">
 
-  overflow-visible
-  whitespace-nowrap
-  scrollbar-hide
-  overscroll-x-contain
+          <div className="flex items-center gap-3 md:gap-6">
 
-  md:flex-wrap
-  md:overflow-visible
-  md:whitespace-normal
-
-  relative z-50
-"
-
-
-          >
             {/* Deposit */}
-             <div className="hidden md:block relative shrink-0 p-1 rounded-2xl">
+            <div className="relative flex-1 md:flex-none">
               <button
-                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   openDesktop.deposit ? closeAll() : openFilter("deposit");
                 }}
-                className="flex flex-col text-left"
-              >
-                <span
-                  className="flex items-center justify-between
+                     className="flex items-center justify-between
              w-[150px] h-9 px-3
 md:w-[220px] md:h-11 md:px-5
 
                rounded-full border border-gray-200 bg-white
                text-gray-800 text-sm font-medium
                shadow-sm hover:shadow-md transition"
-                >
-                  {noDeposit ? "No Deposit" : "Deposit"}
-                  <ChevronDown size={16} />
-                </span>
+              >
+                {noDeposit ? "No Deposit" : "Deposit"}
+                <ChevronDown size={16} />
               </button>
 
-             {openDesktop.deposit && (
-            <div
-              onClick={(e) => e.stopPropagation()}
-              className="absolute left-0 top-full z-[9999] bg-white w-[220px] rounded-2xl shadow-xl border border-gray-100 p-4 ml-1"
-            >
-              <label className="flex items-center gap-1 py-1 text-sm text-gray-700">
-                <input
-                  type="checkbox"
-                  checked={noDeposit}
-                  onChange={(e) => {
-                    const checked = e.target.checked;
-                    dispatch(setCatalogFilters({ noDeposit: checked }));
-                    applyFilters({ noDeposit: checked });
-                  }}
-                  className="accent-site-primary"
-                />
-                No Deposit
-              </label>
-            </div>
-          )}
+              {openDesktop.deposit && (
+                <div   className="mt-1 absolute left-0 top-full   z-[9999] bg-white  w-full max-h-72 overflow-y-auto
+                            bg-gradient-to-br from-off-white to-white border border-soft-grey/40 rounded-lg md:rounded-xl 
+                            px-3 md:px-4 py-2 md:py-2.5 text-sm md:text-base text-site-primary font-semibold focus:outline-none
+                           focus:border-site-accent focus:ring-2 focus:ring-site-accent/20 transition-all cursor-pointer shadow-sm hover:shadow-md" >
 
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={noDeposit}
+                      onChange={(e) => {
+                        dispatch(
+                          setCatalogFilters({ noDeposit: e.target.checked }),
+                        );
+                        applyFilters({ noDeposit: e.target.checked });
+                      }}
+                    />
+                    No Deposit
+                  </label>
+                </div>
+              )}
             </div>
-            <div className="relative shrink-0">
+
+            {/* Brand */}
+            <div className="relative flex-1 md:flex-none">
               <button
-                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   openDesktop.brand ? closeAll() : openFilter("brand");
                 }}
-                className="flex items-center"
-              >
-                <span
+         
                   className="flex items-center justify-between
-                   w-[120px] h-9 px-3
-md:w-[220px] md:h-11 md:px-5
-
-                    rounded-full border border-gray-200 bg-white
-                    text-gray-800 text-sm font-medium
-                    shadow-sm hover:shadow-md transition"
+             w-[150px] h-9 px-3
+            md:w-[220px] md:h-11 md:px-5
+               rounded-full border border-gray-200 bg-white
+               text-gray-800 text-sm font-medium
+               shadow-sm hover:shadow-md transition"
                 >
-                  <span className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-800">
-                      Brand
+
+    
+                <span className="flex items-center gap-2">
+                  Brand
+                  {brand.length > 0 && (
+                    <span className="px-2 rounded-full bg-site-accent text-white text-xs ">
+                      {brand.length}
                     </span>
-
-                    {brand.length > 0 && (
-                      <span
-                        className="w-[10px] sm:min-w-[22px] h-[22px] px-2
-                      flex items-center justify-center
-                      rounded-full bg-site-accent text-white
-                      text-xs font-semibold"
-                      >
-                        {brand.length}
-                      </span>
-                    )}
-                  </span>
-
-                  <ChevronDown
-                    size={16}
-                    className={`transition-transform duration-200 ${
-                      openDesktop.brand ? "rotate-180" : ""
-                    }`}
-                  />
+                  )}
                 </span>
+                <ChevronDown size={16} />
               </button>
 
               {openDesktop.brand && (
-                <div
-                  onClick={(e) => e.stopPropagation()}
-                  className="absolute left-0 top-full  mt-1 z-[9999] bg-white w-40 sm:w-56 shadow-xl rounded-2xl p-4 border border-gray-100 max-h-72 overflow-y-auto"
-                >
-                  {data?.brands?.map((bt) => (
-                    <label
-                      key={bt._id}
-                      className="flex items-center gap-2 py-1 text-sm text-gray-700"
-                    >
+                <div    className="mt-1 absolute left-0 top-full  z-[9999] bg-white  w-full sm:w-full max-h-72 overflow-y-auto
+                            bg-gradient-to-br from-off-white to-white border border-soft-grey/40 rounded-lg md:rounded-xl 
+                            px-3 md:px-4 py-2 md:py-2.5 text-sm md:text-base text-site-primary font-semibold focus:outline-none
+                           focus:border-site-accent focus:ring-2 focus:ring-site-accent/20 transition-all cursor-pointer shadow-sm hover:shadow-md" >
+
+                  {data?.brands?.map((b: any) => (
+                    <label key={b._id} className="flex gap-2 text-sm py-1">
                       <input
                         type="checkbox"
-                        checked={brand.includes(bt._id)}
+                        checked={brand.includes(b._id)}
                         onChange={() => {
-                          const updated = brand.includes(bt._id)
-                            ? brand.filter((x: string) => x !== bt._id)
-                            : [...brand, bt._id];
-
+                          const updated = brand.includes(b._id)
+                            ? brand.filter((x: string) => x !== b._id)
+                            : [...brand, b._id];
                           dispatch(setCatalogFilters({ brand: updated }));
                           applyFilters({ brand: updated });
                         }}
-                        className="accent-site-primary"
                       />
-                      {bt.name}
+                      {b.name}
                     </label>
                   ))}
                 </div>
               )}
             </div>
 
-            <div className=" flex items-center gap-3 shrink-0">
-              <span className="text-sm font-semibold text-gray-900">Sort</span>
+            {/* DESKTOP SORT */}
+            <div className="hidden md:flex items-center gap-3">
+              <span className="font-semibold text-sm">Sort</span>
               <select
                 value={sort}
                 onChange={(e) => {
-                  const newSort = e.target.value;
-                  setSort(newSort);
-                  dispatch(setCatalogFilters({ sort: newSort }));
-                  applyFilters({ sort: newSort });
+                  setSort(e.target.value);
+                  dispatch(setCatalogFilters({ sort: e.target.value }));
+                  applyFilters({ sort: e.target.value });
                 }}
-                className="flex items-center justify-between
+     className="flex items-center justify-between
              w-[150px] h-9 px-3
-              md:w-[220px] md:h-11 md:px-5
+            md:w-[220px] md:h-11 md:px-5
 
                rounded-full border border-gray-200 bg-white
                text-gray-800 text-sm font-medium
                shadow-sm hover:shadow-md transition"
-              >
+                             >
                 <option value="newest">Newest Cars</option>
                 <option value="lowestPrice">Price: High to Low</option>
                 <option value="highestPrice">Price: Low to High</option>
                 <option value="mostBooked">Most Booked</option>
               </select>
             </div>
-
-            {/* ✅ FULL SCREEN FILTER BUTTON */}
           </div>
+
+          {/* ROW 2: MOBILE SORT */}
+       <div className="mt-3 md:hidden flex items-center justify-center gap-2">
+          <span className="font-semibold text-sm shrink-0">
+            Sort
+          </span>
+
+          <select
+            value={sort}
+            onChange={(e) => {
+              const newSort = e.target.value;
+              setSort(newSort);
+              dispatch(setCatalogFilters({ sort: newSort }));
+              applyFilters({ sort: newSort });
+            }}
+            className="
+             
+              h-9 px-3
+              rounded-full border border-gray-200 bg-white
+              text-gray-800 text-sm font-medium
+              shadow-sm hover:shadow-md transition
+            "
+          >
+            <option value="newest">Newest Cars</option>
+            <option value="lowestPrice">Price: High to Low</option>
+            <option value="highestPrice">Price: Low to High</option>
+            <option value="mostBooked">Most Booked</option>
+          </select>
+        </div>
         </div>
       </div>
-      {openFullFilter && (
+
+      {/* FULL FILTER DRAWER */}
+       {openFullFilter && (
         <div className="fixed inset-0 z-[99999] bg-black/50 backdrop-blur-[2px] flex">
           {/* LEFT DRAWER */}
           <div
@@ -396,8 +338,10 @@ md:w-[220px] md:h-11 md:px-5
                 {openCategory && (
                   <div
                     onClick={(e) => e.stopPropagation()}
-                    className="absolute left-0 top-full mt-1 z-[9999] bg-white w-full shadow-xl rounded-2xl p-4 border border-gray-100 max-h-72 overflow-y-auto"
-                  >
+             className="absolute left-0 top-full  mt-1 z-[9999] bg-white  w-full max-h-72 overflow-y-auto
+                            bg-gradient-to-br from-off-white to-white border border-soft-grey/40 rounded-lg md:rounded-xl 
+                            px-3 md:px-4 py-2 md:py-2.5 text-sm md:text-base text-site-primary font-semibold focus:outline-none
+                           focus:border-site-accent focus:ring-2 focus:ring-site-accent/20 transition-all cursor-pointer shadow-sm hover:shadow-md"                  >
                     <p className="text-xs font-semibold text-gray-500 mb-2">
                       Select Categories
                     </p>
@@ -453,7 +397,7 @@ md:w-[220px] md:h-11 md:px-5
               </div>
 
               {/* Brand */}
-              <div className="relative bg-white rounded-3xl border border-gray-200 p-5 shadow-sm">
+              {/* <div className="relative bg-white rounded-3xl border border-gray-200 p-5 shadow-sm">
                 <button
                   type="button"
                   onClick={(e) => {
@@ -520,7 +464,7 @@ md:w-[220px] md:h-11 md:px-5
                     </div>
                   </div>
                 )}
-              </div>
+              </div> */}
 
               {/* Transmission */}
               <div className="relative bg-white rounded-3xl border border-gray-200 p-5 shadow-sm">
@@ -548,7 +492,11 @@ md:w-[220px] md:h-11 md:px-5
                 {openTransmission && (
                   <div
                     onClick={(e) => e.stopPropagation()}
-                    className="absolute left-0 top-full mt-1 z-[9999] bg-white w-full shadow-xl rounded-2xl p-4 border border-gray-100 max-h-72 overflow-y-auto"
+                  className="absolute left-0 top-full  mt-1 z-[9999] bg-white  w-full max-h-72 overflow-y-auto
+                            bg-gradient-to-br from-off-white to-white border border-soft-grey/40 rounded-lg md:rounded-xl 
+                            px-3 md:px-4 py-2 md:py-2.5 text-sm md:text-base text-site-primary font-semibold focus:outline-none
+                           focus:border-site-accent focus:ring-2 focus:ring-site-accent/20 transition-all cursor-pointer shadow-sm hover:shadow-md"
+
                   >
                     <p className="text-xs font-semibold text-gray-500 mb-2">
                       Select Transmission
@@ -624,8 +572,10 @@ md:w-[220px] md:h-11 md:px-5
                 {openSeating && (
                   <div
                     onClick={(e) => e.stopPropagation()}
-                    className="absolute left-0 top-full mt-1 z-[9999] bg-white w-full shadow-xl rounded-2xl p-4 border border-gray-100 max-h-72 overflow-y-auto"
-                  >
+             className="absolute left-0 top-full  mt-1 z-[9999] bg-white  w-full max-h-72 overflow-y-auto
+                            bg-gradient-to-br from-off-white to-white border border-soft-grey/40 rounded-lg md:rounded-xl 
+                            px-3 md:px-4 py-2 md:py-2.5 text-sm md:text-base text-site-primary font-semibold focus:outline-none
+                           focus:border-site-accent focus:ring-2 focus:ring-site-accent/20 transition-all cursor-pointer shadow-sm hover:shadow-md"                  >
                     <p className="text-xs font-semibold text-gray-500 mb-2">
                       Select Seating Capacity
                     </p>
@@ -699,8 +649,10 @@ md:w-[220px] md:h-11 md:px-5
                 {openBodyType && (
                   <div
                     onClick={(e) => e.stopPropagation()}
-                    className="absolute left-0 top-full mt-1 z-[9999] bg-white w-full shadow-xl rounded-2xl p-4 border border-gray-100 max-h-72 overflow-y-auto"
-                  >
+             className="absolute left-0 top-full  mt-1 z-[9999] bg-white  w-full max-h-72 overflow-y-auto
+                            bg-gradient-to-br from-off-white to-white border border-soft-grey/40 rounded-lg md:rounded-xl 
+                            px-3 md:px-4 py-2 md:py-2.5 text-sm md:text-base text-site-primary font-semibold focus:outline-none
+                           focus:border-site-accent focus:ring-2 focus:ring-site-accent/20 transition-all cursor-pointer shadow-sm hover:shadow-md"                  >
                     <p className="text-xs font-semibold text-gray-500 mb-2">
                       Select Body Type
                     </p>
@@ -772,8 +724,10 @@ md:w-[220px] md:h-11 md:px-5
                 {openInterior && (
                   <div
                     onClick={(e) => e.stopPropagation()}
-                    className="absolute left-0 top-full mt-1 z-[9999] bg-white w-full shadow-xl rounded-2xl p-4 border border-gray-100 max-h-72 overflow-y-auto"
-                  >
+             className="absolute left-0 top-full  mt-1 z-[9999] bg-white  w-full max-h-72 overflow-y-auto
+                            bg-gradient-to-br from-off-white to-white border border-soft-grey/40 rounded-lg md:rounded-xl 
+                            px-3 md:px-4 py-2 md:py-2.5 text-sm md:text-base text-site-primary font-semibold focus:outline-none
+                           focus:border-site-accent focus:ring-2 focus:ring-site-accent/20 transition-all cursor-pointer shadow-sm hover:shadow-md"                  >
                     <p className="text-xs font-semibold text-gray-500 mb-2">
                       Select Interior Color
                     </p>
@@ -847,8 +801,10 @@ md:w-[220px] md:h-11 md:px-5
                 {openExterior && (
                   <div
                     onClick={(e) => e.stopPropagation()}
-                    className="absolute left-0 top-full mt-1 z-[9999] bg-white w-full shadow-xl rounded-2xl p-4 border border-gray-100 max-h-72 overflow-y-auto"
-                  >
+             className="absolute left-0 top-full  mt-1 z-[9999] bg-white  w-full max-h-72 overflow-y-auto
+                            bg-gradient-to-br from-off-white to-white border border-soft-grey/40 rounded-lg md:rounded-xl 
+                            px-3 md:px-4 py-2 md:py-2.5 text-sm md:text-base text-site-primary font-semibold focus:outline-none
+                           focus:border-site-accent focus:ring-2 focus:ring-site-accent/20 transition-all cursor-pointer shadow-sm hover:shadow-md"                  >
                     <p className="text-xs font-semibold text-gray-500 mb-2">
                       Select Exterior Color
                     </p>
@@ -924,10 +880,7 @@ md:w-[220px] md:h-11 md:px-5
           </div>
         </div>
       )}
+
     </>
   );
 }
-
-
-
- 
