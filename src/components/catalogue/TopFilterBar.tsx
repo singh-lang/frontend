@@ -21,8 +21,28 @@ import {
   Shapes,
 } from "lucide-react";
 
-export default function TopFiltersBar({ data }: { data: any }) {
-  const dispatch = useAppDispatch();
+type IdName = {
+  _id: string;
+  name: string;
+};
+
+type Category = IdName & { cars?: number };
+type Seating = { _id: string; seats: number };
+type Transmission = { _id: string; transmission: string };
+
+type TopFiltersBarProps = {
+  data: {
+    brands?: IdName[];
+    categories?: Category[];
+    transmissions?: Transmission[];
+    seatingCapacities?: Seating[];
+    bodyTypes?: IdName[];
+    carColors?: IdName[];
+  };
+};
+
+export default function TopFiltersBar({ data }: TopFiltersBarProps) {
+    const dispatch = useAppDispatch();
   const router = useRouter();
   const [openCategory, setOpenCategory] = useState(false);
   const [openBrand, setOpenBrand] = useState(false);
@@ -214,7 +234,7 @@ md:w-[220px] md:h-11 md:px-5
                             px-3 md:px-4 py-2 md:py-2.5 text-sm md:text-base text-site-primary font-semibold focus:outline-none
                            focus:border-site-accent focus:ring-2 focus:ring-site-accent/20 transition-all cursor-pointer shadow-sm hover:shadow-md" >
 
-                  {data?.brands?.map((b: any) => (
+                  {data?.brands?.map((b) => (
                     <label key={b._id} className="flex gap-2 text-sm py-1">
                       <input
                         type="checkbox"
