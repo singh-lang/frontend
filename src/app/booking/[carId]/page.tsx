@@ -410,7 +410,7 @@ export default function BookingPage() {
   const securityDeposit = hasSecurityDeposit
     ? (carData?.securityDeposit ?? 0)
     : 0;
-  const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "";
+  const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
   const carImages = useMemo(() => {
     if (!carData?.car) return [];
@@ -607,7 +607,7 @@ export default function BookingPage() {
 
       // 2️⃣ Create PaymentIntent
       const paymentRes = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/v2/payments/create-intent`,
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/v2/payments/create-intent`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

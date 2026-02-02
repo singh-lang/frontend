@@ -2,15 +2,18 @@ import StripeProvider from "@/components/StripeProvider";
 import CheckoutForm from "@/components/CheckoutForm";
 
 async function getClientSecret(): Promise<string> {
-  const res = await fetch("http://localhost:5000/v2/payments/create-intent", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    cache: "no-store",
-    body: JSON.stringify({
-      bookingId: "booking_123",
-      amount: 5000,
-    }),
-  });
+  const res = await fetch(
+    `${process.env.NEXT_PUBLIC_API_BASE_URL}/v2/payments/create-intent`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+      body: JSON.stringify({
+        bookingId: "booking_123",
+        amount: 5000,
+      }),
+    },
+  );
 
   const data = await res.json();
   return data.clientSecret;
