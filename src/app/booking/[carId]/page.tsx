@@ -77,23 +77,9 @@ const EMIRATES = [
 // useEffect(() => {
 //   setMounted(true);
 // }, []);
-const [mounted, setMounted] = useState(false);
-
-useEffect(() => {
-  setMounted(true);
-}, []);
-
-const stripePromise = useMemo(() => {
-  if (!mounted) return null;
-
-  const key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-  if (!key) {
-    console.error("Stripe publishable key missing");
-    return null;
-  }
-
-  return loadStripe(key);
-}, [mounted]);
+const stripePromise = loadStripe(
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
+);
 
 export default function BookingPage() {
   const params = useParams();
@@ -1452,7 +1438,13 @@ export default function BookingPage() {
                     <Elements stripe={stripePromise} options={{ clientSecret }}>
                       <StripeCheckoutInline
                         onSuccess={() => {
-                          toast.success("Payment successful");
+                          toast.success("Booking confirmed");
+
+                          if (!createdBookingId) {
+                            toast.error("Booking ID missing");
+                            return;
+                          }
+
                           router.push(`/payments/rental/${createdBookingId}`);
                         }}
                       />
