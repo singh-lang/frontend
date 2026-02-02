@@ -80,6 +80,8 @@ export default function BookingPage() {
   const [infoOpen, setInfoOpen] = useState(false);
   const [depositFree, setDepositFree] = useState(false);
   const [mobileAddonsOpen, setMobileAddonsOpen] = useState(false);
+  const [depositFree, setDepositFree] = useState(true);
+const [mobileAddonsOpen, setMobileAddonsOpen] = useState(false);
 
   // ---------- FORM STATES ----------
   const [priceType, setPriceType] = useState<PriceType>("daily");
@@ -336,14 +338,37 @@ export default function BookingPage() {
   const depositFreeDailyFee = depositFreeRes?.data?.daily || 0;
 
   const rentalAmount = calc?.totalAmount ?? 0;
+  const hasSecurityDeposit =
+  !!carData?.depositRequired && (carData?.securityDeposit ?? 0) > 0;
+const depositFreeDailyFee = depositFreeRes?.data?.daily || 0;
+const securityDepositAmount = hasSecurityDeposit
+  ? carData!.securityDeposit!
+  : 0;
+   const rentalAmount = calc?.totalAmount ?? 0;
   const pickupFee = pickupReturnCharges.pickup;
   const returnFee = pickupReturnCharges.return;
   const depositFreeFee = depositFree ? depositFreeDailyFee : 0;
+  const depositFreeTotal = depositFreeDailyFee * rentalDays;
+
+  const isDepositFree = depositFree;
   const frontendTotal =
-    rentalAmount + pickupFee + returnFee + addonsTotal + depositFreeFee;
+  rentalAmount +
+  pickupFee +
+  returnFee +
+  addonsTotal +
+  (isDepositFree ? depositFreeTotal : securityDepositAmount);
+
   const frontendPayNow = calc
     ? Math.round((rentalAmount * calc.prepaymentPercent) / 100)
     : 0;
+ 
+  const depositAmount = depositFree
+  ? depositFreeDailyFee * rentalDays      // ✅ deposit-free → daily × days
+  : securityDepositAmount;             // ✅ ONE TIME
+
+  const depositAmount = depositFree
+    ? depositFreeDailyFee * rentalDays // ✅ deposit-free → daily × days
+    : securityDepositAmount; // ✅ ONE TIME
 
   const frontendPayLater = frontendTotal - frontendPayNow;
   useEffect(() => {
@@ -361,9 +386,6 @@ export default function BookingPage() {
     };
     fetchCar();
   }, [carId]);
-
-  const hasSecurityDeposit =
-    !!carData?.depositRequired && (carData?.securityDeposit ?? 0) > 0;
 
   const securityDeposit = hasSecurityDeposit
     ? (carData?.securityDeposit ?? 0)
@@ -885,53 +907,57 @@ export default function BookingPage() {
 
                 <div className={card}>
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold text-gray-900">
-                        Enjoy a deposit-free ride for AED {depositFreeDailyFee}{" "}
-                        Per day
-                      </p>
-                      <p className="text-sm text-gray-600 p-2">
-                        You can rent a car without any deposit by including the
-                        additional service fee <br /> in your rental price
-                      </p>
-                    </div>
+  <div>
+    <p className="font-semibold text-gray-900">
+      Enjoy a deposit-free ride for AED {depositFreeDailyFee} per day
+    </p>
+    <p className="text-sm text-gray-600 p-2">
+      You can rent a car without any deposit by including the
+      additional service fee in your rental price
+    </p>
+  </div>
 
-                    <button
-                      onClick={() => setDepositFree(!depositFree)}
-                      className={`relative w-12 h-6 rounded-full transition-colors ${
-                        depositFree ? "bg-site-accent" : "bg-gray-300"
-                      }`}
-                    >
-                      <span
-                        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                          depositFree ? "translate-x-6" : ""
-                        }`}
-                      />
-                    </button>
-                  </div>
+  <button
+    onClick={() => setDepositFree((prev) => !prev)}
+    className={`relative w-12 h-6 rounded-full transition-colors ${
+      depositFree ? "bg-site-accent" : "bg-gray-300"
+    }`}
+  >
+    <span
+      className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+        depositFree ? "translate-x-6" : "translate-x-0"
+      }`}
+    />
+  </button>
+</div>
 
-                  <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
-                        💳
-                      </div>
 
-                      <div>
-                        <p className="font-medium text-gray-900">Deposit</p>
-                        <p className="text-xs text-gray-500">
-                          Refunded within 21 days after you return the car
-                        </p>
-                      </div>
-                    </div>
+     <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
+  <div className="flex items-center gap-3">
+    <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
+      💳
+    </div>
 
-                    <p
-                      className={`text-lg font-semibold ${
-                        depositFree ? "text-gray-900" : "text-site-accent"
-                      }`}
-                    >
-                      AED {depositFree ? securityDeposit.toLocaleString() : "0"}
-                    </p>
-                  </div>
+    <div>
+      <p className="font-medium text-gray-900">
+        {depositFree ? "Deposit-free Fee" : "Security Deposit"}
+      </p>
+      <p className="text-xs text-gray-500">
+        {depositFree
+          ? "Applied per rental day"
+          : "Refunded within 21 days after you return the car"}
+      </p>
+    </div>
+  </div>
+
+  <p className="text-lg font-semibold text-site-accent">
+    AED{" "}
+    {depositFree
+      ? (depositFreeDailyFee * rentalDays).toLocaleString() // ✅ daily × days
+      : securityDeposit.toLocaleString()}                 
+  </p>
+</div>
+
                 </div>
                 <div className="flex gap-4">
                   <button
@@ -967,12 +993,26 @@ export default function BookingPage() {
                   <div className="space-y-4">
                     <div>
                       <label className={fieldLabel}>Full Name</label>
-                      <input
-                        value={guestName}
-                        onChange={(e) => setGuestName(e.target.value)}
-                        placeholder="Enter your full name"
-                        className={inputBase}
-                      />
+ <input
+  value={guestName}
+  onChange={(e) => setGuestName(e.target.value)}
+  placeholder="Enter your full name"
+  className="
+    w-full min-w-0
+    rounded-full
+    border border-gray-200
+    bg-soft-grey/40
+    px-4 py-3
+    text-base md:text-sm
+    font-medium text-gray-800
+    outline-none transition
+    focus:bg-white
+    focus:ring-2 focus:ring-site-accent/30
+  "
+/>
+
+
+
                     </div>
                     <div>
                       <label className={fieldLabel}>Mobile Number</label>
@@ -1180,14 +1220,19 @@ export default function BookingPage() {
                       </div>
                     )}
 
-                    {depositFreeFee > 0 && (
-                      <div className="flex justify-between text-sm font-semibold text-gray-700">
-                        <span>Deposit-free fee:</span>
-                        <span className="text-gray-900">
-                          AED {formatMoney(depositFreeFee)}
-                        </span>
-                      </div>
-                    )}
+                 {/* Deposit / Deposit-Free */}
+            {( depositFreeDailyFee > 0 || securityDeposit > 0) && (
+              <div className="flex justify-between text-sm font-semibold text-gray-700">
+                <span>
+                  {isDepositFree ? "Deposit-free fee" : "Security Deposit"}
+                </span>
+
+                <span className="text-gray-900">
+                  AED {formatMoney(depositAmount)}
+                </span>
+              </div>
+            )}
+
 
                     {addonsTotal > 0 && (
                       <div className="flex justify-between text-sm font-semibold text-gray-700">
@@ -1452,35 +1497,39 @@ export default function BookingPage() {
                             Vendor Collects Car
                           </p>
 
-                          <p className="text-xs font-medium text-gray-500 text-center">
-                            Paid (By Emirate)
-                          </p>
-                        </div>
-                      </button>
-                    </div>
-                  </div>
+          <p className="text-xs font-medium text-gray-500 text-center">
+            Paid (By Emirate)
+          </p>
+        </div>
+      </button>
+    </div>
 
                   <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-3">
                     <p className="text-base font-extrabold text-gray-900">
                       Select Date & Time
                     </p>
+ <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-3">
+  <p className="text-base font-extrabold text-gray-900">
+    Select Date & Time
+  </p>
 
-                    <div className="rounded bg-gray-100 p-2 md:p-3 mt-3">
-                      <div className="grid grid-cols-2 gap-2 md:gap-3">
-                        {/* Start Date */}
-                        <div>
-                          <p className="text-[10px] md:text-xs font-semibold text-gray-500">
-                            Start Date
-                          </p>
-
-                          <p className="text-base md:text-lg font-extrabold text-gray-900 mb-2 md:mb-4">
-                            {startDate
-                              ? startDate.toLocaleString("en-US", {
-                                  month: "short",
-                                  day: "numeric",
-                                })
-                              : ""}
-                          </p>
+  {/* Time pill */}
+  <div className="mt-3 rounded-2xl bg-gray-200 px-3 py-2">
+    <div className="grid grid-cols-2 gap-2 items-center">
+      
+      {/* Start */}
+      <div className="flex flex-col items-center">
+        <p className="text-sm font-semibold text-gray-500 mb-1">
+          Start Date
+        </p>
+        <p className="text-base md:text-lg font-extrabold text-gray-900 mb-2 md:mb-4">
+        {startDate
+          ? startDate.toLocaleString("en-US", {
+              month: "short",
+              day: "numeric",
+            })
+          : ""}
+      </p>
 
                           <input
                             type="time"
@@ -1501,52 +1550,68 @@ export default function BookingPage() {
         "
                           />
                         </div>
+        <input
+          type="time"
+          value={pickupTime}
+          onChange={(e) => setPickupTime(e.target.value)}
+          className="
+            w-[150px]
+            bg-gray-100
+            text-sm
+            p-2
+            border-2 border-gray-300 rounded-2xl
+            font-semibold
+            text-gray-900
+            outline-none
+            text-center
+          "
+        />
+      </div>
 
-                        {/* End Date */}
-                        <div>
-                          <p className="text-[10px] md:text-xs font-semibold text-gray-500">
-                            End Date
-                          </p>
+      {/* End */}
+      <div className="flex flex-col items-center">
+        <p className="text-sm font-semibold text-gray-500 mb-1">
+          End Date
+        </p>
+         <p className="text-base md:text-lg font-extrabold text-gray-900 mb-2 md:mb-4">
+        {endDate
+          ? endDate.toLocaleString("en-US", {
+              month: "short",
+              day: "numeric",
+            })
+          : ""}
+      </p>
+        <input
+          type="time"
+          value={dropoffTime}
+          onChange={(e) => setDropoffTime(e.target.value)}
+          className="
+            w-[150px]
+            bg-gray-100
+            p-2
+            text-sm
+            border-2 border-gray-300 rounded-2xl
+            font-semibold
+            text-gray-900
+            outline-none
+            text-center
+          "
+        />
+      </div>
 
-                          <p className="text-base md:text-lg font-extrabold text-gray-900 mb-2 md:mb-4">
-                            {endDate
-                              ? endDate.toLocaleString("en-US", {
-                                  month: "short",
-                                  day: "numeric",
-                                })
-                              : ""}
-                          </p>
+    </div>
+  </div>
 
-                          <input
-                            type="time"
-                            value={dropoffTime}
-                            onChange={(e) => setDropoffTime(e.target.value)}
-                            className="
-          w-full
-          rounded-full
-          border border-gray-200
-          bg-soft-grey/40
-          px-3 py-2
-          md:px-4 md:py-3
-          text-xs md:text-sm
-          font-medium text-gray-800
-          outline-none transition
-          focus:bg-white
-          focus:ring-2 focus:ring-site-accent/30
-        "
-                          />
-                        </div>
-                      </div>
-                    </div>
 
-                    <div className="mt-4">
-                      <DatePicker
-                        inline
-                        selectsRange
-                        startDate={startDate}
-                        endDate={endDate}
-                        onChange={(update) => {
-                          setDateRange(update);
+
+          <div className="flex justify-center mt-4">
+           <DatePicker
+              inline
+              selectsRange
+              startDate={startDate}
+              endDate={endDate}
+              onChange={(update) => {
+                setDateRange(update);
 
                           const [s, e] = update;
 
@@ -1561,24 +1626,22 @@ export default function BookingPage() {
                             setPickupTime(startTime);
                           }
 
-                          if (e) {
-                            const yyyy = e.getFullYear();
-                            const mm = String(e.getMonth() + 1).padStart(
-                              2,
-                              "0",
-                            );
-                            const dd = String(e.getDate()).padStart(2, "0");
-                            setDropoffDate(`${yyyy}-${mm}-${dd}`);
-                            setDropoffTime(endTime);
-                          }
-                        }}
-                        minDate={new Date()}
-                        calendarClassName="mobileRangeCalendar"
-                      />
-                    </div>
-                  </div>
-                </>
-              )}
+                if (e) {
+                  const yyyy = e.getFullYear();
+                  const mm = String(e.getMonth() + 1).padStart(2, "0");
+                  const dd = String(e.getDate()).padStart(2, "0");
+                  setDropoffDate(`${yyyy}-${mm}-${dd}`);
+                  setDropoffTime(endTime);
+                }
+              }}
+              minDate={new Date()}
+              calendarClassName="mobileRangeCalendar"
+            />
+          </div>
+        </div>
+        </div>
+      </>
+    )}
 
               {mobileStep === 2 && (
                 <>
@@ -1620,22 +1683,22 @@ export default function BookingPage() {
                           <span>End Date</span>
                         </div>
 
-                        <div className="text-right">
-                          <p className="text-sm font-semibold text-gray-900">
-                            {endDate
-                              ? endDate.toLocaleDateString("en-US", {
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                })
-                              : "-"}
-                          </p>
-                          <p className="text-xs font-bold text-text-gray-900 mt-0.5 flex items-center justify-end gap-1">
-                            <Clock className="w-3.5 h-3.5" />
-                            {endTime || "--:--"}
-                          </p>
-                        </div>
-                      </div>
+          <div className="text-right">
+            <p className="text-sm font-semibold text-gray-900">
+              {endDate
+                ? endDate.toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })
+                : "-"}
+            </p>
+            <p className="text-xs font-bold text-text-gray-900  mt-0.5 flex items-center justify-end gap-1">
+              <Clock className="w-3.5 h-3.5 " />
+              {endTime || "--:--"}
+            </p>
+          </div>
+        </div>
 
                       {/* DURATION */}
                       <div className="flex justify-between border-b border-gray-200 pb-3">
@@ -1800,61 +1863,61 @@ export default function BookingPage() {
                           </p>
                         </div>
 
-                        <button
-                          type="button"
-                          onClick={() => setDepositFree((prev) => !prev)}
-                          className={`relative w-12 h-6 rounded-full transition-colors ${
-                            depositFree ? "bg-site-accent" : "bg-gray-300"
-                          }`}
-                        >
-                          <span
-                            className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                              depositFree ? "translate-x-6" : ""
-                            }`}
-                          />
-                        </button>
-                      </div>
-                      {/* SECURITY DEPOSIT AMOUNT */}
-                      <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
-                            💳
-                          </div>
+                <button
+                  type="button"
+                  onClick={() => setDepositFree((prev) => !prev)}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${
+                    depositFree ? "bg-site-accent" : "bg-gray-300"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                      depositFree ? "translate-x-6" : ""
+                    }`}
+                  />
+                </button>
+              </div>
+                {/* SECURITY DEPOSIT AMOUNT */}
+              
+     <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
+  <div className="flex items-center gap-3">
+    <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
+      💳
+    </div>
 
-                          <div>
-                            <p className="font-semibold text-gray-900">
-                              Deposit Amount
-                            </p>
-                            <p className="text-xs text-gray-500">
-                              {depositFree
-                                ? "Deposit-free enabled"
-                                : "Refundable security deposit"}
-                            </p>
-                          </div>
-                        </div>
-                        <p
-                          className={`text-lg font-extrabold ${
-                            depositFree ? "text-gray-900" : "text-site-accent"
-                          }`}
-                        >
-                          AED{" "}
-                          {depositFree ? securityDeposit.toLocaleString() : "0"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </>
-              )}
-              {mobileStep === 3 && (
-                <>
-                  <div className="flex items-center justify-between pt-2">
-                    <div className="flex items-center gap-2">
-                      <User className="w-4 h-4 text-site-accent" />
-                      <p className="text-sm font-extrabold text-gray-900">
-                        Your Details
-                      </p>
-                    </div>
-                    {/* 
+    <div>
+      <p className="font-medium text-gray-900">
+        {depositFree ? "Deposit-free Fee" : "Security Deposit"}
+      </p>
+     <p className="text-xs text-gray-500 max-w-[150px]">
+  {depositFree
+    ? "Applied per rental day"
+    : "Refunded within 21 days after you return the car"}
+</p>
+
+    </div>
+  </div>
+
+  <p className="text-lg font-semibold text-site-accent">
+    AED{" "}
+    {depositFree
+      ? (depositFreeDailyFee * rentalDays).toLocaleString() // ✅ daily × days
+      : securityDeposit.toLocaleString()}                 
+  </p>
+</div>
+
+              </div>
+            </div>
+          </>
+        )}
+          {mobileStep === 3 && (
+             <>
+                 <div className="flex items-center justify-between pt-2">
+          <div className="flex items-center gap-2">
+            <User className="w-4 h-4 text-site-accent" />
+            <p className="text-sm font-extrabold text-gray-900">Your Details</p>
+          </div>
+{/* 
           <button
             type="button"
             onClick={() => setDetailsOpen((prev) => !prev)}
@@ -1885,137 +1948,166 @@ export default function BookingPage() {
                         />
                       </div>
                     </div>
+        {/* DETAILS BODY */}
+        {/* {detailsOpen && ( */}
+          <div className="space-y-4 mt-3">
+            <div>
+              <label className="text-gray-700 font-semibold text-sm">Full Name</label>
+              <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 focus-within:bg-white focus-within:ring-2 focus-within:ring-site-accent/30">
+                <User className="w-4 h-4 text-site-accent" />
+               <input
+                value={guestName}
+                onChange={(e) => setGuestName(e.target.value)}
+                placeholder="Enter your full name"
+                className="
+                  w-full min-w-0
+                  bg-transparent
+                  outline-none
+                  text-base md:text-sm
+                  font-semibold
+                "
+              />
 
-                    <div>
-                      <label className="text-gray-700 font-semibold text-sm">
-                        Mobile Number
-                      </label>
-                      <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 focus-within:bg-white focus-within:ring-2 focus-within:ring-site-accent/30">
-                        <Phone className="w-4 h-4 text-site-accent" />
-                        <span className="text-sm font-extrabold text-gray-900">
-                          +971
-                        </span>
-                        <input
-                          type="tel"
-                          value={guestPhone}
-                          onChange={(e) => {
-                            const val = e.target.value
-                              .replace(/\D/g, "")
-                              .slice(0, 9);
-                            setGuestPhone(val);
-                          }}
-                          placeholder="50XXXXXXX"
-                          className="flex-1 bg-transparent outline-none text-sm font-semibold"
-                        />
-                      </div>
-                    </div>
+              </div>
+            </div>
 
-                    <div>
-                      <label className="text-gray-700 font-semibold text-sm">
-                        Email Address
-                      </label>
-                      <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 focus-within:bg-white focus-within:ring-2 focus-within:ring-site-accent/30">
-                        <Mail className="w-4 h-4 text-site-accent" />
-                        <input
-                          type="email"
-                          value={guestEmail}
-                          onChange={(e) => setGuestEmail(e.target.value)}
-                          placeholder="Enter your email address"
-                          className="flex-1 bg-transparent outline-none text-sm font-semibold"
-                        />
-                      </div>
-                    </div>
+            <div>
+              <label className="text-gray-700 font-semibold text-sm">Mobile Number</label>
+              <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 focus-within:bg-white focus-within:ring-2 focus-within:ring-site-accent/30">
+                <Phone className="w-4 h-4 text-site-accent" />
+                <span className="text-sm font-extrabold text-gray-900">+971</span>
+               <input
+                  type="tel"
+                  value={guestPhone}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, "").slice(0, 9);
+                    setGuestPhone(val);
+                  }}
+                  placeholder="50XXXXXXX"
+                  className="
+                    w-full min-w-0
+                    bg-transparent
+                    outline-none
+                    text-base md:text-sm
+                    font-semibold
+                  "
+                />
+
+              </div>
+            </div>
+
+            <div>
+              <label className="text-gray-700 font-semibold text-sm">Email Address</label>
+              <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 focus-within:bg-white focus-within:ring-2 focus-within:ring-site-accent/30">
+                <Mail className="w-4 h-4 text-site-accent" />
+                <input
+                type="email"
+                value={guestEmail}
+                onChange={(e) => setGuestEmail(e.target.value)}
+                placeholder="Enter your email address"
+                className="
+                  w-full min-w-0
+                  bg-transparent
+                  outline-none
+                  text-base md:text-sm
+                  font-semibold
+                "
+              />
+
+              </div>
+            </div>
+          </div>
+              <div className="mt-3 rounded-2xl border border-gray-200 bg-gray-50 p-4 space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500 text-sm font-semibold">
+                      Rental Plan
+                    </span>
+                    <span className="font-semibold text-sm capitalize">
+                      {priceType}
+                    </span>
                   </div>
-                  {/* )} */}
-                  <div className="mt-3 rounded-2xl border border-gray-200 bg-gray-50 p-4 space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-gray-500 text-sm font-semibold">
-                        Rental Plan
-                      </span>
-                      <span className="font-semibold text-sm capitalize">
-                        {priceType}
+                  <div className="flex justify-between items-center text-sm font-semibold w-full">
+                    <span className="text-gray-500">Method</span>
+                    <span className="font-semibold text-gray-900">
+                      {pickupType === "DELIVERY" && returnType === "RETURN"
+                        ? "Delivery + Return"
+                        : pickupType === "DELIVERY"
+                          ? "Delivery"
+                          : returnType === "RETURN"
+                            ? "Pickup + Return"
+                            : "Pickup"}
+                    </span>
+                  </div>
+                  {pickupType === "DELIVERY" && address && (
+                    <div className="text-xs text-gray-500 bg-soft-grey/30 rounded-xl p-2">
+                      {address}
+                    </div>
+                  )}
+
+                  <div className="pt-3 border-t border-gray-200 space-y-2">
+                    <div className="flex justify-between text-sm font-semibold text-gray-700">
+                      <span>Base Rental:</span>
+                      <span className="text-gray-900">
+                        AED {formatMoney(calc?.totalAmount || 0)}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center text-sm font-semibold w-full">
-                      <span className="text-gray-500">Method</span>
-                      <span className="font-semibold text-gray-900">
-                        {pickupType === "DELIVERY" && returnType === "RETURN"
-                          ? "Delivery + Return"
-                          : pickupType === "DELIVERY"
-                            ? "Delivery"
-                            : returnType === "RETURN"
-                              ? "Pickup + Return"
-                              : "Pickup"}
-                      </span>
-                    </div>
-                    {pickupType === "DELIVERY" && address && (
-                      <div className="text-xs text-gray-500 bg-soft-grey/30 rounded-xl p-2">
-                        {address}
+                    {pickupReturnCharges.pickup > 0 && (
+                      <div className="flex justify-between text-sm font-semibold text-gray-700">
+                        <span>Pickup charge:</span>
+                        <span className="text-gray-900">
+                          AED {formatMoney(pickupReturnCharges.pickup)}
+                        </span>
                       </div>
                     )}
-
-                    <div className="pt-3 border-t border-gray-200 space-y-2">
+                    {pickupReturnCharges.return > 0 && (
                       <div className="flex justify-between text-sm font-semibold text-gray-700">
-                        <span>Base Rental:</span>
+                        <span>Return charge:</span>
                         <span className="text-gray-900">
-                          AED {formatMoney(calc?.totalAmount || 0)}
+                          AED {formatMoney(pickupReturnCharges.return)}
                         </span>
                       </div>
-                      {pickupReturnCharges.pickup > 0 && (
-                        <div className="flex justify-between text-sm font-semibold text-gray-700">
-                          <span>Pickup charge:</span>
-                          <span className="text-gray-900">
-                            AED {formatMoney(pickupReturnCharges.pickup)}
-                          </span>
-                        </div>
-                      )}
-                      {pickupReturnCharges.return > 0 && (
-                        <div className="flex justify-between text-sm font-semibold text-gray-700">
-                          <span>Return charge:</span>
-                          <span className="text-gray-900">
-                            AED {formatMoney(pickupReturnCharges.return)}
-                          </span>
-                        </div>
-                      )}
-                      {depositFreeFee > 0 && (
-                        <div className="flex justify-between text-sm font-semibold text-gray-700">
-                          <span>Deposit-free fee:</span>
-                          <span className="text-gray-900">
-                            AED {formatMoney(depositFreeFee)}
-                          </span>
-                        </div>
-                      )}
-                      {addonsTotal > 0 && (
-                        <div className="flex justify-between text-sm font-semibold text-gray-700">
-                          <span>Add-ons:</span>
-                          <span className="text-gray-900">
-                            AED {formatMoney(addonsTotal)}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex justify-between text-base font-extrabold text-gray-900 pt-3 border-t border-gray-200">
-                      <span>Total Price:</span>
-                      <span>AED {formatMoney(frontendTotal)}</span>
-                    </div>
+                    )}
+                   
+                        {( depositFreeDailyFee > 0 || securityDeposit > 0) && (
+              <div className="flex justify-between text-sm font-semibold text-gray-700">
+                <span>
+                  {isDepositFree ? "Deposit-free fee" : "Security Deposit"}
+                </span>
+
+                <span className="text-gray-900">
+                  AED {formatMoney(depositAmount)}
+                </span>
+              </div>
+            )}
+                    {addonsTotal > 0 && (
+                      <div className="flex justify-between text-sm font-semibold text-gray-700">
+                        <span>Add-ons:</span>
+                        <span className="text-gray-900">
+                          AED {formatMoney(addonsTotal)}
+                        </span>
+                      </div>
+                    )}
                   </div>
-                  <div className="mt-5 rounded-2xl border bg-gray-50 border-gray-200  p-4">
-                    <h3 className="text-base font-extrabold text-gray-900 mb-3">
-                      Agreement
-                    </h3>
-                    <label className="flex items-start gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={agree}
-                        onChange={(e) => setAgree(e.target.checked)}
-                        className="mt-1 h-5 w-5 rounded border-gray-300 text-site-accent focus:ring-site-accent"
-                      />
-                      <div className="flex flex-col">
-                        {/* Row 1 */}
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-semibold text-gray-900">
-                            I agree to the terms and conditions
-                          </p>
+                  <div className="flex justify-between text-base font-extrabold text-gray-900 pt-3 border-t border-gray-200">
+                    <span>Total Price:</span>
+                    <span>AED {formatMoney(frontendTotal)}</span>
+                  </div>
+                </div>
+          <div className="mt-5 rounded-2xl border bg-gray-50 border-gray-200  p-4">
+            <h3 className="text-base font-extrabold text-gray-900 mb-3">Agreement</h3>
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={agree}
+                onChange={(e) => setAgree(e.target.checked)}
+                className="mt-1 h-5 w-5 rounded border-gray-300 text-site-accent focus:ring-site-accent"
+              />
+               <div className="flex flex-col">
+  {/* Row 1 */}
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-semibold text-gray-900">
+              I agree to the terms and conditions
+            </p>
 
                           <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 text-gray-600 text-xs font-bold">
                             i
@@ -2050,56 +2142,60 @@ export default function BookingPage() {
                       <span>AED {formatMoney(frontendPayNow)}</span>
                     </div>
 
-                    <div className="flex justify-between text-xs font-semibold text-gray-500">
-                      <span>Pay later at handover</span>
-                      <span className="text-gray-900 font-extrabold">
-                        AED {formatMoney(frontendPayLater)}
-                      </span>
-                    </div>
+                  <div className="flex justify-between text-xs font-semibold text-gray-500">
+                    <span>Pay later at handover</span>
+                    <span className="text-gray-900 font-extrabold">
+                      AED {formatMoney(frontendPayLater)}
+                    </span>
                   </div>
-                </>
-              )}
-            </div>
-            <div className="border-t border-gray-200 bg-white p-2">
-              {mobileStep === 1 && (
-                <button
-                  type="button"
-                  onClick={handleContinue}
-                  className="w-full rounded-full  bg-gradient-to-r from-site-accent to-slate-teal py-3 text-white font-extrabold text-sm shadow-md"
-                >
-                  Continue {startDate && endDate ? `(${rangeDays} days)` : ""}
-                </button>
-              )}
-              {mobileStep === 2 && (
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setMobileStep(1)}
-                    className="w-1/2 rounded-full border border-gray-200 py-3 text-gray-800 font-extrabold text-sm"
-                  >
-                    Back
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleNextStep}
-                    className="w-1/2 rounded-full  bg-gradient-to-r from-site-accent to-slate-teal py-3 text-white font-extrabold text-sm shadow-md"
-                  >
-                    Next
-                  </button>
-                </div>
-              )}
-              {mobileStep === 3 && (
-                <div className="mt-1 flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setMobileStep(2)}
-                    className="flex-1 rounded-full border border-gray-200 py-3 text-gray-800 font-extrabold text-sm"
-                  >
-                    Back
-                  </button>
-                  <button
-                    onClick={handleConfirmPayMobile}
-                    className={`flex-1 rounded-full py-3 text-sm font-extrabold transition
+                </div>           
+             </>
+          )}
+       </div>
+    <div className="border-t border-gray-200 bg-white p-2">
+    {mobileStep === 1 && (
+     <div className="px-4">
+  <button
+    type="button"
+    onClick={handleContinue}
+    className="w-full rounded-full bg-gradient-to-r from-site-accent to-slate-teal py-3 text-white font-extrabold text-sm shadow-md"
+  >
+    Continue {startDate && endDate ? `(${rangeDays} days)` : ""}
+  </button>
+</div>
+
+    )}
+    {mobileStep === 2 && (
+      <div className="flex gap-3">
+        <button
+          type="button"
+          onClick={() => setMobileStep(1)}
+          className="w-1/2 rounded-full border border-gray-200 py-3 text-gray-800 font-extrabold text-sm"
+        >
+          Back
+        </button>
+        <button
+          type="button"
+          onClick={handleNextStep}
+          className="w-1/2 rounded-full  bg-gradient-to-r from-site-accent to-slate-teal py-3 text-white font-extrabold text-sm shadow-md"
+        >
+          Next
+        </button>
+      </div>
+    )}
+      {mobileStep === 3 && (
+        <div className="mt-1 flex gap-3">
+           <button
+             type="button"
+              onClick={() => setMobileStep(2)}
+              className="flex-1 rounded-full border border-gray-200 py-3 text-gray-800 font-extrabold text-sm"
+              >
+               Back
+            </button>
+            <button
+  onClick={handleConfirmPayMobile}
+ 
+  className={`flex-1 rounded-full py-3 text-sm font-extrabold transition
     ${
       !guestName.trim() ||
       !guestPhone.trim() ||

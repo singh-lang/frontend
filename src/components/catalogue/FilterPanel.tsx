@@ -6,13 +6,11 @@ import { CarTypes } from "@/types/homePageTypes";
 
 export default function SideFilterPanel({data}) {
   const [returnLocation, setReturnLocation] = useState(
-    "Different return location",
+    "Different Return Location",
   );
-  const [driverAge, setDriverAge] = useState("Main driver's age: 30+");
+  const [driverAge, setDriverAge] = useState(" Driver's Age: 18+");
   const [pickup, setPickup] = useState("Dubai Mall, Downtown Dubai, Dubai");
-  const [dateRange, setDateRange] = useState(
-    "Jul 12, 11:00 AM - Jul 19, 11:00 AM",
-  );
+ 
 
 const tabs = ["All", ...(data?.categories?.map(c => c.name) || [])];
   const [activeTab, setActiveTab] = useState("All");
@@ -29,6 +27,21 @@ const tabs = ["All", ...(data?.categories?.map(c => c.name) || [])];
             ?.toLowerCase()
             ?.trim() === activeTab.toLowerCase().trim()
       );
+      const formatDate = (date: Date) => {
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
+
+const today = new Date();
+
+const afterTwoDays = new Date();
+afterTwoDays.setDate(today.getDate() + 2);
+
+const dateRange = `${formatDate(today)} - ${formatDate(afterTwoDays)}`;
+
   return (
     <div className="w-full max-w-sm rounded-2xl border border-gray-200 bg-white shadow-sm p-4">
       {/* Title */}
@@ -36,22 +49,23 @@ const tabs = ["All", ...(data?.categories?.map(c => c.name) || [])];
         Find rentals near
       </h3>
 
-      {/* Dropdown 1 */}
-      <div className="mb-3">
-        <button className="w-full flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition">
-          <span>{returnLocation}</span>
-          <ChevronDown className="w-4 h-4 text-gray-500" />
-        </button>
-      </div>
+     <div className="mb-3">
+  <button className="w-full flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition">
+        <div className="flex items-center gap-3">
+      <MapPin className="w-5 h-5 text-gray-500" />
+      <span className="truncate">{returnLocation}</span>
+    </div>
+  </button>
+</div>
 
-      {/* Dropdown 2 */}
-      <div className="mb-3">
-        <button className="w-full flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition">
-          <span>{driverAge}</span>
-          <ChevronDown className="w-4 h-4 text-gray-500" />
-        </button>
-      </div>
-
+     <div className="mb-3">
+  <button className="w-full flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-100 transition">
+        <div className="flex items-center gap-3">
+      <User className="w-5 h-5 text-gray-500" />
+      <span>{driverAge}</span>
+    </div>
+  </button>
+</div>
       {/* Location */}
       <div className="mb-3">
         <div className="w-full flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
@@ -63,14 +77,15 @@ const tabs = ["All", ...(data?.categories?.map(c => c.name) || [])];
       </div>
 
       {/* Date */}
-      <div className="mb-4">
-        <div className="w-full flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
-          <CalendarDays className="w-5 h-5 text-gray-500" />
-          <p className="text-sm font-semibold text-gray-700 truncate">
-            {dateRange}
-          </p>
-        </div>
-      </div>
+    <div className="mb-4">
+  <div className="w-full flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+    <CalendarDays className="w-5 h-5 text-gray-500" />
+    <p className="text-sm font-semibold text-gray-700 truncate">
+      {dateRange}
+    </p>
+  </div>
+</div>
+
 
       {/* Search Button */}
       <button className="w-full rounded-xl bg-gradient-to-r from-site-accent to-slate-teal px-4 py-3 text-sm font-bold text-white shadow hover:shadow-md transition">
