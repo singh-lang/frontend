@@ -19,6 +19,7 @@ import {
   Palette,
   Settings2,
   Shapes,
+  Check,
 } from "lucide-react";
 
 type IdName = {
@@ -129,7 +130,16 @@ export default function TopFiltersBar({ data }: TopFiltersBarProps) {
     closeAll();
   };
 
-  /* ================= RENDER ================= */
+const [openSort, setOpenSort] = useState(false);
+
+const sortOptions = [
+  { value: "newest", label: "Newest Cars" },
+  { value: "lowestPrice", label: "Price: High to Low" },
+  { value: "highestPrice", label: "Price: Low to High" },
+  { value: "mostBooked", label: "Most Booked" },
+];
+const selectedSortLabel =
+  sortOptions.find((opt) => opt.value === sort)?.label || "Sort";
 
   return (
     <>
@@ -166,8 +176,8 @@ export default function TopFiltersBar({ data }: TopFiltersBarProps) {
                   openDesktop.deposit ? closeAll() : openFilter("deposit");
                 }}
                      className="flex items-center justify-between
-             w-[150px] h-9 px-3
-md:w-[220px] md:h-11 md:px-5
+                w-[150px] h-9 px-3
+                md:w-[220px] md:h-11 md:px-5
 
                rounded-full border border-gray-200 bg-white
                text-gray-800 text-sm font-medium
@@ -254,33 +264,79 @@ md:w-[220px] md:h-11 md:px-5
               )}
             </div>
 
-            {/* DESKTOP SORT */}
-            <div className="hidden md:flex items-center gap-3">
-              <span className="font-semibold text-sm">Sort</span>
-              <select
-                value={sort}
-                onChange={(e) => {
-                  setSort(e.target.value);
-                  dispatch(setCatalogFilters({ sort: e.target.value }));
-                  applyFilters({ sort: e.target.value });
-                }}
-     className="flex items-center justify-between
-             w-[150px] h-9 px-3
-            md:w-[220px] md:h-11 md:px-5
+      <div className=" hidden md:block relative flex-1 md:flex-none">
+ <button
+  onClick={(e) => {
+    e.stopPropagation();
+    setOpenSort((p) => !p);
+  }}
+  className="
+    flex items-center justify-between
+    w-[150px] md:w-[220px]
+    h-9 md:h-11
+    px-4 md:px-5
+    rounded-full md:rounded-xl
+   bg-white
+    border border-soft-grey/40
+    text-gray-800 text-sm  font-medium
+    shadow-sm hover:shadow-md
+    transition
+  "
+>
+  <span className="truncate">
+    {selectedSortLabel}
+  </span>
+  <ChevronDown size={16} />
+</button>
 
-               rounded-full border border-gray-200 bg-white
-               text-gray-800 text-sm font-medium
-               shadow-sm hover:shadow-md transition"
-                             >
-                <option value="newest">Newest Cars</option>
-                <option value="lowestPrice">Price: High to Low</option>
-                <option value="highestPrice">Price: Low to High</option>
-                <option value="mostBooked">Most Booked</option>
-              </select>
-            </div>
+{openSort && (
+  <div
+    className="
+      absolute left-0 top-full mt-2 z-[9999]
+      w-[220px]
+      bg-gradient-to-br from-off-white to-white
+      border border-soft-grey/40
+      rounded-xl
+      shadow-xl
+      p-2
+      space-y-1
+    "
+  >
+    {sortOptions.map((opt) => (
+      <button
+  key={opt.value}
+  type="button"
+  onClick={() => {
+    setSort(opt.value);
+    dispatch(setCatalogFilters({ sort: opt.value }));
+    applyFilters({ sort: opt.value });
+    setOpenSort(false);
+  }}
+  className={`
+    w-full flex items-center justify-between
+    px-3 py-2 rounded-lg
+    text-sm font-medium
+    transition
+    ${
+      sort === opt.value
+        ? " text-white bg-site-accent "
+        : "text-gray-700 hover:bg-site-accent/10"
+    }
+  `}
+>
+  <span>{opt.label}</span>
+
+  {sort === opt.value && (
+    <Check className="w-4 h-4 font-medium text-white" />
+  )}
+</button>
+
+    ))}
+  </div>
+)}
+</div>
+
           </div>
-
-          {/* ROW 2: MOBILE SORT */}
        <div className="mt-3 md:hidden flex items-center justify-center gap-2">
           <span className="font-semibold text-sm shrink-0">
             Sort

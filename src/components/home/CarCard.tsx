@@ -101,12 +101,21 @@ const CarCard = ({ car }: CarCardProps) => {
     router.push(navigateTo);
   };
 
-  const whatsappUrl = buildWhatsAppUrl(
-    car?.vendor?.vendorDetails?.contact?.whatsappNum,
+  // const whatsappUrl = buildWhatsAppUrl(
+  //   car?.vendor?.vendorDetails?.contact?.whatsappNum,
+  //   `${buildWhatsAppMessage(
+  //     car as CarTypes,
+  //   )}\n\n*Any changes made to this message will result in the inquiry not being sent to the dealer.*`,
+  // );
+
+  const FIXED_WHATSAPP_NUMBER = "+971 50 148 0802";
+  const fixedWhatsappUrl = buildWhatsAppUrl(
+    FIXED_WHATSAPP_NUMBER,
     `${buildWhatsAppMessage(
       car as CarTypes,
     )}\n\n*Any changes made to this message will result in the inquiry not being sent to the dealer.*`,
   );
+  const FIXED_CALL_NUMBER = "++971 50 148 0802";
 
   return (
     <div className="shrink-0 h-fit w-[300px] sm:w-85 bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 ease-out-cubic group border border-soft-grey/30">
@@ -252,7 +261,7 @@ const CarCard = ({ car }: CarCardProps) => {
             <ArrowRight className="w-5 h-5 group-hover/btn:translate-x-1 transition-transform duration-300" />
           </button>
           <div className="flex items-center gap-2">
-            <a
+            {/* <a
               href={`tel:${car.vendor?.vendorDetails?.contact?.landlineNum}`}
               onClick={(e) => {
                 e.preventDefault();
@@ -274,10 +283,27 @@ const CarCard = ({ car }: CarCardProps) => {
             >
               <Phone className="w-4 h-4" />
               Call
-            </a>
-
-            {/* ===== FIXED CHAT using helpers + warning line ===== */}
+            </a> */}
             <a
+  href={`tel:${FIXED_CALL_NUMBER}`}
+  onClick={(e) => {
+    e.preventDefault();
+    createClick({ carId: car._id, body: { type: "call" } })
+      .unwrap()
+      .catch(() => {})
+      .finally(() => {
+        setTimeout(() => {
+          window.location.href = `tel:${FIXED_CALL_NUMBER}`;
+        }, 150);
+      });
+  }}
+  className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-800 hover:border-site-accent hover:text-site-accent transition"
+>
+  <Phone className="w-4 h-4" />
+  Call
+</a>
+            {/* ===== FIXED CHAT using helpers + warning line ===== */}
+            {/* <a
               href={whatsappUrl}
               onClick={(e) => {
                 e.preventDefault();
@@ -296,6 +322,28 @@ const CarCard = ({ car }: CarCardProps) => {
                   });
               }}
               className="flex-1 flex items-center justify-center gap-1 bg-white border border-site-accent/30 text-site-accent hover:bg-site-accent hover:text-white hover:border-site-accent px-2 py-1.5 rounded-lg font-semibold transition-all duration-300 text-[10px] hover:shadow-md"
+            >
+              <MessageCircle className="w-4 h-4" />
+              WhatsApp
+            </a> */}
+              <a
+              href={fixedWhatsappUrl}
+              onClick={(e) => {
+                e.preventDefault();
+                createClick({ carId: car._id, body: { type: "whatsapp" } })
+                  .unwrap()
+                  .catch(() => {})
+                  .finally(() => {
+                    setTimeout(() => {
+                      window.open(
+                        fixedWhatsappUrl,
+                        "_blank",
+                        "noopener,noreferrer"
+                      );
+                    }, 120);
+                  });
+              }}
+              className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-site-accent/50 bg-white px-3 py-2 text-sm font-semibold text-site-accent hover:bg-site-accent hover:text-white transition"
             >
               <MessageCircle className="w-4 h-4" />
               WhatsApp

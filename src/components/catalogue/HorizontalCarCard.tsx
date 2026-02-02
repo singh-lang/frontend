@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect} from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -34,6 +34,7 @@ const CompactCarCard = ({ car }: CompactCarCardProps) => {
   const [isHovering, setIsHovering] = useState(false);
 const [showGallery, setShowGallery] = useState(false);
 const [activeIndex, setActiveIndex] = useState(0);
+const [showSheet, setShowSheet] = useState(false);
 
 const images = car?.car?.images || [];
 
@@ -117,28 +118,97 @@ const handleMouseEnter = () => setIsHovering(true);
   const handleMouseLeave = () => {
     setIsHovering(false);
   };
+  useEffect(() => {
+  if (showSheet) {
+    document.body.style.overflow = "hidden";
+  } else {
+    document.body.style.overflow = "";
+  }
+
+  return () => {
+    document.body.style.overflow = "";
+  };
+}, [showSheet]);
+const [isMobile, setIsMobile] = useState(false);
+
+useEffect(() => {
+  const check = () => setIsMobile(window.innerWidth < 768);
+  check();
+  window.addEventListener("resize", check);
+  return () => window.removeEventListener("resize", check);
+}, []);
+const closeSheet = () => {
+  setShowSheet(false);
+  setActiveTab("carInfo");
+};
+  const FIXED_CALL_NUMBER = "++971 50 148 0802";
+
+const FIXED_WHATSAPP_NUMBER = "+971 50 148 0802";
+const fixedWhatsappUrl = buildWhatsAppUrl(
+  FIXED_WHATSAPP_NUMBER,
+  `${buildWhatsAppMessage(car)}\n\n*Any changes made to this message will result in the inquiry not being sent to the dealer.*`
+);
+
   return (
+    <>
     <div className="w-full group rounded-2xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition overflow-hidden">
       <div className="flex flex-col md:flex-row">
         {/* Image */}
-        <div
-          className="relative w-full md:w-[34%] h-[190px] md:h-[180px] bg-gray-100 overflow-hidden"
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
-        >
-                 <Image
-  src={imageUrl}
-  alt={car?.title || "car"}
-  fill
-  onClick={() => {
-    setActiveIndex(0);
-    setShowGallery(true);
-  }}
-  className={`cursor-pointer object-cover transition-transform duration-500 ease-out ${
-    isHovering ? "scale-[1.1]" : "scale-100"
-  }`}
-  sizes="(max-width:768px) 100vw, 35vw"
-/>
+   {/* IMAGE SECTION */}
+<div className="relative w-full md:w-[34%] h-[190px] md:h-[180px] bg-gray-100 overflow-hidden group">
+  
+  {/* IMAGE */}
+  <div
+    className="relative w-full h-full cursor-pointer"
+    onClick={() => {
+      setActiveIndex(0);
+      setShowGallery(true);
+    }}
+  >
+    <Image
+      src={imageUrl}
+      alt={car?.title || "car"}
+      fill
+      className="
+        object-cover
+        transition-transform
+        duration-500
+        ease-out
+        group-hover:scale-[1.08]
+      "
+      sizes="(max-width:768px) 100vw, 35vw"
+      priority={false}
+    />
+
+    {/* HOVER OVERLAY (DESKTOP ONLY) */}
+    <div className="
+      absolute inset-0
+      hidden md:flex
+      items-center justify-center
+      bg-black/40
+      opacity-0
+      group-hover:opacity-100
+      transition
+    ">
+      <span className="
+        text-white/90
+        text-sm
+        font-semibold
+        bg-black/60
+        px-4 py-2
+        rounded-full
+      ">
+        Click to Large
+      </span>
+    </div>
+  </div>
+
+  {/* CATEGORY BADGE */}
+  <div className="absolute top-3 left-3 bg-white/90 px-3 py-1 rounded-full text-xs font-semibold text-gray-700">
+    {car?.car?.category || "Car"}
+  </div>
+
+
 {showGallery && images.length > 0 && (
   <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
 
@@ -188,7 +258,7 @@ const handleMouseEnter = () => setIsHovering(true);
           prev === images.length - 1 ? 0 : prev + 1
         )
       }
-      className="absolute right-4 w-10 h-10 flex items-center justify-center rounded-full bg-gradient-to-r from-site-accent to-slate-teal border border-white text-white text-2xl shadow-md hover:bg-black/80 transition"
+      className="absolute right-4 w-10 h-10 flex items-center justify-center rounded-full bg-gradient-to-r from-site-accent to-slate-teal border  text-white text-2xl shadow-md  transition"
     >
       ›
     </button>
@@ -279,7 +349,7 @@ const handleMouseEnter = () => setIsHovering(true);
             <div className="flex flex-col items-end gap-1.5 w-full md:w-auto">
               <div className="flex gap-2 w-full md:w-[380px]">
                 {/* Call */}
-                <a
+                {/* <a
                   href={`tel:${callNumber}`}
                   onClick={(e) => {
                     e.preventDefault();
@@ -296,8 +366,26 @@ const handleMouseEnter = () => setIsHovering(true);
                 >
                   <Phone className="w-4 h-4" />
                   Call
-                </a>
-                <a
+                </a> */}
+                   <a
+  href={`tel:${FIXED_CALL_NUMBER}`}
+  onClick={(e) => {
+    e.preventDefault();
+    createClick({ carId: car._id, body: { type: "call" } })
+      .unwrap()
+      .catch(() => {})
+      .finally(() => {
+        setTimeout(() => {
+          window.location.href = `tel:${FIXED_CALL_NUMBER}`;
+        }, 150);
+      });
+  }}
+  className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-800 hover:border-site-accent hover:text-site-accent transition"
+>
+  <Phone className="w-4 h-4" />
+  Call
+</a>
+                {/* <a
                   href={whatsappUrl}
                   onClick={(e) => {
                     e.preventDefault();
@@ -318,7 +406,29 @@ const handleMouseEnter = () => setIsHovering(true);
                 >
                   <MessageCircle className="w-4 h-4" />
                   WhatsApp
-                </a>
+                </a> */}
+                    <a
+  href={fixedWhatsappUrl}
+  onClick={(e) => {
+    e.preventDefault();
+    createClick({ carId: car._id, body: { type: "whatsapp" } })
+      .unwrap()
+      .catch(() => {})
+      .finally(() => {
+        setTimeout(() => {
+          window.open(
+            fixedWhatsappUrl,
+            "_blank",
+            "noopener,noreferrer"
+          );
+        }, 120);
+      });
+  }}
+  className="flex-1 flex items-center justify-center gap-2 rounded-xl border border-site-accent/50 bg-white px-3 py-2 text-sm font-semibold text-site-accent hover:bg-site-accent hover:text-white transition"
+>
+  <MessageCircle className="w-4 h-4" />
+  WhatsApp
+</a>
 
                 {/* Rent Now */}
                 <Link
@@ -346,23 +456,26 @@ const handleMouseEnter = () => setIsHovering(true);
             </div>
 
             {/* Toggle */}
-            <button
-              type="button"
-              onClick={toggleDetails}
-              className="absolute right-0 flex items-center gap-1 text-sm font-semibold text-site-accent hover:underline"
-            >
-              {showDetails ? "Less Details" : "More Details"}
-              {showDetails ? (
-                <Minus className="w-4 h-4" />
-              ) : (
-                <Plus className="w-4 h-4" />
-              )}
-            </button>
+          <button
+            type="button"
+          onClick={() => {
+            if (isMobile) {
+              setShowSheet(true);   // 📱
+            } else {
+              setShowDetails((p) => !p); // 💻
+            }
+          }}
+            className="absolute right-0 flex items-center gap-1 text-sm font-semibold text-site-accent"
+          >
+            More Details
+            <Plus className="w-4 h-4" />
+          </button>
+
           </div>
         </div>
       </div>
 
-   {showDetails && (
+  {showDetails && !isMobile && (
   <div className="border-t border-gray-200 bg-gray-50 px-4 py-4 h-[500px] overflow-y-auto">
 
     {/* TABS */}
@@ -439,13 +552,13 @@ const handleMouseEnter = () => setIsHovering(true);
         )}
 
         {/* OVERVIEW */}
-   {activeTab === "overview" && (
-  <div className="h-[320px] overflow-y-auto pr-2">
-    <p className="text-sm font-medium text-gray-600 leading-relaxed">
-      {car?.description || "No overview available."}
-    </p>
-  </div>
-)}
+          {activeTab === "overview" && (
+          <div className="h-[320px] overflow-y-auto pr-2">
+            <p className="text-sm font-medium text-gray-600 leading-relaxed">
+              {car?.description || "No overview available."}
+            </p>
+          </div>
+        )}
 
 
         {/* FEATURES */}
@@ -461,7 +574,7 @@ const handleMouseEnter = () => setIsHovering(true);
                   {car.car.techFeatures.map((f: string, idx: number) => (
                     <div
                       key={idx}
-                      className="flex items-center gap-2 text-sm text-gray-700"
+                      className="flex items-center gap-2 text-sm font-medium text-gray-600"
                     >
                       <CheckCircle className="w-4 h-4 text-site-accent shrink-0" />
                       <span>{f}</span>
@@ -480,7 +593,7 @@ const handleMouseEnter = () => setIsHovering(true);
                   {car.car.otherFeatures.map((f: string, idx: number) => (
                     <div
                       key={idx}
-                      className="flex items-center gap-2 text-sm text-gray-700"
+                      className="flex items-center gap-2 text-sm font-medium text-gray-600"
                     >
                       <CheckCircle className="w-4 h-4 text-site-accent shrink-0" />
                       <span>{f}</span>
@@ -544,7 +657,177 @@ const handleMouseEnter = () => setIsHovering(true);
   </div>
 )}
 
-  </div>  
+
+  </div> 
+  {/* MOBILE SLIDE-UP DETAILS */}
+{showSheet && (
+  <div className="fixed inset-0 z-[999] md:hidden">
+    {/* BACKDROP */}
+    <div
+      className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+      onClick={() => setShowSheet(false)}
+    />
+
+    {/* SHEET */}
+    <div
+      className="
+        absolute bottom-0 left-0 right-0
+        h-[85vh]
+        bg-white
+        rounded-t-3xl
+        shadow-xl
+        animate-slideUp
+        flex flex-col
+      "
+    >
+      {/* DRAG HANDLE */}
+      <div className="flex justify-center py-3">
+        <div className="w-12 h-1.5 rounded-full bg-gray-300" />
+      </div>
+
+      {/* HEADER */}
+      <div className="flex items-center justify-between px-4 pb-2 border-b">
+        <h3 className="text-base font-bold text-gray-900">
+          {car?.title}
+        </h3>
+        <button
+          onClick={() => setShowSheet(false)}
+          className="text-gray-500 text-2xl"
+        >
+          ✕
+        </button>
+      </div>
+
+      {/* TABS */}
+      <div className="
+        flex gap-6
+        px-4 py-3
+        overflow-x-auto
+        whitespace-nowrap
+        border-b
+        scrollbar-hide
+      ">
+        {(["carInfo", "overview", "features"] as const).map((t) => (
+          <button
+            key={t}
+            onClick={() => setActiveTab(t)}
+            className={`pb-2 text-sm font-semibold transition relative
+              ${
+                activeTab === t
+                  ? "text-site-accent after:absolute after:left-0 after:-bottom-[1px] after:h-[2px] after:w-full after:bg-site-accent"
+                  : "text-gray-500"
+              }
+            `}
+          >
+            {t === "carInfo"
+              ? "Important Info"
+              : t.charAt(0).toUpperCase() + t.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      {/* CONTENT */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+
+        {/* CAR INFO */}
+        {activeTab === "carInfo" && (
+          <div className="space-y-1">
+            {[
+              ["Model Year", car?.car?.modelYear],
+            ["Car Model", car?.car?.carModel],
+            ["Body Type", car?.car?.bodyType],
+            ["Regional Specs", car?.car?.regionalSpecs],
+            ["Transmission", car?.car?.transmission],
+            ["Seats", car?.car?.seatingCapacity],
+            ["Fuel Type", car?.car?.fuelType],
+            ["Doors", car?.car?.doors],
+        
+            ["Insurance", car?.car?.carInsurance === "yes" ? "Included" : "Not Included"],
+            ["Warranty", car?.car?.warranty === "yes" ? "Yes" : "No"],
+            ["Location", car?.location],
+            ["Horse Power", car?.car?.horsePower],
+            ["Air Bags", car?.car?.airBags],
+            ["Tank Capacity", car?.car?.tankCapacity],
+            ["Interior Color", car?.car?.interiorColor],
+            ["Exterior Color", car?.car?.exteriorColor],
+            ].map(([label, value], i) => (
+              <div
+                key={i}
+                className="flex justify-between  p-1 text-sm"
+              >
+                <span className="text-gray-600 font-medium">{label}</span>
+                <span className="font-semibold text-gray-900">
+                  {value || "-"}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* OVERVIEW */}
+         {activeTab === "overview" && (
+          <div className="h-[320px] overflow-y-auto pr-2">
+            <p className="text-sm font-medium text-gray-600 leading-relaxed">
+              {car?.description || "No overview available."}
+            </p>
+          </div>
+        )}
+
+        {/* FEATURES */}
+        {activeTab === "features" && (
+       <div className=" overflow-y-auto pr-2 space-y-4">
+
+            {(car?.car?.techFeatures || []).length > 0 && (
+              <div>
+                <p className="text-sm font-bold text-gray-900 mb-2">
+                  Technical Features
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  {car.car.techFeatures.map((f: string, idx: number) => (
+                    <div
+                      key={idx}
+                      className="flex items-center gap-2 text-sm text-gray-700"
+                    >
+                      <CheckCircle className="w-4 h-4 text-site-accent shrink-0" />
+                      <span>{f}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {(car?.car?.otherFeatures || []).length > 0 && (
+              <div>
+                <p className="text-sm font-bold text-gray-900 mb-2">
+                  Other Features
+                </p>
+                  <div className="grid grid-cols-2 gap-3">
+                  {car.car.otherFeatures.map((f: string, idx: number) => (
+                    <div
+                      key={idx}
+                      className="flex items-center gap-2 text-sm text-gray-700"
+                    >
+                      <CheckCircle className="w-4 h-4 text-site-accent shrink-0" />
+                      <span>{f}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {!car?.car?.techFeatures?.length &&
+              !car?.car?.otherFeatures?.length && (
+                <p className="text-sm text-gray-500">
+                  No features available.
+                </p>
+              )}
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+)} 
+  </>
   );
 };
 
