@@ -1,168 +1,164 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import AuthModal from "@/components/Auth/AuthModel";
 import ProfileSetup from "@/components/Auth/ProfileSetup";
 
 type Booking = {
-  _id: string;
   bookingId: string;
   isGuestBooking: boolean;
   guestName?: string;
-  guestEmail?: string;
-  guestPhone?: string;
   totalAmount: number;
   prepaymentAmount: number;
   remainingAmount: number;
   pickupDate: string;
   dropoffDate: string;
-  pickupTime: string;
-  dropoffTime: string;
-  pickupType: string;
-  returnType: string;
-  status: string;
+  prepaymentPaid?: boolean;
 };
 
-export default function RentalPaymentPage() {
+export default function RentalPaymentSuccessPage() {
   const { bookingId } = useParams<{ bookingId: string }>();
-  const searchParams = useSearchParams();
-
   const { user } = useAuth();
 
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
-
-  // 🔐 auth modal state (same as Navbar)
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showProfileSetup, setShowProfileSetup] = useState(false);
 
   useEffect(() => {
     if (!bookingId) return;
 
-    const token = searchParams.get("token");
+    let retries = 0;
 
-    if (token) {
-      window.location.href = `https://api.thedrivehub.com/api/payments/rental/${bookingId}?token=${token}`;
-      return;
-    }
+    const load = async () => {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/api/payments/rental/view/${bookingId}`,
+      );
+      const data = await res.json();
 
-    fetch(`https://api.thedrivehub.com/api/payments/rental/view/${bookingId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (!data.success) {
-          setError(data.message || "Booking not found");
-          return;
-        }
-        setBooking(data.data);
-      })
-      .catch(() => setError("Internal server error"))
-      .finally(() => setLoading(false));
-  }, [bookingId, searchParams]);
+      setBooking(data.data);
 
-  // ✅ same function as Navbar
-  const handleAuthSuccess = () => {
-    setShowAuthModal(false);
-    if (!user?.profileComplete) {
-      setShowProfileSetup(true);
-    }
-  };
+      if (!data.data?.prepaymentPaid && retries < 4) {
+        retries++;
+        setTimeout(load, 2000);
+      } else {
+        setLoading(false);
+      }
+    };
+
+    load();
+  }, [bookingId]);
 
   const sendGuestAccess = async () => {
     if (!booking?.bookingId) return;
+    setSending(true);
 
-    try {
-      setSending(true);
-      setSuccessMsg(null);
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_BASE_URL}/api/payments/rental/view/${bookingId}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookingId: booking.bookingId }),
+      },
+    );
 
-      const res = await fetch(
-        "https://api.thedrivehub.com/api/auth/guest/send-temp-password",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ bookingId: booking.bookingId }),
-        },
-      );
-
-      const data = await res.json();
-      if (!data.success) throw new Error(data.message);
-
-      setSuccessMsg(
-        "Login details sent to your email. Please check your inbox.",
-      );
-    } catch (err: any) {
-      setError(err.message || "Failed to send login details");
-    } finally {
-      setSending(false);
+    const data = await res.json();
+    if (data.success) {
+      setSuccessMsg("Login details sent to your email.");
     }
+
+    setSending(false);
   };
 
-  if (loading) return <p className="p-10">Loading booking details…</p>;
-  if (error) return <p className="p-10 text-red-600">{error}</p>;
-  if (!booking) return <p className="p-10">Booking not found</p>;
+  const handleAuthSuccess = () => {
+    setShowAuthModal(false);
+    if (!user?.profileComplete) setShowProfileSetup(true);
+  };
+
+  if (loading || !booking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-sm text-gray-500">
+        Finalizing your booking…
+      </div>
+    );
+  }
 
   return (
     <>
-      <div className="p-10 max-w-lg mx-auto bg-white shadow rounded">
-        <h1 className="text-2xl font-bold mb-4">Booking Confirmed 🎉</h1>
+      <main className="min-h-screen bg-[#fafafa] flex items-center justify-center px-6">
+        <section className="w-full max-w-md text-center">
+          {/* HEADLINE */}
+          <h1 className="text-3xl font-semibold text-[#0f172a] tracking-tight">
+            Booking confirmed
+          </h1>
 
-        {booking.isGuestBooking && (
-          <div className="mb-4 rounded border p-4 bg-gray-50">
-            <p className="font-semibold mb-2">
-              Hello {booking.guestName || "Guest"},
-            </p>
-            <p className="text-sm text-gray-600 mb-3">
-              Want to manage your booking online?
-            </p>
+          <p className="mt-2 text-sm text-gray-500">
+            {booking.prepaymentPaid
+              ? "Your payment was successful."
+              : "Payment is processing. This usually takes a few seconds."}
+          </p>
 
-            {/* EXISTING BUTTON – untouched */}
-            <button
-              onClick={sendGuestAccess}
-              disabled={sending}
-              className="w-full bg-black text-white py-2 rounded disabled:opacity-50"
-            >
-              {sending ? "Sending access email…" : "Sign in to manage booking"}
-            </button>
+          {/* DIVIDER */}
+          <div className="my-8 h-px bg-gray-200" />
 
-            {/* ✅ NEW SIGN IN BUTTON (Navbar auth logic) */}
-            <button
-              onClick={() => setShowAuthModal(true)}
-              className="w-full mt-3 border border-black text-black py-2 rounded hover:bg-black hover:text-white transition"
-            >
-              Sign In using Temporary Password recieved via Email
-            </button>
+          {/* BOOKING DETAILS */}
+          <div className="space-y-4 text-left text-sm">
+            <Detail label="Booking ID" value={booking.bookingId} />
 
-            {successMsg && (
-              <p className="text-green-600 text-sm mt-2">{successMsg}</p>
-            )}
+            <Detail label="Pickup" value={formatDate(booking.pickupDate)} />
+
+            <Detail label="Dropoff" value={formatDate(booking.dropoffDate)} />
           </div>
-        )}
 
-        <p>
-          <strong>Booking ID:</strong> {booking.bookingId}
-        </p>
-        <p>
-          <strong>Pickup:</strong> {booking.pickupDate} {booking.pickupTime}
-        </p>
-        <p>
-          <strong>Dropoff:</strong> {booking.dropoffDate} {booking.dropoffTime}
-        </p>
-        <p>
-          <strong>Total:</strong> AED {booking.totalAmount}
-        </p>
-        <p>
-          <strong>Paid:</strong> AED {booking.prepaymentAmount}
-        </p>
-        <p>
-          <strong>Remaining:</strong> AED {booking.remainingAmount}
-        </p>
-      </div>
+          <div className="my-6 h-px bg-gray-200" />
 
-      {/* 🔐 SAME MODALS AS NAVBAR */}
+          {/* AMOUNT */}
+          <div className="space-y-2 text-sm">
+            <Amount label="Total" value={`AED ${booking.totalAmount}`} />
+            <Amount
+              label="Paid now"
+              value={`AED ${booking.prepaymentAmount}`}
+            />
+            <Amount
+              label="Remaining"
+              value={`AED ${booking.remainingAmount}`}
+              bold
+            />
+          </div>
+
+          {/* GUEST CTA */}
+          {booking.isGuestBooking && (
+            <>
+              <div className="my-8 h-px bg-gray-200" />
+
+              <button
+                onClick={sendGuestAccess}
+                disabled={sending}
+                className="w-full bg-black text-white py-3 text-sm font-medium rounded-md"
+              >
+                {sending ? "Sending…" : "Email login details"}
+              </button>
+
+              <button
+                onClick={() => setShowAuthModal(true)}
+                className="w-full mt-3 border border-black py-3 text-sm font-medium rounded-md hover:bg-black hover:text-white transition"
+              >
+                Sign in with temporary password
+              </button>
+
+              {successMsg && (
+                <p className="mt-3 text-xs text-green-600">{successMsg}</p>
+              )}
+            </>
+          )}
+        </section>
+      </main>
+
+      {/* MODALS */}
       <AuthModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
@@ -176,4 +172,44 @@ export default function RentalPaymentPage() {
       />
     </>
   );
+}
+
+/* ---------- Helpers ---------- */
+
+function Detail({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between">
+      <span className="text-gray-500">{label}</span>
+      <span className="font-medium text-[#0f172a]">{value}</span>
+    </div>
+  );
+}
+
+function Amount({
+  label,
+  value,
+  bold,
+}: {
+  label: string;
+  value: string;
+  bold?: boolean;
+}) {
+  return (
+    <div className="flex justify-between">
+      <span className="text-gray-500">{label}</span>
+      <span
+        className={`${bold ? "font-semibold text-[#0f172a]" : "font-medium"}`}
+      >
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function formatDate(date: string) {
+  return new Date(date).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
 }

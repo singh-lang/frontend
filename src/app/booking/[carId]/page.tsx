@@ -1,5 +1,12 @@
 "use client";
-
+import { Stripe } from "@stripe/stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
+import {
+  Elements,
+  PaymentElement,
+  useStripe,
+  useElements,
+} from "@stripe/react-stripe-js";
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
@@ -59,11 +66,32 @@ const EMIRATES = [
   { id: "6953ce32ad7fb6b0b43ee738", name: "Ras Al Khaimah" },
   { id: "6953ce33ad7fb6b0b43ee73b", name: "Fujairah" },
 ];
+// const stripePromise = loadStripe(
+//   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
+// );
+// const [clientSecret, setClientSecret] = useState<string | null>(null);
+// const [showStripe, setShowStripe] = useState(false);
+
+// const [mounted, setMounted] = useState(false);
+
+// useEffect(() => {
+//   setMounted(true);
+// }, []);
+const stripePromise = loadStripe(
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
+);
 
 export default function BookingPage() {
   const params = useParams();
   const carId = (params?.carId as string) || "";
   const router = useRouter();
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [showStripe, setShowStripe] = useState<boolean>(false);
+  const [mounted, setMounted] = useState<boolean>(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const [step, setStep] = useState(1);
   const [maxStepReached, setMaxStepReached] = useState(1);
   const [agree, setAgree] = useState(false);
@@ -96,6 +124,7 @@ export default function BookingPage() {
 
   const [emirateId, setEmirateId] = useState<string>("");
   const [address, setAddress] = useState("");
+  const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
 
   const [guestEmail, setGuestEmail] = useState("");
   const [guestName, setGuestName] = useState("");
@@ -484,11 +513,70 @@ export default function BookingPage() {
     }
   };
 
+  // const handleCreateBooking = async () => {
+  //   if (!calc || calc.totalAmount <= 0) {
+  //     return toast.error("Please calculate price first");
+  //   }
+  //   try {
+  //     const res = await createBooking({
+  //       carId,
+  //       pickupDate,
+  //       pickupTime,
+  //       dropoffDate,
+  //       dropoffTime,
+  //       priceType,
+  //       pickupType,
+  //       returnType,
+  //       emirateId,
+  //       deliveryRequired: pickupType === "DELIVERY" || returnType === "RETURN",
+  //       address: pickupType === "DELIVERY" ? address : undefined,
+  //       guestName,
+  //       guestPhone,
+  //       guestEmail,
+  //       totalAmount: calc.totalAmount,
+  //       prepaymentPercent: calc.prepaymentPercent,
+  //       prepaymentAmount: frontendPayNow,
+  //       remainingAmount: frontendPayLater,
+  //     }).unwrap();
+  //     const bookingId = res?.data?._id;
+  //     if (!bookingId) return toast.error("Booking created but ID missing");
+  //     // const paymentUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/payments/rental/${bookingId}?token=${res.data.paymentToken}`;
+  //     // window.location.href = paymentUrl;
+  //     const paymentRes = await fetch(
+  //       "http://localhost:5000/v2/payments/create-intent",
+  //       {
+  //         method: "POST",
+  //         headers: { "Content-Type": "application/json" },
+  //         body: JSON.stringify({
+  //           bookingId,
+  //           amount: frontendPayNow * 100, // AED → fils
+  //           currency: "aed",
+  //         }),
+  //       },
+  //     );
+
+  //     const paymentData = await paymentRes.json();
+
+  //     if (!paymentData.clientSecret) {
+  //       toast.error("Payment initialization failed");
+  //       return;
+  //     }
+
+  //     setClientSecret(paymentData.clientSecret);
+  //     setShowStripe(true);
+  //   } catch (error: unknown) {
+  //     const e = error as ApiError;
+  //     toast.error(e?.data?.message || "Booking failed");
+  //   }
+  // };
   const handleCreateBooking = async () => {
     if (!calc || calc.totalAmount <= 0) {
-      return toast.error("Please calculate price first");
+      toast.error("Please calculate price first");
+      return;
     }
+
     try {
+      // 1️⃣ Create booking
       const res = await createBooking({
         carId,
         pickupDate,
@@ -509,13 +597,40 @@ export default function BookingPage() {
         prepaymentAmount: frontendPayNow,
         remainingAmount: frontendPayLater,
       }).unwrap();
+
       const bookingId = res?.data?._id;
-      if (!bookingId) return toast.error("Booking created but ID missing");
-      const paymentUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/payments/rental/${bookingId}?token=${res.data.paymentToken}`;
-      window.location.href = paymentUrl;
-    } catch (error: unknown) {
-      const e = error as ApiError;
-      toast.error(e?.data?.message || "Booking failed");
+      if (!bookingId) {
+        toast.error("Booking created but ID missing");
+        return;
+      }
+      setCreatedBookingId(bookingId);
+
+      // 2️⃣ Create PaymentIntent
+      const paymentRes = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/v2/payments/create-intent`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            bookingId,
+            amount: frontendPayNow * 100, // AED → fils
+            currency: "aed",
+          }),
+        },
+      );
+
+      const paymentData = await paymentRes.json();
+
+      if (!paymentData.clientSecret) {
+        toast.error("Payment initialization failed");
+        return;
+      }
+
+      // 3️⃣ SHOW STRIPE
+      setClientSecret(paymentData.clientSecret);
+      setShowStripe(true);
+    } catch (err) {
+      toast.error("Booking failed");
     }
   };
   const getStepCircle = (id: number) => {
@@ -1254,19 +1369,87 @@ export default function BookingPage() {
                   </div>
                 </div>
 
-                <button
+                {/* <button
                   onClick={handleCreateBooking}
                   disabled={!canPayFinal || createLoading}
                   className={`mt-4 ${primaryBtn}`}
                 >
                   {createLoading ? "Redirecting..." : "Confirm & Pay"}
-                </button>
+                </button> */}
 
-                {frontendTotal === 0 && (
+                {/* {frontendTotal === 0 && (
                   <p className="mt-3 text-xs font-semibold text-gray-500">
                     Please complete steps and click{" "}
                     <span className="font-extrabold">Calculate Price</span>
                   </p>
+                )} */}
+
+                {/* {!showStripe ? (
+                  <button
+                    onClick={handleCreateBooking}
+                    disabled={!canPayFinal || createLoading}
+                    className={`mt-4 ${primaryBtn}`}
+                  >
+                    {createLoading ? "Preparing payment..." : "Confirm & Pay"}
+                  </button>
+                ) : (
+                  clientSecret && (
+                    <Elements stripe={stripePromise} options={{ clientSecret }}>
+                      <StripeCheckoutInline
+                        onSuccess={() => {
+                          toast.success("Booking confirmed");
+                        }}
+                      />
+                    </Elements>
+                  )
+                )} */}
+                {/* {!showStripe ? (
+  <button
+    onClick={handleCreateBooking}
+    disabled={!canPayFinal || createLoading}
+    className={`mt-4 ${primaryBtn}`}
+  >
+    {createLoading ? "Preparing payment..." : "Confirm & Pay"}
+  </button>
+) : (
+  mounted &&
+  clientSecret && (
+    <Elements stripe={stripePromise} options={{ clientSecret }}>
+      <StripeCheckoutInline
+        onSuccess={() => {
+          toast.success("Booking confirmed");
+        }}
+      />
+    </Elements>
+  )
+)}
+{/* CONFIRM & PAY / STRIPE */}
+                {!showStripe ? (
+                  <button
+                    onClick={handleCreateBooking}
+                    disabled={!canPayFinal || createLoading}
+                    className={`mt-4 ${primaryBtn}`}
+                  >
+                    {createLoading ? "Preparing payment..." : "Confirm & Pay"}
+                  </button>
+                ) : (
+                  mounted &&
+                  clientSecret && (
+                    <Elements stripe={stripePromise} options={{ clientSecret }}>
+                      <StripeCheckoutInline
+                        onSuccess={() => {
+                          toast.success("Booking confirmed");
+
+                          if (!createdBookingId) {
+                            toast.error("Booking ID missing");
+                            return;
+                          }
+
+                          router.push(`/payments/rental/${createdBookingId}`);
+                        }}
+                      />
+                    </Elements>
+                  )
                 )}
               </div>
             </div>
@@ -2210,6 +2393,93 @@ export default function BookingPage() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+// function StripeCheckoutInline({ onSuccess }: { onSuccess: () => void }) {
+//   const stripe = useStripe();
+//   const elements = useElements();
+//   const [loading, setLoading] = useState(false);
+
+//   const handlePay = async () => {
+//     if (!stripe || !elements) return;
+
+//     setLoading(true);
+
+//     const { error } = await stripe.confirmPayment({
+//       elements,
+//       redirect: "if_required",
+//     });
+
+//     if (error) {
+//       toast.error(error.message || "Payment failed");
+//     } else {
+//       toast.success("Payment successful");
+//       onSuccess();
+//     }
+
+//     setLoading(false);
+//   };
+
+//   return (
+//     <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-4">
+//       <PaymentElement />
+//       <button
+//         onClick={handlePay}
+//         disabled={loading}
+//         className="mt-4 w-full rounded-2xl bg-gradient-to-r from-site-accent to-slate-teal py-3 text-sm font-bold text-white"
+//       >
+//         {loading ? "Processing..." : "Pay Now"}
+//       </button>
+//     </div>
+//   );
+// }
+// type StripeCheckoutInlineProps = {
+//   onSuccess: () => void;
+// };
+type StripeCheckoutInlineProps = {
+  onSuccess: () => void;
+};
+
+function StripeCheckoutInline({ onSuccess }: StripeCheckoutInlineProps) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [loading, setLoading] = useState(false);
+
+  const handlePay = async () => {
+    if (!stripe || !elements) return;
+
+    setLoading(true);
+
+    const { error, paymentIntent } = await stripe.confirmPayment({
+      elements,
+      redirect: "if_required",
+    });
+
+    if (error) {
+      toast.error(error.message || "Payment failed");
+      setLoading(false);
+      return;
+    }
+
+    if (paymentIntent?.status === "succeeded") {
+      toast.success("Payment successful");
+      onSuccess(); // ✅ tell parent only
+    }
+
+    setLoading(false);
+  };
+
+  return (
+    <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-4">
+      <PaymentElement />
+      <button
+        onClick={handlePay}
+        disabled={loading}
+        className="mt-4 w-full rounded-2xl bg-gradient-to-r from-site-accent to-slate-teal py-3 text-sm font-bold text-white"
+      >
+        {loading ? "Processing..." : "Pay Now"}
+      </button>
     </div>
   );
 }
