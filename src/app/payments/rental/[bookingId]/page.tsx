@@ -47,11 +47,11 @@ export default function RentalPaymentPage() {
     const token = searchParams.get("token");
 
     if (token) {
-      window.location.href = `http://localhost:5000/api/payments/rental/${bookingId}?token=${token}`;
+      window.location.href = `https://api.thedrivehub.com/api/payments/rental/${bookingId}?token=${token}`;
       return;
     }
 
-    fetch(`http://localhost:5000/api/payments/rental/view/${bookingId}`)
+    fetch(`https://api.thedrivehub.com/api/payments/rental/view/${bookingId}`)
       .then((res) => res.json())
       .then((data) => {
         if (!data.success) {
@@ -80,7 +80,7 @@ export default function RentalPaymentPage() {
       setSuccessMsg(null);
 
       const res = await fetch(
-        "http://localhost:5000/api/auth/guest/send-temp-password",
+        "https://api.thedrivehub.com/api/auth/guest/send-temp-password",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
