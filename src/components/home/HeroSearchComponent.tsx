@@ -11,6 +11,10 @@ import { useEffect, useRef, useState } from "react";
 /* =========================
    Types
 ========================= */
+interface SearchCar {
+  _id: string;
+  title?: string;
+}
 interface SearchFormProps {
   brands: {
     _id: string;
@@ -213,7 +217,7 @@ const HeroFormLayout = ({ brands, bodyTypes }: SearchFormProps) => {
                 </div>
               ) : totalResults > 0 ? (
                 <>
-                  {carsList.map((car: any) => {
+                  {carsList.map((car: SearchCar) => {
                     const { brand, model } = tokenizeCarTitle(car.title || "");
                     const searchText = `${brand} ${model}`.trim();
 
