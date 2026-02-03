@@ -106,9 +106,8 @@ export default function BookingPage() {
   const [showDeliveryPolicy, setShowDeliveryPolicy] = useState(false);
   const [addonsOpen, setAddonsOpen] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
-  const [depositFree, setDepositFree] = useState(false);
+  const [depositFree, setDepositFree] = useState(true);
   const [mobileAddonsOpen, setMobileAddonsOpen] = useState(false);
-  
 
   // ---------- FORM STATES ----------
   const [priceType, setPriceType] = useState<PriceType>("daily");
@@ -364,10 +363,12 @@ export default function BookingPage() {
     }));
   };
   const hasSecurityDeposit =
-  !!carData?.depositRequired && (carData?.securityDeposit ?? 0) > 0;
-const securityDepositAmount = hasSecurityDeposit
-  ? carData!.securityDeposit!
-  : 0;
+    !!carData?.depositRequired && (carData?.securityDeposit ?? 0) > 0;
+  const depositFreeDailyFee = depositFreeRes?.data?.daily || 0;
+  const securityDepositAmount = hasSecurityDeposit
+    ? carData!.securityDeposit!
+    : 0;
+  const rentalAmount = calc?.totalAmount ?? 0;
   const pickupFee = pickupReturnCharges.pickup;
   const returnFee = pickupReturnCharges.return;
   const depositFreeFee = depositFree ? depositFreeDailyFee : 0;
@@ -384,12 +385,10 @@ const securityDepositAmount = hasSecurityDeposit
   const frontendPayNow = calc
     ? Math.round((rentalAmount * calc.prepaymentPercent) / 100)
     : 0;
- 
-  const depositAmount = depositFree
-  ? depositFreeDailyFee * rentalDays      // ✅ deposit-free → daily × days
-  : securityDepositAmount;             // ✅ ONE TIME
 
-  
+  const depositAmount = depositFree
+    ? depositFreeDailyFee * rentalDays // ✅ deposit-free → daily × days
+    : securityDepositAmount; // ✅ ONE TIME
 
   const frontendPayLater = frontendTotal - frontendPayNow;
   useEffect(() => {
@@ -2290,61 +2289,58 @@ const securityDepositAmount = hasSecurityDeposit
                       <span>AED {formatMoney(frontendPayNow)}</span>
                     </div>
 
-                  <div className="flex justify-between text-xs font-semibold text-gray-500">
-                    <span>Pay later at handover</span>
-                    <span className="text-gray-900 font-extrabold">
-                      AED {formatMoney(frontendPayLater)}
-                    </span>
+                    <div className="flex justify-between text-xs font-semibold text-gray-500">
+                      <span>Pay later at handover</span>
+                      <span className="text-gray-900 font-extrabold">
+                        AED {formatMoney(frontendPayLater)}
+                      </span>
+                    </div>
                   </div>
-                </div> 
-                </div>          
-             </>
-          )}
-       </div>
-    <div className="border-t border-gray-200 bg-white p-2">
-    {mobileStep === 1 && (
-     <div className="px-4">
-  <button
-    type="button"
-    onClick={handleContinue}
-    className="w-full rounded-full bg-gradient-to-r from-site-accent to-slate-teal py-3 text-white font-extrabold text-sm shadow-md"
-  >
-    Continue {startDate && endDate ? `(${rangeDays} days)` : ""}
-  </button>
-</div>
-
-    )}
-    {mobileStep === 2 && (
-      <div className="flex gap-3">
-        <button
-          type="button"
-          onClick={() => setMobileStep(1)}
-          className="w-1/2 rounded-full border border-gray-200 py-3 text-gray-800 font-extrabold text-sm"
-        >
-          Back
-        </button>
-        <button
-          type="button"
-          onClick={handleNextStep}
-          className="w-1/2 rounded-full  bg-gradient-to-r from-site-accent to-slate-teal py-3 text-white font-extrabold text-sm shadow-md"
-        >
-          Next
-        </button>
-      </div>
-    )}
-      {mobileStep === 3 && (
-        <div className="mt-1 flex gap-3">
-           <button
-             type="button"
-              onClick={() => setMobileStep(2)}
-              className="flex-1 rounded-full border border-gray-200 py-3 text-gray-800 font-extrabold text-sm"
-              >
-               Back
-            </button>
-            <button
-  onClick={handleConfirmPayMobile}
- 
-  className={`flex-1 rounded-full py-3 text-sm font-extrabold transition
+                </>
+              )}
+            </div>
+            <div className="border-t border-gray-200 bg-white p-2">
+              {mobileStep === 1 && (
+                <div className="px-4">
+                  <button
+                    type="button"
+                    onClick={handleContinue}
+                    className="w-full rounded-full bg-gradient-to-r from-site-accent to-slate-teal py-3 text-white font-extrabold text-sm shadow-md"
+                  >
+                    Continue {startDate && endDate ? `(${rangeDays} days)` : ""}
+                  </button>
+                </div>
+              )}
+              {mobileStep === 2 && (
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setMobileStep(1)}
+                    className="w-1/2 rounded-full border border-gray-200 py-3 text-gray-800 font-extrabold text-sm"
+                  >
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNextStep}
+                    className="w-1/2 rounded-full  bg-gradient-to-r from-site-accent to-slate-teal py-3 text-white font-extrabold text-sm shadow-md"
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
+              {mobileStep === 3 && (
+                <div className="mt-1 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setMobileStep(2)}
+                    className="flex-1 rounded-full border border-gray-200 py-3 text-gray-800 font-extrabold text-sm"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={handleConfirmPayMobile}
+                    className={`flex-1 rounded-full py-3 text-sm font-extrabold transition
     ${
       !guestName.trim() ||
       !guestPhone.trim() ||
@@ -2356,12 +2352,13 @@ const securityDepositAmount = hasSecurityDeposit
     }
   `}
                   >
-                    {createLoading ? "Redirecting..." : "Confirm & Pay"}
+                    {createLoading ? "Redirecting..." : "Confirm & Pay"} 
                   </button>
                 </div>
               )}
             </div>
           </div>
+        </div>
         {showDeliveryPolicy && (
           <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center px-4">
             <div className="bg-white w-full max-w-md rounded-3xl p-6 border border-gray-200 shadow-xl">
@@ -2396,7 +2393,6 @@ const securityDepositAmount = hasSecurityDeposit
           </div>
         )}
       </div>
-    </div>
     </div>
   );
 }

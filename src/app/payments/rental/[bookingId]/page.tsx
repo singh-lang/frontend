@@ -36,7 +36,7 @@ export default function RentalPaymentSuccessPage() {
 
     const load = async () => {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/api/payments/rental/view/${bookingId}`,
+        `${process.env.NEXT_PUBLIC_BASE_URL}/payments/rental/view/${bookingId}`,
       );
       const data = await res.json();
 
@@ -58,7 +58,7 @@ export default function RentalPaymentSuccessPage() {
     setSending(true);
 
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/api/payments/rental/view/${bookingId}`,
+      `${process.env.NEXT_PUBLIC_BASE_URL}/auth/guest/send-temp-password`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
