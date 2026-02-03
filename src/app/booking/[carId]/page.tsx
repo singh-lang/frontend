@@ -1105,17 +1105,17 @@ export default function BookingPage() {
                         onChange={(e) => setGuestName(e.target.value)}
                         placeholder="Enter your full name"
                         className="
-    w-full min-w-0
-    rounded-full
-    border border-gray-200
-    bg-soft-grey/40
-    px-4 py-3
-    text-base md:text-sm
-    font-medium text-gray-800
-    outline-none transition
-    focus:bg-white
-    focus:ring-2 focus:ring-site-accent/30
-  "
+                        w-full min-w-0
+                        rounded-full
+                        border border-gray-200
+                        bg-soft-grey/40
+                        px-4 py-3
+                        text-base md:text-sm
+                        font-medium text-gray-800
+                        outline-none transition
+                        focus:bg-white
+                        focus:ring-2 focus:ring-site-accent/30
+                      "
                       />
                     </div>
                     <div>
@@ -1704,16 +1704,16 @@ export default function BookingPage() {
                               value={pickupTime}
                               onChange={(e) => setPickupTime(e.target.value)}
                               className="
-            w-[150px]
-            bg-gray-100
-            text-sm
-            p-2
-            border-2 border-gray-300 rounded-2xl
-            font-semibold
-            text-gray-900
-            outline-none
-            text-center
-          "
+                                  w-[150px]
+                                  bg-gray-100
+                                  text-sm
+                                  p-2
+                                  border-2 border-gray-300 rounded-2xl
+                                  font-semibold
+                                  text-gray-900
+                                  outline-none
+                                  text-center
+                                "
                             />
                           </div>
 
@@ -2070,22 +2070,8 @@ export default function BookingPage() {
                         Your Details
                       </p>
                     </div>
-                    {/* 
-          <button
-            type="button"
-            onClick={() => setDetailsOpen((prev) => !prev)}
-            className="h-9 w-9 rounded-full  flex items-center justify-center"
-          >
-            {detailsOpen ? (
-              <Minus className="w-5 h-5 text-gray-800" />
-            ) : (
-              <Plus className="w-5 h-5 text-gray-800" />
-            )}
-          </button> */}
+                   
                   </div>
-
-                  {/* DETAILS BODY */}
-                  {/* {detailsOpen && ( */}
                   <div className="space-y-4 mt-3">
                     <div>
                       <label className="text-gray-700 font-semibold text-sm">
@@ -2098,12 +2084,12 @@ export default function BookingPage() {
                           onChange={(e) => setGuestName(e.target.value)}
                           placeholder="Enter your full name"
                           className="
-                  w-full min-w-0
-                  bg-transparent
-                  outline-none
-                  text-base md:text-sm
-                  font-semibold
-                "
+                            w-full min-w-0
+                            bg-transparent
+                            outline-none
+                            text-base md:text-sm
+                            font-semibold
+                          "
                         />
                       </div>
                     </div>
@@ -2128,12 +2114,12 @@ export default function BookingPage() {
                           }}
                           placeholder="50XXXXXXX"
                           className="
-                    w-full min-w-0
-                    bg-transparent
-                    outline-none
-                    text-base md:text-sm
-                    font-semibold
-                  "
+                            w-full min-w-0
+                            bg-transparent
+                            outline-none
+                            text-base md:text-sm
+                            font-semibold
+                          "
                         />
                       </div>
                     </div>
@@ -2150,12 +2136,12 @@ export default function BookingPage() {
                           onChange={(e) => setGuestEmail(e.target.value)}
                           placeholder="Enter your email address"
                           className="
-                  w-full min-w-0
-                  bg-transparent
-                  outline-none
-                  text-base md:text-sm
-                  font-semibold
-                "
+                            w-full min-w-0
+                            bg-transparent
+                            outline-none
+                            text-base md:text-sm
+                            font-semibold
+                          "
                         />
                       </div>
                     </div>
@@ -2330,35 +2316,57 @@ export default function BookingPage() {
                 </div>
               )}
               {mobileStep === 3 && (
-                <div className="mt-1 flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setMobileStep(2)}
-                    className="flex-1 rounded-full border border-gray-200 py-3 text-gray-800 font-extrabold text-sm"
-                  >
-                    Back
-                  </button>
-                  <button
-                    onClick={handleConfirmPayMobile}
-                    className={`flex-1 rounded-full py-3 text-sm font-extrabold transition
-    ${
-      !guestName.trim() ||
-      !guestPhone.trim() ||
-      !guestEmail.trim() ||
-      !agree ||
-      !canPayFinal
-        ? "bg-site-accent opacity-50 text-white cursor-not-allowed"
-        : "bg-gradient-to-r from-site-accent to-slate-teal text-white shadow-md"
-    }
-  `}
-                  >
-                    {createLoading ? "Redirecting..." : "Confirm & Pay"} 
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+        
+<div className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white px-4 py-3">
+
+  {/* BEFORE PAYMENT */}
+  {!showStripe && (
+    <div className="flex gap-3 h-[52px]">
+      <button
+        type="button"
+        onClick={() => setMobileStep(2)}
+        className="w-1/2 h-[52px] rounded-full border border-gray-200
+                   text-gray-800 font-extrabold text-sm
+                   flex items-center justify-center"
+      >
+        Back
+      </button>
+
+      <button
+        onClick={handleCreateBooking}
+        disabled={!canPayFinal || createLoading}
+        className="w-1/2 h-[52px] rounded-full
+                   bg-gradient-to-r from-site-accent to-slate-teal
+                   text-white font-extrabold text-sm
+                   flex items-center justify-center
+                   disabled:opacity-50"
+      >
+        {createLoading ? "Preparing payment..." : "Confirm & Pay"}
+      </button>
+    </div>
+  )}
+
+  {/* STRIPE FORM */}
+  {showStripe && mounted && clientSecret && (
+    <div className="px-4 ">
+      <Elements stripe={stripePromise} options={{ clientSecret }}>
+        <StripeCheckoutInline
+          onSuccess={() => {
+            toast.success("Booking confirmed");
+            if (!createdBookingId) return toast.error("Booking ID missing");
+            router.push(`/payments/rental/${createdBookingId}`);
+          }}
+        />
+      </Elements>
+    </div>
+  )}
+</div>
+
+
+ )}
+ </div>
+ </div>
+ </div>
         {showDeliveryPolicy && (
           <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center px-4">
             <div className="bg-white w-full max-w-md rounded-3xl p-6 border border-gray-200 shadow-xl">
