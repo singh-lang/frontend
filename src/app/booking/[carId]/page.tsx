@@ -1,5 +1,12 @@
 "use client";
-
+import { Stripe } from "@stripe/stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
+import {
+  Elements,
+  PaymentElement,
+  useStripe,
+  useElements,
+} from "@stripe/react-stripe-js";
 import React, { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
@@ -59,11 +66,32 @@ const EMIRATES = [
   { id: "6953ce32ad7fb6b0b43ee738", name: "Ras Al Khaimah" },
   { id: "6953ce33ad7fb6b0b43ee73b", name: "Fujairah" },
 ];
+// const stripePromise = loadStripe(
+//   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
+// );
+// const [clientSecret, setClientSecret] = useState<string | null>(null);
+// const [showStripe, setShowStripe] = useState(false);
+
+// const [mounted, setMounted] = useState(false);
+
+// useEffect(() => {
+//   setMounted(true);
+// }, []);
+const stripePromise = loadStripe(
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
+);
 
 export default function BookingPage() {
   const params = useParams();
   const carId = (params?.carId as string) || "";
   const router = useRouter();
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [showStripe, setShowStripe] = useState<boolean>(false);
+  const [mounted, setMounted] = useState<boolean>(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const [step, setStep] = useState(1);
   const [maxStepReached, setMaxStepReached] = useState(1);
   const [agree, setAgree] = useState(false);
@@ -97,6 +125,7 @@ export default function BookingPage() {
 
   const [emirateId, setEmirateId] = useState<string>("");
   const [address, setAddress] = useState("");
+  const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
 
   const [guestEmail, setGuestEmail] = useState("");
   const [guestName, setGuestName] = useState("");
@@ -334,9 +363,6 @@ export default function BookingPage() {
       [id]: !prev[id],
     }));
   };
-  const depositFreeDailyFee = depositFreeRes?.data?.daily || 0;
-
-  const rentalAmount = calc?.totalAmount ?? 0;
   const hasSecurityDeposit =
   !!carData?.depositRequired && (carData?.securityDeposit ?? 0) > 0;
 const securityDepositAmount = hasSecurityDeposit
@@ -349,11 +375,11 @@ const securityDepositAmount = hasSecurityDeposit
 
   const isDepositFree = depositFree;
   const frontendTotal =
-  rentalAmount +
-  pickupFee +
-  returnFee +
-  addonsTotal +
-  (isDepositFree ? depositFreeTotal : securityDepositAmount);
+    rentalAmount +
+    pickupFee +
+    returnFee +
+    addonsTotal +
+    (isDepositFree ? depositFreeTotal : securityDepositAmount);
 
   const frontendPayNow = calc
     ? Math.round((rentalAmount * calc.prepaymentPercent) / 100)
@@ -385,7 +411,7 @@ const securityDepositAmount = hasSecurityDeposit
   const securityDeposit = hasSecurityDeposit
     ? (carData?.securityDeposit ?? 0)
     : 0;
-  const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? "";
+  const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
   const carImages = useMemo(() => {
     if (!carData?.car) return [];
@@ -488,11 +514,70 @@ const securityDepositAmount = hasSecurityDeposit
     }
   };
 
+  // const handleCreateBooking = async () => {
+  //   if (!calc || calc.totalAmount <= 0) {
+  //     return toast.error("Please calculate price first");
+  //   }
+  //   try {
+  //     const res = await createBooking({
+  //       carId,
+  //       pickupDate,
+  //       pickupTime,
+  //       dropoffDate,
+  //       dropoffTime,
+  //       priceType,
+  //       pickupType,
+  //       returnType,
+  //       emirateId,
+  //       deliveryRequired: pickupType === "DELIVERY" || returnType === "RETURN",
+  //       address: pickupType === "DELIVERY" ? address : undefined,
+  //       guestName,
+  //       guestPhone,
+  //       guestEmail,
+  //       totalAmount: calc.totalAmount,
+  //       prepaymentPercent: calc.prepaymentPercent,
+  //       prepaymentAmount: frontendPayNow,
+  //       remainingAmount: frontendPayLater,
+  //     }).unwrap();
+  //     const bookingId = res?.data?._id;
+  //     if (!bookingId) return toast.error("Booking created but ID missing");
+  //     // const paymentUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/payments/rental/${bookingId}?token=${res.data.paymentToken}`;
+  //     // window.location.href = paymentUrl;
+  //     const paymentRes = await fetch(
+  //       "http://localhost:5000/v2/payments/create-intent",
+  //       {
+  //         method: "POST",
+  //         headers: { "Content-Type": "application/json" },
+  //         body: JSON.stringify({
+  //           bookingId,
+  //           amount: frontendPayNow * 100, // AED → fils
+  //           currency: "aed",
+  //         }),
+  //       },
+  //     );
+
+  //     const paymentData = await paymentRes.json();
+
+  //     if (!paymentData.clientSecret) {
+  //       toast.error("Payment initialization failed");
+  //       return;
+  //     }
+
+  //     setClientSecret(paymentData.clientSecret);
+  //     setShowStripe(true);
+  //   } catch (error: unknown) {
+  //     const e = error as ApiError;
+  //     toast.error(e?.data?.message || "Booking failed");
+  //   }
+  // };
   const handleCreateBooking = async () => {
     if (!calc || calc.totalAmount <= 0) {
-      return toast.error("Please calculate price first");
+      toast.error("Please calculate price first");
+      return;
     }
+
     try {
+      // 1️⃣ Create booking
       const res = await createBooking({
         carId,
         pickupDate,
@@ -513,13 +598,40 @@ const securityDepositAmount = hasSecurityDeposit
         prepaymentAmount: frontendPayNow,
         remainingAmount: frontendPayLater,
       }).unwrap();
+
       const bookingId = res?.data?._id;
-      if (!bookingId) return toast.error("Booking created but ID missing");
-      const paymentUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/payments/rental/${bookingId}?token=${res.data.paymentToken}`;
-      window.location.href = paymentUrl;
-    } catch (error: unknown) {
-      const e = error as ApiError;
-      toast.error(e?.data?.message || "Booking failed");
+      if (!bookingId) {
+        toast.error("Booking created but ID missing");
+        return;
+      }
+      setCreatedBookingId(bookingId);
+
+      // 2️⃣ Create PaymentIntent
+      const paymentRes = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/v2/payments/create-intent`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            bookingId,
+            amount: frontendPayNow * 100, // AED → fils
+            currency: "aed",
+          }),
+        },
+      );
+
+      const paymentData = await paymentRes.json();
+
+      if (!paymentData.clientSecret) {
+        toast.error("Payment initialization failed");
+        return;
+      }
+
+      // 3️⃣ SHOW STRIPE
+      setClientSecret(paymentData.clientSecret);
+      setShowStripe(true);
+    } catch (err) {
+      toast.error("Booking failed");
     }
   };
   const getStepCircle = (id: number) => {
@@ -902,57 +1014,58 @@ const securityDepositAmount = hasSecurityDeposit
 
                 <div className={card}>
                   <div className="flex items-center justify-between">
-  <div>
-    <p className="font-semibold text-gray-900">
-      Enjoy a deposit-free ride for AED {depositFreeDailyFee} per day
-    </p>
-    <p className="text-sm text-gray-600 p-2">
-      You can rent a car without any deposit by including the
-      additional service fee in your rental price
-    </p>
-  </div>
+                    <div>
+                      <p className="font-semibold text-gray-900">
+                        Enjoy a deposit-free ride for AED {depositFreeDailyFee}{" "}
+                        per day
+                      </p>
+                      <p className="text-sm text-gray-600 p-2">
+                        You can rent a car without any deposit by including the
+                        additional service fee in your rental price
+                      </p>
+                    </div>
 
-  <button
-    onClick={() => setDepositFree((prev) => !prev)}
-    className={`relative w-12 h-6 rounded-full transition-colors ${
-      depositFree ? "bg-site-accent" : "bg-gray-300"
-    }`}
-  >
-    <span
-      className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-        depositFree ? "translate-x-6" : "translate-x-0"
-      }`}
-    />
-  </button>
-</div>
+                    <button
+                      onClick={() => setDepositFree((prev) => !prev)}
+                      className={`relative w-12 h-6 rounded-full transition-colors ${
+                        depositFree ? "bg-site-accent" : "bg-gray-300"
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                          depositFree ? "translate-x-6" : "translate-x-0"
+                        }`}
+                      />
+                    </button>
+                  </div>
 
+                  <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
+                        💳
+                      </div>
 
-     <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
-  <div className="flex items-center gap-3">
-    <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
-      💳
-    </div>
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {depositFree
+                            ? "Deposit-free Fee"
+                            : "Security Deposit"}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {depositFree
+                            ? "Applied per rental day"
+                            : "Refunded within 21 days after you return the car"}
+                        </p>
+                      </div>
+                    </div>
 
-    <div>
-      <p className="font-medium text-gray-900">
-        {depositFree ? "Deposit-free Fee" : "Security Deposit"}
-      </p>
-      <p className="text-xs text-gray-500">
-        {depositFree
-          ? "Applied per rental day"
-          : "Refunded within 21 days after you return the car"}
-      </p>
-    </div>
-  </div>
-
-  <p className="text-lg font-semibold text-site-accent">
-    AED{" "}
-    {depositFree
-      ? (depositFreeDailyFee * rentalDays).toLocaleString() // ✅ daily × days
-      : securityDeposit.toLocaleString()}                 
-  </p>
-</div>
-
+                    <p className="text-lg font-semibold text-site-accent">
+                      AED{" "}
+                      {depositFree
+                        ? (depositFreeDailyFee * rentalDays).toLocaleString() // ✅ daily × days
+                        : securityDeposit.toLocaleString()}
+                    </p>
+                  </div>
                 </div>
                 <div className="flex gap-4">
                   <button
@@ -988,11 +1101,11 @@ const securityDepositAmount = hasSecurityDeposit
                   <div className="space-y-4">
                     <div>
                       <label className={fieldLabel}>Full Name</label>
- <input
-  value={guestName}
-  onChange={(e) => setGuestName(e.target.value)}
-  placeholder="Enter your full name"
-  className="
+                      <input
+                        value={guestName}
+                        onChange={(e) => setGuestName(e.target.value)}
+                        placeholder="Enter your full name"
+                        className="
     w-full min-w-0
     rounded-full
     border border-gray-200
@@ -1004,10 +1117,7 @@ const securityDepositAmount = hasSecurityDeposit
     focus:bg-white
     focus:ring-2 focus:ring-site-accent/30
   "
-/>
-
-
-
+                      />
                     </div>
                     <div>
                       <label className={fieldLabel}>Mobile Number</label>
@@ -1215,19 +1325,20 @@ const securityDepositAmount = hasSecurityDeposit
                       </div>
                     )}
 
-                 {/* Deposit / Deposit-Free */}
-            {( depositFreeDailyFee > 0 || securityDeposit > 0) && (
-              <div className="flex justify-between text-sm font-semibold text-gray-700">
-                <span>
-                  {isDepositFree ? "Deposit-free fee" : "Security Deposit"}
-                </span>
+                    {/* Deposit / Deposit-Free */}
+                    {(depositFreeDailyFee > 0 || securityDeposit > 0) && (
+                      <div className="flex justify-between text-sm font-semibold text-gray-700">
+                        <span>
+                          {isDepositFree
+                            ? "Deposit-free fee"
+                            : "Security Deposit"}
+                        </span>
 
-                <span className="text-gray-900">
-                  AED {formatMoney(depositAmount)}
-                </span>
-              </div>
-            )}
-
+                        <span className="text-gray-900">
+                          AED {formatMoney(depositAmount)}
+                        </span>
+                      </div>
+                    )}
 
                     {addonsTotal > 0 && (
                       <div className="flex justify-between text-sm font-semibold text-gray-700">
@@ -1259,19 +1370,87 @@ const securityDepositAmount = hasSecurityDeposit
                   </div>
                 </div>
 
-                <button
+                {/* <button
                   onClick={handleCreateBooking}
                   disabled={!canPayFinal || createLoading}
                   className={`mt-4 ${primaryBtn}`}
                 >
                   {createLoading ? "Redirecting..." : "Confirm & Pay"}
-                </button>
+                </button> */}
 
-                {frontendTotal === 0 && (
+                {/* {frontendTotal === 0 && (
                   <p className="mt-3 text-xs font-semibold text-gray-500">
                     Please complete steps and click{" "}
                     <span className="font-extrabold">Calculate Price</span>
                   </p>
+                )} */}
+
+                {/* {!showStripe ? (
+                  <button
+                    onClick={handleCreateBooking}
+                    disabled={!canPayFinal || createLoading}
+                    className={`mt-4 ${primaryBtn}`}
+                  >
+                    {createLoading ? "Preparing payment..." : "Confirm & Pay"}
+                  </button>
+                ) : (
+                  clientSecret && (
+                    <Elements stripe={stripePromise} options={{ clientSecret }}>
+                      <StripeCheckoutInline
+                        onSuccess={() => {
+                          toast.success("Booking confirmed");
+                        }}
+                      />
+                    </Elements>
+                  )
+                )} */}
+                {/* {!showStripe ? (
+  <button
+    onClick={handleCreateBooking}
+    disabled={!canPayFinal || createLoading}
+    className={`mt-4 ${primaryBtn}`}
+  >
+    {createLoading ? "Preparing payment..." : "Confirm & Pay"}
+  </button>
+) : (
+  mounted &&
+  clientSecret && (
+    <Elements stripe={stripePromise} options={{ clientSecret }}>
+      <StripeCheckoutInline
+        onSuccess={() => {
+          toast.success("Booking confirmed");
+        }}
+      />
+    </Elements>
+  )
+)}
+{/* CONFIRM & PAY / STRIPE */}
+                {!showStripe ? (
+                  <button
+                    onClick={handleCreateBooking}
+                    disabled={!canPayFinal || createLoading}
+                    className={`mt-4 ${primaryBtn}`}
+                  >
+                    {createLoading ? "Preparing payment..." : "Confirm & Pay"}
+                  </button>
+                ) : (
+                  mounted &&
+                  clientSecret && (
+                    <Elements stripe={stripePromise} options={{ clientSecret }}>
+                      <StripeCheckoutInline
+                        onSuccess={() => {
+                          toast.success("Booking confirmed");
+
+                          if (!createdBookingId) {
+                            toast.error("Booking ID missing");
+                            return;
+                          }
+
+                          router.push(`/payments/rental/${createdBookingId}`);
+                        }}
+                      />
+                    </Elements>
+                  )
                 )}
               </div>
             </div>
@@ -1492,64 +1671,40 @@ const securityDepositAmount = hasSecurityDeposit
                             Vendor Collects Car
                           </p>
 
-          <p className="text-xs font-medium text-gray-500 text-center">
-            Paid (By Emirate)
-          </p>
-        </div>
-      </button>
-    </div>
-
-                  <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-3">
-                    <p className="text-base font-extrabold text-gray-900">
-                      Select Date & Time
-                    </p>
- <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-3">
-  <p className="text-base font-extrabold text-gray-900">
-    Select Date & Time
-  </p>
-
-  {/* Time pill */}
-  <div className="mt-3 rounded-2xl bg-gray-200 px-3 py-2">
-    <div className="grid grid-cols-2 gap-2 items-center">
-      
-      {/* Start */}
-      <div className="flex flex-col items-center">
-        <p className="text-sm font-semibold text-gray-500 mb-1">
-          Start Date
-        </p>
-        <p className="text-base md:text-lg font-extrabold text-gray-900 mb-2 md:mb-4">
-        {startDate
-          ? startDate.toLocaleString("en-US", {
-              month: "short",
-              day: "numeric",
-            })
-          : ""}
-      </p>
-
-                          <input
-                            type="time"
-                            value={pickupTime}
-                            onChange={(e) => setPickupTime(e.target.value)}
-                            className="
-          w-full
-          rounded-full
-          border border-gray-200
-          bg-soft-grey/40
-          px-3 py-2
-          md:px-4 md:py-3
-          text-xs md:text-sm
-          font-medium text-gray-800
-          outline-none transition
-          focus:bg-white
-          focus:ring-2 focus:ring-site-accent/30
-        "
-                          />
+                          <p className="text-xs font-medium text-gray-500 text-center">
+                            Paid (By Emirate)
+                          </p>
                         </div>
-        <input
-          type="time"
-          value={pickupTime}
-          onChange={(e) => setPickupTime(e.target.value)}
-          className="
+                      </button>
+                    </div>
+
+                    <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-3">
+                      <p className="text-base font-extrabold text-gray-900">
+                        Select Date & Time
+                      </p>
+
+                      {/* Time pill */}
+                      <div className="mt-3 rounded-2xl bg-gray-200 px-3 py-2">
+                        <div className="grid grid-cols-2 gap-2 items-center">
+                          {/* Start */}
+                          <div className="flex flex-col items-center">
+                            <p className="text-sm font-semibold text-gray-500 mb-1">
+                              Start Date
+                            </p>
+                            <p className="text-base md:text-lg font-extrabold text-gray-900 mb-2 md:mb-4">
+                              {startDate
+                                ? startDate.toLocaleString("en-US", {
+                                    month: "short",
+                                    day: "numeric",
+                                  })
+                                : ""}
+                            </p>
+
+                            <input
+                              type="time"
+                              value={pickupTime}
+                              onChange={(e) => setPickupTime(e.target.value)}
+                              className="
             w-[150px]
             bg-gray-100
             text-sm
@@ -1560,27 +1715,27 @@ const securityDepositAmount = hasSecurityDeposit
             outline-none
             text-center
           "
-        />
-      </div>
+                            />
+                          </div>
 
-      {/* End */}
-      <div className="flex flex-col items-center">
-        <p className="text-sm font-semibold text-gray-500 mb-1">
-          End Date
-        </p>
-         <p className="text-base md:text-lg font-extrabold text-gray-900 mb-2 md:mb-4">
-        {endDate
-          ? endDate.toLocaleString("en-US", {
-              month: "short",
-              day: "numeric",
-            })
-          : ""}
-      </p>
-        <input
-          type="time"
-          value={dropoffTime}
-          onChange={(e) => setDropoffTime(e.target.value)}
-          className="
+                          {/* End */}
+                          <div className="flex flex-col items-center">
+                            <p className="text-sm font-semibold text-gray-500 mb-1">
+                              End Date
+                            </p>
+                            <p className="text-base md:text-lg font-extrabold text-gray-900 mb-2 md:mb-4">
+                              {endDate
+                                ? endDate.toLocaleString("en-US", {
+                                    month: "short",
+                                    day: "numeric",
+                                  })
+                                : ""}
+                            </p>
+                            <input
+                              type="time"
+                              value={dropoffTime}
+                              onChange={(e) => setDropoffTime(e.target.value)}
+                              className="
             w-[150px]
             bg-gray-100
             p-2
@@ -1591,52 +1746,52 @@ const securityDepositAmount = hasSecurityDeposit
             outline-none
             text-center
           "
-        />
-      </div>
+                            />
+                          </div>
+                        </div>
+                      </div>
 
-    </div>
-  </div>
+                      <div className="flex justify-center mt-4">
+                        <DatePicker
+                          inline
+                          selectsRange
+                          startDate={startDate}
+                          endDate={endDate}
+                          onChange={(update) => {
+                            setDateRange(update);
 
+                            const [s, e] = update;
 
+                            if (s) {
+                              const yyyy = s.getFullYear();
+                              const mm = String(s.getMonth() + 1).padStart(
+                                2,
+                                "0",
+                              );
+                              const dd = String(s.getDate()).padStart(2, "0");
+                              setPickupDate(`${yyyy}-${mm}-${dd}`);
+                              setPickupTime(startTime);
+                            }
 
-          <div className="flex justify-center mt-4">
-           <DatePicker
-              inline
-              selectsRange
-              startDate={startDate}
-              endDate={endDate}
-              onChange={(update) => {
-                setDateRange(update);
-
-                          const [s, e] = update;
-
-                          if (s) {
-                            const yyyy = s.getFullYear();
-                            const mm = String(s.getMonth() + 1).padStart(
-                              2,
-                              "0",
-                            );
-                            const dd = String(s.getDate()).padStart(2, "0");
-                            setPickupDate(`${yyyy}-${mm}-${dd}`);
-                            setPickupTime(startTime);
-                          }
-
-                if (e) {
-                  const yyyy = e.getFullYear();
-                  const mm = String(e.getMonth() + 1).padStart(2, "0");
-                  const dd = String(e.getDate()).padStart(2, "0");
-                  setDropoffDate(`${yyyy}-${mm}-${dd}`);
-                  setDropoffTime(endTime);
-                }
-              }}
-              minDate={new Date()}
-              calendarClassName="mobileRangeCalendar"
-            />
-          </div>
-        </div>
-        </div>
-      </>
-    )}
+                            if (e) {
+                              const yyyy = e.getFullYear();
+                              const mm = String(e.getMonth() + 1).padStart(
+                                2,
+                                "0",
+                              );
+                              const dd = String(e.getDate()).padStart(2, "0");
+                              setDropoffDate(`${yyyy}-${mm}-${dd}`);
+                              setDropoffTime(endTime);
+                            }
+                          }}
+                          minDate={new Date()}
+                          calendarClassName="mobileRangeCalendar"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
 
               {mobileStep === 2 && (
                 <>
@@ -1678,22 +1833,22 @@ const securityDepositAmount = hasSecurityDeposit
                           <span>End Date</span>
                         </div>
 
-          <div className="text-right">
-            <p className="text-sm font-semibold text-gray-900">
-              {endDate
-                ? endDate.toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })
-                : "-"}
-            </p>
-            <p className="text-xs font-bold text-text-gray-900  mt-0.5 flex items-center justify-end gap-1">
-              <Clock className="w-3.5 h-3.5 " />
-              {endTime || "--:--"}
-            </p>
-          </div>
-        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-semibold text-gray-900">
+                            {endDate
+                              ? endDate.toLocaleDateString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                })
+                              : "-"}
+                          </p>
+                          <p className="text-xs font-bold text-text-gray-900  mt-0.5 flex items-center justify-end gap-1">
+                            <Clock className="w-3.5 h-3.5 " />
+                            {endTime || "--:--"}
+                          </p>
+                        </div>
+                      </div>
 
                       {/* DURATION */}
                       <div className="flex justify-between border-b border-gray-200 pb-3">
@@ -1858,61 +2013,65 @@ const securityDepositAmount = hasSecurityDeposit
                           </p>
                         </div>
 
-                <button
-                  type="button"
-                  onClick={() => setDepositFree((prev) => !prev)}
-                  className={`relative w-12 h-6 rounded-full transition-colors ${
-                    depositFree ? "bg-site-accent" : "bg-gray-300"
-                  }`}
-                >
-                  <span
-                    className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-                      depositFree ? "translate-x-6" : ""
-                    }`}
-                  />
-                </button>
-              </div>
-                {/* SECURITY DEPOSIT AMOUNT */}
-              
-     <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
-  <div className="flex items-center gap-3">
-    <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
-      💳
-    </div>
+                        <button
+                          type="button"
+                          onClick={() => setDepositFree((prev) => !prev)}
+                          className={`relative w-12 h-6 rounded-full transition-colors ${
+                            depositFree ? "bg-site-accent" : "bg-gray-300"
+                          }`}
+                        >
+                          <span
+                            className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                              depositFree ? "translate-x-6" : ""
+                            }`}
+                          />
+                        </button>
+                      </div>
+                      {/* SECURITY DEPOSIT AMOUNT */}
 
-    <div>
-      <p className="font-medium text-gray-900">
-        {depositFree ? "Deposit-free Fee" : "Security Deposit"}
-      </p>
-     <p className="text-xs text-gray-500 max-w-[150px]">
-  {depositFree
-    ? "Applied per rental day"
-    : "Refunded within 21 days after you return the car"}
-</p>
+                      <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
+                            💳
+                          </div>
 
-    </div>
-  </div>
+                          <div>
+                            <p className="font-medium text-gray-900">
+                              {depositFree
+                                ? "Deposit-free Fee"
+                                : "Security Deposit"}
+                            </p>
+                            <p className="text-xs text-gray-500 max-w-[150px]">
+                              {depositFree
+                                ? "Applied per rental day"
+                                : "Refunded within 21 days after you return the car"}
+                            </p>
+                          </div>
+                        </div>
 
-  <p className="text-lg font-semibold text-site-accent">
-    AED{" "}
-    {depositFree
-      ? (depositFreeDailyFee * rentalDays).toLocaleString() // ✅ daily × days
-      : securityDeposit.toLocaleString()}                 
-  </p>
-</div>
-
-              </div>
-            </div>
-          </>
-        )}
-          {mobileStep === 3 && (
-             <>
-                 <div className="flex items-center justify-between pt-2">
-          <div className="flex items-center gap-2">
-            <User className="w-4 h-4 text-site-accent" />
-            <p className="text-sm font-extrabold text-gray-900">Your Details</p>
-          </div>
-{/* 
+                        <p className="text-lg font-semibold text-site-accent">
+                          AED{" "}
+                          {depositFree
+                            ? (
+                                depositFreeDailyFee * rentalDays
+                              ).toLocaleString() // ✅ daily × days
+                            : securityDeposit.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+              {mobileStep === 3 && (
+                <>
+                  <div className="flex items-center justify-between pt-2">
+                    <div className="flex items-center gap-2">
+                      <User className="w-4 h-4 text-site-accent" />
+                      <p className="text-sm font-extrabold text-gray-900">
+                        Your Details
+                      </p>
+                    </div>
+                    {/* 
           <button
             type="button"
             onClick={() => setDetailsOpen((prev) => !prev)}
@@ -1939,170 +2098,164 @@ const securityDepositAmount = hasSecurityDeposit
                           value={guestName}
                           onChange={(e) => setGuestName(e.target.value)}
                           placeholder="Enter your full name"
-                          className="flex-1 bg-transparent outline-none text-sm font-semibold"
-                        />
-                      </div>
-                    </div>
-        {/* DETAILS BODY */}
-        {/* {detailsOpen && ( */}
-          <div className="space-y-4 mt-3">
-            <div>
-              <label className="text-gray-700 font-semibold text-sm">Full Name</label>
-              <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 focus-within:bg-white focus-within:ring-2 focus-within:ring-site-accent/30">
-                <User className="w-4 h-4 text-site-accent" />
-               <input
-                value={guestName}
-                onChange={(e) => setGuestName(e.target.value)}
-                placeholder="Enter your full name"
-                className="
+                          className="
                   w-full min-w-0
                   bg-transparent
                   outline-none
                   text-base md:text-sm
                   font-semibold
                 "
-              />
+                        />
+                      </div>
+                    </div>
 
-              </div>
-            </div>
-
-            <div>
-              <label className="text-gray-700 font-semibold text-sm">Mobile Number</label>
-              <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 focus-within:bg-white focus-within:ring-2 focus-within:ring-site-accent/30">
-                <Phone className="w-4 h-4 text-site-accent" />
-                <span className="text-sm font-extrabold text-gray-900">+971</span>
-               <input
-                  type="tel"
-                  value={guestPhone}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, "").slice(0, 9);
-                    setGuestPhone(val);
-                  }}
-                  placeholder="50XXXXXXX"
-                  className="
+                    <div>
+                      <label className="text-gray-700 font-semibold text-sm">
+                        Mobile Number
+                      </label>
+                      <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 focus-within:bg-white focus-within:ring-2 focus-within:ring-site-accent/30">
+                        <Phone className="w-4 h-4 text-site-accent" />
+                        <span className="text-sm font-extrabold text-gray-900">
+                          +971
+                        </span>
+                        <input
+                          type="tel"
+                          value={guestPhone}
+                          onChange={(e) => {
+                            const val = e.target.value
+                              .replace(/\D/g, "")
+                              .slice(0, 9);
+                            setGuestPhone(val);
+                          }}
+                          placeholder="50XXXXXXX"
+                          className="
                     w-full min-w-0
                     bg-transparent
                     outline-none
                     text-base md:text-sm
                     font-semibold
                   "
-                />
+                        />
+                      </div>
+                    </div>
 
-              </div>
-            </div>
-
-            <div>
-              <label className="text-gray-700 font-semibold text-sm">Email Address</label>
-              <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 focus-within:bg-white focus-within:ring-2 focus-within:ring-site-accent/30">
-                <Mail className="w-4 h-4 text-site-accent" />
-                <input
-                type="email"
-                value={guestEmail}
-                onChange={(e) => setGuestEmail(e.target.value)}
-                placeholder="Enter your email address"
-                className="
+                    <div>
+                      <label className="text-gray-700 font-semibold text-sm">
+                        Email Address
+                      </label>
+                      <div className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 focus-within:bg-white focus-within:ring-2 focus-within:ring-site-accent/30">
+                        <Mail className="w-4 h-4 text-site-accent" />
+                        <input
+                          type="email"
+                          value={guestEmail}
+                          onChange={(e) => setGuestEmail(e.target.value)}
+                          placeholder="Enter your email address"
+                          className="
                   w-full min-w-0
                   bg-transparent
                   outline-none
                   text-base md:text-sm
                   font-semibold
                 "
-              />
-
-              </div>
-            </div>
-          </div>
-              <div className="mt-3 rounded-2xl border border-gray-200 bg-gray-50 p-4 space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-gray-500 text-sm font-semibold">
-                      Rental Plan
-                    </span>
-                    <span className="font-semibold text-sm capitalize">
-                      {priceType}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center text-sm font-semibold w-full">
-                    <span className="text-gray-500">Method</span>
-                    <span className="font-semibold text-gray-900">
-                      {pickupType === "DELIVERY" && returnType === "RETURN"
-                        ? "Delivery + Return"
-                        : pickupType === "DELIVERY"
-                          ? "Delivery"
-                          : returnType === "RETURN"
-                            ? "Pickup + Return"
-                            : "Pickup"}
-                    </span>
-                  </div>
-                  {pickupType === "DELIVERY" && address && (
-                    <div className="text-xs text-gray-500 bg-soft-grey/30 rounded-xl p-2">
-                      {address}
+                        />
+                      </div>
                     </div>
-                  )}
-
-                  <div className="pt-3 border-t border-gray-200 space-y-2">
-                    <div className="flex justify-between text-sm font-semibold text-gray-700">
-                      <span>Base Rental:</span>
-                      <span className="text-gray-900">
-                        AED {formatMoney(calc?.totalAmount || 0)}
+                  </div>
+                  <div className="mt-3 rounded-2xl border border-gray-200 bg-gray-50 p-4 space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500 text-sm font-semibold">
+                        Rental Plan
+                      </span>
+                      <span className="font-semibold text-sm capitalize">
+                        {priceType}
                       </span>
                     </div>
-                    {pickupReturnCharges.pickup > 0 && (
-                      <div className="flex justify-between text-sm font-semibold text-gray-700">
-                        <span>Pickup charge:</span>
-                        <span className="text-gray-900">
-                          AED {formatMoney(pickupReturnCharges.pickup)}
-                        </span>
+                    <div className="flex justify-between items-center text-sm font-semibold w-full">
+                      <span className="text-gray-500">Method</span>
+                      <span className="font-semibold text-gray-900">
+                        {pickupType === "DELIVERY" && returnType === "RETURN"
+                          ? "Delivery + Return"
+                          : pickupType === "DELIVERY"
+                            ? "Delivery"
+                            : returnType === "RETURN"
+                              ? "Pickup + Return"
+                              : "Pickup"}
+                      </span>
+                    </div>
+                    {pickupType === "DELIVERY" && address && (
+                      <div className="text-xs text-gray-500 bg-soft-grey/30 rounded-xl p-2">
+                        {address}
                       </div>
                     )}
-                    {pickupReturnCharges.return > 0 && (
-                      <div className="flex justify-between text-sm font-semibold text-gray-700">
-                        <span>Return charge:</span>
-                        <span className="text-gray-900">
-                          AED {formatMoney(pickupReturnCharges.return)}
-                        </span>
-                      </div>
-                    )}
-                   
-                        {( depositFreeDailyFee > 0 || securityDeposit > 0) && (
-              <div className="flex justify-between text-sm font-semibold text-gray-700">
-                <span>
-                  {isDepositFree ? "Deposit-free fee" : "Security Deposit"}
-                </span>
 
-                <span className="text-gray-900">
-                  AED {formatMoney(depositAmount)}
-                </span>
-              </div>
-            )}
-                    {addonsTotal > 0 && (
+                    <div className="pt-3 border-t border-gray-200 space-y-2">
                       <div className="flex justify-between text-sm font-semibold text-gray-700">
-                        <span>Add-ons:</span>
+                        <span>Base Rental:</span>
                         <span className="text-gray-900">
-                          AED {formatMoney(addonsTotal)}
+                          AED {formatMoney(calc?.totalAmount || 0)}
                         </span>
                       </div>
-                    )}
+                      {pickupReturnCharges.pickup > 0 && (
+                        <div className="flex justify-between text-sm font-semibold text-gray-700">
+                          <span>Pickup charge:</span>
+                          <span className="text-gray-900">
+                            AED {formatMoney(pickupReturnCharges.pickup)}
+                          </span>
+                        </div>
+                      )}
+                      {pickupReturnCharges.return > 0 && (
+                        <div className="flex justify-between text-sm font-semibold text-gray-700">
+                          <span>Return charge:</span>
+                          <span className="text-gray-900">
+                            AED {formatMoney(pickupReturnCharges.return)}
+                          </span>
+                        </div>
+                      )}
+
+                      {(depositFreeDailyFee > 0 || securityDeposit > 0) && (
+                        <div className="flex justify-between text-sm font-semibold text-gray-700">
+                          <span>
+                            {isDepositFree
+                              ? "Deposit-free fee"
+                              : "Security Deposit"}
+                          </span>
+
+                          <span className="text-gray-900">
+                            AED {formatMoney(depositAmount)}
+                          </span>
+                        </div>
+                      )}
+                      {addonsTotal > 0 && (
+                        <div className="flex justify-between text-sm font-semibold text-gray-700">
+                          <span>Add-ons:</span>
+                          <span className="text-gray-900">
+                            AED {formatMoney(addonsTotal)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex justify-between text-base font-extrabold text-gray-900 pt-3 border-t border-gray-200">
+                      <span>Total Price:</span>
+                      <span>AED {formatMoney(frontendTotal)}</span>
+                    </div>
                   </div>
-                  <div className="flex justify-between text-base font-extrabold text-gray-900 pt-3 border-t border-gray-200">
-                    <span>Total Price:</span>
-                    <span>AED {formatMoney(frontendTotal)}</span>
-                  </div>
-                </div>
-          <div className="mt-5 rounded-2xl border bg-gray-50 border-gray-200  p-4">
-            <h3 className="text-base font-extrabold text-gray-900 mb-3">Agreement</h3>
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={agree}
-                onChange={(e) => setAgree(e.target.checked)}
-                className="mt-1 h-5 w-5 rounded border-gray-300 text-site-accent focus:ring-site-accent"
-              />
-               <div className="flex flex-col">
-  {/* Row 1 */}
-          <div className="flex items-center gap-2">
-            <p className="text-sm font-semibold text-gray-900">
-              I agree to the terms and conditions
-            </p>
+                  <div className="mt-5 rounded-2xl border bg-gray-50 border-gray-200  p-4">
+                    <h3 className="text-base font-extrabold text-gray-900 mb-3">
+                      Agreement
+                    </h3>
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={agree}
+                        onChange={(e) => setAgree(e.target.checked)}
+                        className="mt-1 h-5 w-5 rounded border-gray-300 text-site-accent focus:ring-site-accent"
+                      />
+                      <div className="flex flex-col">
+                        {/* Row 1 */}
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold text-gray-900">
+                            I agree to the terms and conditions
+                          </p>
 
                           <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 text-gray-600 text-xs font-bold">
                             i
@@ -2244,6 +2397,93 @@ const securityDepositAmount = hasSecurityDeposit
         )}
       </div>
     </div>
+    </div>
+  );
+}
+// function StripeCheckoutInline({ onSuccess }: { onSuccess: () => void }) {
+//   const stripe = useStripe();
+//   const elements = useElements();
+//   const [loading, setLoading] = useState(false);
+
+//   const handlePay = async () => {
+//     if (!stripe || !elements) return;
+
+//     setLoading(true);
+
+//     const { error } = await stripe.confirmPayment({
+//       elements,
+//       redirect: "if_required",
+//     });
+
+//     if (error) {
+//       toast.error(error.message || "Payment failed");
+//     } else {
+//       toast.success("Payment successful");
+//       onSuccess();
+//     }
+
+//     setLoading(false);
+//   };
+
+//   return (
+//     <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-4">
+//       <PaymentElement />
+//       <button
+//         onClick={handlePay}
+//         disabled={loading}
+//         className="mt-4 w-full rounded-2xl bg-gradient-to-r from-site-accent to-slate-teal py-3 text-sm font-bold text-white"
+//       >
+//         {loading ? "Processing..." : "Pay Now"}
+//       </button>
+//     </div>
+//   );
+// }
+// type StripeCheckoutInlineProps = {
+//   onSuccess: () => void;
+// };
+type StripeCheckoutInlineProps = {
+  onSuccess: () => void;
+};
+
+function StripeCheckoutInline({ onSuccess }: StripeCheckoutInlineProps) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [loading, setLoading] = useState(false);
+
+  const handlePay = async () => {
+    if (!stripe || !elements) return;
+
+    setLoading(true);
+
+    const { error, paymentIntent } = await stripe.confirmPayment({
+      elements,
+      redirect: "if_required",
+    });
+
+    if (error) {
+      toast.error(error.message || "Payment failed");
+      setLoading(false);
+      return;
+    }
+
+    if (paymentIntent?.status === "succeeded") {
+      toast.success("Payment successful");
+      onSuccess(); // ✅ tell parent only
+    }
+
+    setLoading(false);
+  };
+
+  return (
+    <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-4">
+      <PaymentElement />
+      <button
+        onClick={handlePay}
+        disabled={loading}
+        className="mt-4 w-full rounded-2xl bg-gradient-to-r from-site-accent to-slate-teal py-3 text-sm font-bold text-white"
+      >
+        {loading ? "Processing..." : "Pay Now"}
+      </button>
     </div>
   );
 }
