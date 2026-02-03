@@ -19,7 +19,10 @@ type Booking = {
 };
 
 export default function RentalPaymentSuccessPage() {
-  const { bookingId } = useParams<{ bookingId: string }>();
+  const params = useParams();
+  const bookingId =
+    typeof params?.bookingId === "string" ? params.bookingId : undefined;
+
   const { user } = useAuth();
 
   const [booking, setBooking] = useState<Booking | null>(null);
@@ -35,17 +38,28 @@ export default function RentalPaymentSuccessPage() {
     let retries = 0;
 
     const load = async () => {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/payments/rental/view/${bookingId}`,
-      );
-      const data = await res.json();
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BASE_URL as string}/payments/rental/view/${bookingId}`,
+        );
 
-      setBooking(data.data);
+        const data: {
+          success?: boolean;
+          data?: Booking;
+        } = await res.json();
 
-      if (!data.data?.prepaymentPaid && retries < 4) {
-        retries++;
-        setTimeout(load, 2000);
-      } else {
+        if (data?.data) {
+          setBooking(data.data);
+
+          if (!data.data.prepaymentPaid && retries < 4) {
+            retries++;
+            setTimeout(load, 2000);
+            return;
+          }
+        }
+
+        setLoading(false);
+      } catch {
         setLoading(false);
       }
     };
@@ -61,7 +75,7 @@ export default function RentalPaymentSuccessPage() {
 
     try {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/auth/guest/send-temp-password`,
+        `${process.env.NEXT_PUBLIC_BASE_URL as string}/auth/guest/send-temp-password`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -71,15 +85,17 @@ export default function RentalPaymentSuccessPage() {
         },
       );
 
-      const data = await res.json();
+      const data: { success?: boolean; message?: string } = await res.json();
 
       if (!res.ok || !data.success) {
         throw new Error(data.message || "Failed to send email");
       }
 
       setSuccessMsg("Login details sent to your email.");
-    } catch (err: any) {
-      setSuccessMsg(err.message || "Something went wrong.");
+    } catch (err) {
+      setSuccessMsg(
+        err instanceof Error ? err.message : "Something went wrong.",
+      );
     } finally {
       setSending(false);
     }
@@ -102,7 +118,6 @@ export default function RentalPaymentSuccessPage() {
     <>
       <main className="min-h-screen bg-[#fafafa] flex items-center justify-center px-6">
         <section className="w-full max-w-md text-center">
-          {/* HEADLINE */}
           <h1 className="text-3xl font-semibold text-[#0f172a] tracking-tight">
             Booking confirmed
           </h1>
@@ -113,21 +128,16 @@ export default function RentalPaymentSuccessPage() {
               : "Payment is processing. This usually takes a few seconds."}
           </p>
 
-          {/* DIVIDER */}
           <div className="my-8 h-px bg-gray-200" />
 
-          {/* BOOKING DETAILS */}
           <div className="space-y-4 text-left text-sm">
             <Detail label="Booking ID" value={booking.bookingId} />
-
             <Detail label="Pickup" value={formatDate(booking.pickupDate)} />
-
             <Detail label="Dropoff" value={formatDate(booking.dropoffDate)} />
           </div>
 
           <div className="my-6 h-px bg-gray-200" />
 
-          {/* AMOUNT */}
           <div className="space-y-2 text-sm">
             <Amount label="Total" value={`AED ${booking.totalAmount}`} />
             <Amount
@@ -141,7 +151,6 @@ export default function RentalPaymentSuccessPage() {
             />
           </div>
 
-          {/* GUEST CTA */}
           {booking.isGuestBooking && (
             <>
               <div className="my-8 h-px bg-gray-200" />
@@ -169,7 +178,6 @@ export default function RentalPaymentSuccessPage() {
         </section>
       </main>
 
-      {/* MODALS */}
       <AuthModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
@@ -208,9 +216,7 @@ function Amount({
   return (
     <div className="flex justify-between">
       <span className="text-gray-500">{label}</span>
-      <span
-        className={`${bold ? "font-semibold text-[#0f172a]" : "font-medium"}`}
-      >
+      <span className={bold ? "font-semibold text-[#0f172a]" : "font-medium"}>
         {value}
       </span>
     </div>
