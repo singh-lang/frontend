@@ -27,7 +27,7 @@ export type FilterValues =
 
 function appendParamsSafe(
   urlParams: URLSearchParams,
-  params: Record<string, FilterValues>
+  params: Record<string, FilterValues>,
 ) {
   Object.entries(params).forEach(([key, value]) => {
     if (value === undefined || value === null || value === "") return;
@@ -44,13 +44,13 @@ function appendParamsSafe(
 export const getCatalogData = async (
   filterType: string,
   filterId: string,
-  pageNum?: number | string
+  pageNum?: number | string,
 ): Promise<ApiCarResponse> => {
   const page = pageNum ? `?page=${pageNum}` : "";
 
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_BASE_URL}/cars/${filterType}/${filterId}${page}`,
-    { next: { revalidate: 450 } }
+    { next: { revalidate: 450 } },
   );
 
   if (res.status === 404) notFound();
@@ -61,7 +61,7 @@ export const getCatalogData = async (
 
 /* ---------------------- FILTERED DATA ---------------------- */
 export const getFilteredData = async (
-  params: SearchParams = {}
+  params: SearchParams = {},
 ): Promise<ApiCarResponse> => {
   const search = new URLSearchParams();
   appendParamsSafe(search, params);
@@ -70,7 +70,7 @@ export const getFilteredData = async (
 
   const res = await fetch(
     `${process.env.NEXT_PUBLIC_BASE_URL}/cars/filter${qs ? `?${qs}` : ""}`,
-    { cache: "no-store" }
+    { cache: "no-store" },
   );
 
   if (res.status === 404) notFound();
@@ -82,7 +82,7 @@ export const getFilteredData = async (
 /* ---------------------- MASTER DATA ---------------------- */
 export const getFilterMasterData = async () => {
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/cars/filter/master-data`
+    `${process.env.NEXT_PUBLIC_BASE_URL}/cars/filter/master-data`,
   );
 
   if (res.status === 404) notFound();
@@ -125,6 +125,18 @@ const catalogApi = baseApi.injectEndpoints({
     }),
   }),
 });
+const sanitizeSearchParams = (params: URLSearchParams) => {
+  const allowed = ["search", "page", "limit", "sort"];
+
+  const clean = new URLSearchParams();
+
+  allowed.forEach((key) => {
+    const value = params.get(key);
+    if (value) clean.set(key, value);
+  });
+
+  return clean.toString();
+};
 
 export const { useLazyApplyFiltersQuery, useLazyFetchCatalogDataQuery } =
   catalogApi;
