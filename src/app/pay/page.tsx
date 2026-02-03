@@ -167,7 +167,7 @@ export default function RentalPaymentSuccessPage() {
                 onClick={() => setShowAuthModal(true)}
                 className="w-full mt-3 border border-black py-3 text-sm font-medium rounded-md hover:bg-black hover:text-white transition"
               >
-                Sign in with temporary password
+                Sign in with temporary password.
               </button>
 
               {successMsg && (
