@@ -212,7 +212,7 @@ export default function MyProfile() {
 
         {/* Emirate */}
         <div>
-          <label className="block text-sm font-semibold text-dark-base mb-2 flex items-center gap-2">
+          <label className="block text-sm font-semibold text-dark-base mb-2 items-center gap-2">
             <MapPin className="w-4 h-4 text-site-accent" /> Emirate
           </label>
           <select
@@ -237,7 +237,7 @@ export default function MyProfile() {
 
         {/* Address */}
         <div className="md:col-span-2">
-          <label className="block text-sm font-semibold text-dark-base mb-2 flex items-center gap-2">
+          <label className="block text-sm font-semibold text-dark-base mb-2 items-center gap-2">
             <MapPin className="w-4 h-4 text-site-accent" /> Address
           </label>
           <textarea

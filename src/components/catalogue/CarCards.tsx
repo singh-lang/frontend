@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 
 import HorizontalCarCard from "./HorizontalCarCard";
@@ -13,7 +13,7 @@ import {
 } from "@/lib/api/catalog";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { setCatalogCars, setCarsLoading } from "@/lib/slice/catalogCarsSlice";
+import { setCatalogCars } from "@/lib/slice/catalogCarsSlice";
 
 import {
   fetchCars,
@@ -22,17 +22,7 @@ import {
   hasActiveFilters,
 } from "@/util/helper";
 
-import { CarTypes } from "@/types/homePageTypes";
-
-interface CarCardsProps {
-  data: {
-    docs: CarTypes[];
-    page: number;
-    totalPages: number;
-  };
-}
-
-const CarCards = ({ data }: CarCardsProps) => {
+const CarCards = () => {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
@@ -41,11 +31,10 @@ const CarCards = ({ data }: CarCardsProps) => {
   const filterType = params.filterType as string;
   const filterId = params.filterId as string;
 
-  const [getCars, { isFetching }] = useLazyApplyFiltersQuery();
-  const [getCatalogCars, { isFetching: isCatalogFetching }] =
-    useLazyFetchCatalogDataQuery();
+  const [getCars] = useLazyApplyFiltersQuery();
+  const [getCatalogCars] = useLazyFetchCatalogDataQuery();
 
-  const { carsData, page, totalPages, isLoading } = useAppSelector(
+  const { carsData, page, totalPages } = useAppSelector(
     (s) => s.catalogCars
   );
 
@@ -56,99 +45,63 @@ const CarCards = ({ data }: CarCardsProps) => {
     [searchParams]
   );
 
-  /** 🔥 FIRST RENDER = always fetch correct page */
-  // useEffect(() => {
-  //   const urlPage = Number(searchParams.get("page") || 1);
+  // 🔑 LOCAL UI STATE (ONLY FOR SKELETON)
+  const [showSkeleton, setShowSkeleton] = useState(true);
+  const skeletonShownRef = useRef(false);
 
-  //   fetchCars({
-  //     getCars,
-  //     getCatalogCars,
-  //     router,
-  //     hasActive: hasActiveFilters(filtersState),
-  //     filters: getFilters({ ...filtersState, page: urlPage }),
-  //     searchFilters,
-  //     setCars: (payload) =>
-  //       dispatch(
-  //         setCatalogCars({
-  //           carsData: payload.docs,
-  //           page: payload.page,
-  //           totalPages: payload.totalPages,
-  //         })
-  //       ),
-  //     filterType,
-  //     filterId,
-  //     page: urlPage,
-  //     sort: filtersState.sort,
-  //     searchParams,
-  //   });
-  // }, []);
-  useEffect(() => {
-    const urlPage = Number(searchParams.get("page") || 1);
+ useEffect(() => {
+  const urlPage = Number(searchParams.get("page") || 1);
 
-    fetchCars({
-      getCars,
-      getCatalogCars,
-      router,
-      hasActive: hasActiveFilters(filtersState),
-      filters: getFilters({ ...filtersState, page: urlPage }),
-      searchFilters,
-      setCars: (payload) =>
-        dispatch(
-          setCatalogCars({
-            carsData: payload.docs,
-            page: payload.page,
-            totalPages: payload.totalPages,
-          })
-        ),
-      filterType,
-      filterId,
-      page: urlPage,
-      sort: filtersState.sort,
-      searchParams,
-    });
-  }, [
-    searchParams.toString(), // ✅ KEY LINE
-  ]);
+  // Skeleton ONLY first load
+  if (!skeletonShownRef.current && !isPaginatingRef.current) {
+    setShowSkeleton(true);
+  }
 
-  /** GLOBAL LOADING */
-  useEffect(() => {
-    dispatch(setCarsLoading({ isLoading: isFetching || isCatalogFetching }));
-  }, [isFetching, isCatalogFetching]);
+  fetchCars({
+    getCars,
+    getCatalogCars,
+    router,
+    hasActive: hasActiveFilters(filtersState),
+    filters: getFilters({ ...filtersState, page: urlPage }),
+    searchFilters,
+    setCars: (payload) => {
+      dispatch(
+        setCatalogCars({
+          carsData: payload.docs,
+          page: payload.page,
+          totalPages: payload.totalPages,
+        })
+      );
 
-  /** PAGINATE */
+      skeletonShownRef.current = true;
+      setShowSkeleton(false);
+
+      // 🔑 pagination done
+      isPaginatingRef.current = false;
+    },
+    filterType,
+    filterId,
+    page: urlPage,
+    sort: filtersState.sort,
+    searchParams,
+  });
+}, [searchParams.toString(), dispatch]);
+
+const isPaginatingRef = useRef(false);
+
   const paginate = (newPage: number) => {
-    const paramsCopy = new URLSearchParams(searchParams);
-    paramsCopy.set("page", String(newPage));
-    router.push(`?${paramsCopy}`, { scroll: false });
+  isPaginatingRef.current = true; // 👈 IMPORTANT
 
-    fetchCars({
-      getCars,
-      getCatalogCars,
-      router,
-      hasActive: hasActiveFilters(filtersState),
-      filters: getFilters({ ...filtersState, page: newPage }),
-      searchFilters,
-      setCars: (payload) =>
-        dispatch(
-          setCatalogCars({
-            carsData: payload.docs,
-            page: payload.page,
-            totalPages: payload.totalPages,
-          })
-        ),
-      filterType,
-      filterId,
-      page: newPage,
-      sort: filtersState.sort,
-      searchParams,
-    });
+  const paramsCopy = new URLSearchParams(searchParams);
+  paramsCopy.set("page", String(newPage));
+  router.push(`?${paramsCopy}`, { scroll: false });
+  window.scrollTo(0, 0);
+};
 
-    window.scrollTo(0, 0);
-  };
 
   return (
     <>
-      {isLoading ? (
+      {showSkeleton ? (
         Array.from({ length: 10 }).map((_, i) => (
           <HorizontalCarCardSkeleton key={i} />
         ))

@@ -198,7 +198,7 @@ const fixedWhatsappUrl = buildWhatsAppUrl(
         px-4 py-2
         rounded-full
       ">
-        Click to Large
+        Click To Large
       </span>
     </div>
   </div>
@@ -243,7 +243,7 @@ const fixedWhatsappUrl = buildWhatsAppUrl(
     flex items-center justify-center
     rounded-full
     bg-gradient-to-r from-site-accent to-slate-teal
-    border
+   
     text-white text-2xl
     shadow-md
   
@@ -258,7 +258,7 @@ const fixedWhatsappUrl = buildWhatsAppUrl(
           prev === images.length - 1 ? 0 : prev + 1
         )
       }
-      className="absolute right-4 w-10 h-10 flex items-center justify-center rounded-full bg-gradient-to-r from-site-accent to-slate-teal border  text-white text-2xl shadow-md  transition"
+      className="absolute right-4 w-10 h-10 flex items-center justify-center rounded-full bg-gradient-to-r from-site-accent to-slate-teal  text-white text-2xl shadow-md  transition"
     >
       ›
     </button>

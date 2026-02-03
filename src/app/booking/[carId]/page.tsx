@@ -80,8 +80,7 @@ export default function BookingPage() {
   const [infoOpen, setInfoOpen] = useState(false);
   const [depositFree, setDepositFree] = useState(false);
   const [mobileAddonsOpen, setMobileAddonsOpen] = useState(false);
-  const [depositFree, setDepositFree] = useState(true);
-const [mobileAddonsOpen, setMobileAddonsOpen] = useState(false);
+  
 
   // ---------- FORM STATES ----------
   const [priceType, setPriceType] = useState<PriceType>("daily");
@@ -340,11 +339,9 @@ const [mobileAddonsOpen, setMobileAddonsOpen] = useState(false);
   const rentalAmount = calc?.totalAmount ?? 0;
   const hasSecurityDeposit =
   !!carData?.depositRequired && (carData?.securityDeposit ?? 0) > 0;
-const depositFreeDailyFee = depositFreeRes?.data?.daily || 0;
 const securityDepositAmount = hasSecurityDeposit
   ? carData!.securityDeposit!
   : 0;
-   const rentalAmount = calc?.totalAmount ?? 0;
   const pickupFee = pickupReturnCharges.pickup;
   const returnFee = pickupReturnCharges.return;
   const depositFreeFee = depositFree ? depositFreeDailyFee : 0;
@@ -366,9 +363,7 @@ const securityDepositAmount = hasSecurityDeposit
   ? depositFreeDailyFee * rentalDays      // ✅ deposit-free → daily × days
   : securityDepositAmount;             // ✅ ONE TIME
 
-  const depositAmount = depositFree
-    ? depositFreeDailyFee * rentalDays // ✅ deposit-free → daily × days
-    : securityDepositAmount; // ✅ ONE TIME
+  
 
   const frontendPayLater = frontendTotal - frontendPayNow;
   useEffect(() => {
@@ -2148,7 +2143,8 @@ const securityDepositAmount = hasSecurityDeposit
                       AED {formatMoney(frontendPayLater)}
                     </span>
                   </div>
-                </div>           
+                </div> 
+                </div>          
              </>
           )}
        </div>
@@ -2213,7 +2209,6 @@ const securityDepositAmount = hasSecurityDeposit
               )}
             </div>
           </div>
-        </div>
         {showDeliveryPolicy && (
           <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center px-4">
             <div className="bg-white w-full max-w-md rounded-3xl p-6 border border-gray-200 shadow-xl">
@@ -2248,6 +2243,7 @@ const securityDepositAmount = hasSecurityDeposit
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 }

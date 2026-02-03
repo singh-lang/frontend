@@ -86,7 +86,7 @@ export default async function Page({ params, searchParams }: PageProps) {
           <div className="w-full space-y-2">
             <TopFiltersBar data={masterData} />
 
-            <CarCards data={data} />
+            <CarCards  />
             <ComparisonBar />
           </div>
         </div>
