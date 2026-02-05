@@ -12,6 +12,7 @@ import { useParams } from "next/navigation";
 import { toast } from "sonner";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { useApplyCouponMutation } from "@/lib/api/couponApi";
 import { useRouter } from "next/navigation";
 import {
   CheckCircle2,
@@ -88,12 +89,22 @@ export default function BookingPage() {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [showStripe, setShowStripe] = useState<boolean>(false);
   const [mounted, setMounted] = useState<boolean>(false);
+
   useEffect(() => {
     setMounted(true);
   }, []);
 
   const [step, setStep] = useState(1);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    couponId: string;
+    discount: number;
+  } | null>(null);
+
   const [maxStepReached, setMaxStepReached] = useState(1);
+  const [applyCoupon, { isLoading: couponLoading }] = useApplyCouponMutation();
+
   const [agree, setAgree] = useState(false);
   const steps = [
     { id: 1, label: "Rental Plan" },
@@ -197,6 +208,28 @@ export default function BookingPage() {
     emirateId,
     address,
   ]);
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+
+    setCouponError(null);
+
+    try {
+      const res = await applyCoupon({
+        code: couponCode,
+        orderAmount: originalPayNow, // ✅ PAY NOW BASE
+      }).unwrap();
+
+      setAppliedCoupon({
+        couponId: res.data.couponId,
+        discount: res.data.discount,
+      });
+
+      toast.success(`Coupon applied! -AED ${res.data.discount}`);
+    } catch (err: any) {
+      setAppliedCoupon(null);
+      setCouponError(err?.data?.message || "Invalid coupon");
+    }
+  };
 
   const handleContinue = () => {
     const err = validateMobileStep1();
@@ -381,16 +414,25 @@ export default function BookingPage() {
     returnFee +
     addonsTotal +
     (isDepositFree ? depositFreeTotal : securityDepositAmount);
+  const couponDiscount = appliedCoupon?.discount ?? 0;
 
-  const frontendPayNow = calc
-    ? Math.round((rentalAmount * calc.prepaymentPercent) / 100)
+  // const discountedTotal = Math.max(frontendTotal - couponDiscount, 0);
+  const originalPayNow = calc
+    ? Math.round((frontendTotal * calc.prepaymentPercent) / 100)
     : 0;
+
+  const frontendPayNow = Math.max(
+    originalPayNow - (appliedCoupon?.discount ?? 0),
+    0,
+  );
+
+  const frontendPayLater = frontendTotal - originalPayNow;
 
   const depositAmount = depositFree
     ? depositFreeDailyFee * rentalDays // ✅ deposit-free → daily × days
     : securityDepositAmount; // ✅ ONE TIME
 
-  const frontendPayLater = frontendTotal - frontendPayNow;
+  // const frontendPayLater = frontendTotal - frontendPayNow;
   useEffect(() => {
     if (!carId) return;
     const fetchCar = async () => {
@@ -1105,17 +1147,17 @@ export default function BookingPage() {
                         onChange={(e) => setGuestName(e.target.value)}
                         placeholder="Enter your full name"
                         className="
-                        w-full min-w-0
-                        rounded-full
-                        border border-gray-200
-                        bg-soft-grey/40
-                        px-4 py-3
-                        text-base md:text-sm
-                        font-medium text-gray-800
-                        outline-none transition
-                        focus:bg-white
-                        focus:ring-2 focus:ring-site-accent/30
-                      "
+    w-full min-w-0
+    rounded-full
+    border border-gray-200
+    bg-soft-grey/40
+    px-4 py-3
+    text-base md:text-sm
+    font-medium text-gray-800
+    outline-none transition
+    focus:bg-white
+    focus:ring-2 focus:ring-site-accent/30
+  "
                       />
                     </div>
                     <div>
@@ -1359,6 +1401,41 @@ export default function BookingPage() {
                   <div className="flex justify-between text-sm font-bold text-site-accent">
                     <span>Pay Now</span>
                     <span>AED {formatMoney(frontendPayNow)}</span>
+                  </div>
+                  {/* COUPON */}
+                  <div className="mt-4">
+                    <label className="text-sm font-semibold text-gray-700">
+                      Coupon Code
+                    </label>
+
+                    <div className="flex gap-2 mt-2">
+                      <input
+                        value={couponCode}
+                        onChange={(e) =>
+                          setCouponCode(e.target.value.toUpperCase())
+                        }
+                        placeholder="Enter coupon"
+                        className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold"
+                      />
+
+                      <button
+                        onClick={handleApplyCoupon}
+                        disabled={couponLoading}
+                        className="rounded-xl bg-site-accent px-4 py-2 text-white text-sm font-bold"
+                      >
+                        {couponLoading ? "Applying..." : "Apply"}
+                      </button>
+                    </div>
+
+                    {couponError && (
+                      <p className="text-xs text-red-500 mt-1">{couponError}</p>
+                    )}
+
+                    {appliedCoupon && (
+                      <p className="text-xs text-green-600 mt-1">
+                        Coupon applied: −AED {appliedCoupon.discount}
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex justify-between text-xs font-semibold text-gray-500">
@@ -1704,16 +1781,16 @@ export default function BookingPage() {
                               value={pickupTime}
                               onChange={(e) => setPickupTime(e.target.value)}
                               className="
-                                  w-[150px]
-                                  bg-gray-100
-                                  text-sm
-                                  p-2
-                                  border-2 border-gray-300 rounded-2xl
-                                  font-semibold
-                                  text-gray-900
-                                  outline-none
-                                  text-center
-                                "
+            w-[150px]
+            bg-gray-100
+            text-sm
+            p-2
+            border-2 border-gray-300 rounded-2xl
+            font-semibold
+            text-gray-900
+            outline-none
+            text-center
+          "
                             />
                           </div>
 
@@ -2070,8 +2147,22 @@ export default function BookingPage() {
                         Your Details
                       </p>
                     </div>
-                   
+                    {/* 
+          <button
+            type="button"
+            onClick={() => setDetailsOpen((prev) => !prev)}
+            className="h-9 w-9 rounded-full  flex items-center justify-center"
+          >
+            {detailsOpen ? (
+              <Minus className="w-5 h-5 text-gray-800" />
+            ) : (
+              <Plus className="w-5 h-5 text-gray-800" />
+            )}
+          </button> */}
                   </div>
+
+                  {/* DETAILS BODY */}
+                  {/* {detailsOpen && ( */}
                   <div className="space-y-4 mt-3">
                     <div>
                       <label className="text-gray-700 font-semibold text-sm">
@@ -2084,12 +2175,12 @@ export default function BookingPage() {
                           onChange={(e) => setGuestName(e.target.value)}
                           placeholder="Enter your full name"
                           className="
-                            w-full min-w-0
-                            bg-transparent
-                            outline-none
-                            text-base md:text-sm
-                            font-semibold
-                          "
+                  w-full min-w-0
+                  bg-transparent
+                  outline-none
+                  text-base md:text-sm
+                  font-semibold
+                "
                         />
                       </div>
                     </div>
@@ -2114,12 +2205,12 @@ export default function BookingPage() {
                           }}
                           placeholder="50XXXXXXX"
                           className="
-                            w-full min-w-0
-                            bg-transparent
-                            outline-none
-                            text-base md:text-sm
-                            font-semibold
-                          "
+                    w-full min-w-0
+                    bg-transparent
+                    outline-none
+                    text-base md:text-sm
+                    font-semibold
+                  "
                         />
                       </div>
                     </div>
@@ -2136,12 +2227,12 @@ export default function BookingPage() {
                           onChange={(e) => setGuestEmail(e.target.value)}
                           placeholder="Enter your email address"
                           className="
-                            w-full min-w-0
-                            bg-transparent
-                            outline-none
-                            text-base md:text-sm
-                            font-semibold
-                          "
+                  w-full min-w-0
+                  bg-transparent
+                  outline-none
+                  text-base md:text-sm
+                  font-semibold
+                "
                         />
                       </div>
                     </div>
@@ -2316,57 +2407,35 @@ export default function BookingPage() {
                 </div>
               )}
               {mobileStep === 3 && (
-        
-<div className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white px-4 py-3">
-
-  {/* BEFORE PAYMENT */}
-  {!showStripe && (
-    <div className="flex gap-3 h-[52px]">
-      <button
-        type="button"
-        onClick={() => setMobileStep(2)}
-        className="w-1/2 h-[52px] rounded-full border border-gray-200
-                   text-gray-800 font-extrabold text-sm
-                   flex items-center justify-center"
-      >
-        Back
-      </button>
-
-      <button
-        onClick={handleCreateBooking}
-        disabled={!canPayFinal || createLoading}
-        className="w-1/2 h-[52px] rounded-full
-                   bg-gradient-to-r from-site-accent to-slate-teal
-                   text-white font-extrabold text-sm
-                   flex items-center justify-center
-                   disabled:opacity-50"
-      >
-        {createLoading ? "Preparing payment..." : "Confirm & Pay"}
-      </button>
-    </div>
-  )}
-
-  {/* STRIPE FORM */}
-  {showStripe && mounted && clientSecret && (
-    <div className="px-4 ">
-      <Elements stripe={stripePromise} options={{ clientSecret }}>
-        <StripeCheckoutInline
-          onSuccess={() => {
-            toast.success("Booking confirmed");
-            if (!createdBookingId) return toast.error("Booking ID missing");
-            router.push(`/payments/rental/${createdBookingId}`);
-          }}
-        />
-      </Elements>
-    </div>
-  )}
-</div>
-
-
- )}
- </div>
- </div>
- </div>
+                <div className="mt-1 flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setMobileStep(2)}
+                    className="flex-1 rounded-full border border-gray-200 py-3 text-gray-800 font-extrabold text-sm"
+                  >
+                    Back
+                  </button>
+                  <button
+                    onClick={handleConfirmPayMobile}
+                    className={`flex-1 rounded-full py-3 text-sm font-extrabold transition
+    ${
+      !guestName.trim() ||
+      !guestPhone.trim() ||
+      !guestEmail.trim() ||
+      !agree ||
+      !canPayFinal
+        ? "bg-site-accent opacity-50 text-white cursor-not-allowed"
+        : "bg-gradient-to-r from-site-accent to-slate-teal text-white shadow-md"
+    }
+  `}
+                  >
+                    {createLoading ? "Redirecting..." : "Confirm & Pay"}
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
         {showDeliveryPolicy && (
           <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center px-4">
             <div className="bg-white w-full max-w-md rounded-3xl p-6 border border-gray-200 shadow-xl">
