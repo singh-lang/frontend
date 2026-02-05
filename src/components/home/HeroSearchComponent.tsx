@@ -7,14 +7,13 @@ import { useRouter } from "@bprogress/next/app";
 import { z } from "zod";
 import { useLazyGetSearchedCarsQuery } from "@/lib/api/carSearchApi";
 import { useEffect, useRef, useState } from "react";
+import { log } from "console";
 
-/* =========================
-   Types
-========================= */
 interface SearchCar {
-  _id: string;
-  title?: string;
+  title: string;
+  vendorName: string;
 }
+
 interface SearchFormProps {
   brands: {
     _id: string;
@@ -33,9 +32,6 @@ const filterSchema = z.object({
 
 type FilterFormData = z.infer<typeof filterSchema>;
 
-/* =========================
-   Component
-========================= */
 const HeroFormLayout = ({ brands, bodyTypes }: SearchFormProps) => {
   const router = useRouter();
   const dropdownRef = useRef<HTMLDivElement | null>(null);
@@ -44,32 +40,32 @@ const HeroFormLayout = ({ brands, bodyTypes }: SearchFormProps) => {
   const [triggerSearch, { data: searchedCars, isFetching, error }] =
     useLazyGetSearchedCarsQuery();
 
+  const carsList = searchedCars?.result ?? [];
+
   const { handleSubmit, control, watch } = useForm<FilterFormData>({
     resolver: zodResolver(filterSchema),
     defaultValues: { search: "" },
   });
 
-  const searchValue = watch("search") || "";
+  const searchValue = watch("search") ?? "";
 
-  /* =========================
-     Debounced search
-  ========================= */
   useEffect(() => {
+    if (!searchValue.trim()) {
+      setIsSearchOpen(false);
+      return;
+    }
+
     const timer = setTimeout(() => {
-      if (searchValue.trim()) {
-        setIsSearchOpen(true);
-        triggerSearch(searchValue);
-      } else {
-        setIsSearchOpen(false);
-      }
+      setIsSearchOpen(true);
+      triggerSearch({
+        query: searchValue.trim(),
+        page: 1,
+      });
     }, 400);
 
     return () => clearTimeout(timer);
   }, [searchValue, triggerSearch]);
 
-  /* =========================
-     Outside click close
-  ========================= */
   useEffect(() => {
     const handleOutside = (e: MouseEvent | TouchEvent) => {
       if (
@@ -89,47 +85,28 @@ const HeroFormLayout = ({ brands, bodyTypes }: SearchFormProps) => {
     };
   }, []);
 
-  /* =========================
-     Submit (Enter / Button)
-  ========================= */
   const onSubmit = (data: FilterFormData) => {
     if (!data.search?.trim()) return;
 
     const params = new URLSearchParams();
-    params.set("search", data.search.trim());
+    params.set("query", data.search.trim()); // 🔥 catalog uses `query`
 
     setIsSearchOpen(false);
     router.push(`/catalog/all/cars?${params.toString()}`);
   };
 
-  /* =========================
-     Dropdown click
-  ========================= */
   const handleSuggestionClick = (value: string) => {
     if (!value.trim()) return;
 
     const params = new URLSearchParams();
-    params.set("search", value.trim());
+    params.set("query", value.trim());
 
     setIsSearchOpen(false);
     router.push(`/catalog/all/cars?${params.toString()}`);
   };
 
-  /* =========================
-     Normalize API response
-  ========================= */
-  const carsList =
-    searchedCars?.result?.length > 0
-      ? searchedCars.result
-      : searchedCars?.data
-        ? [searchedCars.data]
-        : [];
+  const totalResults = searchedCars?.totalResults ?? 0;
 
-  const totalResults = carsList.length;
-
-  /* =========================
-     JSX
-  ========================= */
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="w-full">
       <div
@@ -137,12 +114,10 @@ const HeroFormLayout = ({ brands, bodyTypes }: SearchFormProps) => {
         className="w-full max-w-5xl mx-auto mt-5 mb-5 px-4"
       >
         <div className="relative w-full">
-          {/* Search Icon */}
           <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 z-10">
             <Search className="hidden sm:inline w-5 h-5" />
           </div>
 
-          {/* Input */}
           <Controller
             name="search"
             control={control}
@@ -168,7 +143,6 @@ const HeroFormLayout = ({ brands, bodyTypes }: SearchFormProps) => {
             )}
           />
 
-          {/* Submit Button */}
           <button
             type="submit"
             className="
@@ -179,7 +153,6 @@ const HeroFormLayout = ({ brands, bodyTypes }: SearchFormProps) => {
               bg-transparent sm:bg-gradient-to-r sm:from-site-accent sm:to-slate-teal
               text-gray-600 sm:text-white
               font-semibold
-              transition
               flex items-center gap-2
             "
           >
@@ -187,7 +160,6 @@ const HeroFormLayout = ({ brands, bodyTypes }: SearchFormProps) => {
             <span className="hidden sm:inline text-sm">Explore Cars</span>
           </button>
 
-          {/* Dropdown */}
           {isSearchOpen && (
             <div
               className="
@@ -201,7 +173,6 @@ const HeroFormLayout = ({ brands, bodyTypes }: SearchFormProps) => {
                 overflow-auto
               "
             >
-              {/* Header */}
               <div className="px-4 py-3 text-sm font-semibold text-gray-600 border-b flex justify-between">
                 <span>Search results</span>
                 {totalResults > 0 && (
@@ -217,13 +188,13 @@ const HeroFormLayout = ({ brands, bodyTypes }: SearchFormProps) => {
                 </div>
               ) : totalResults > 0 ? (
                 <>
-                  {carsList.map((car: SearchCar) => {
-                    const { brand, model } = tokenizeCarTitle(car.title || "");
+                  {carsList.map((car, index) => {
+                    const { brand, model } = tokenizeCarTitle(car.title);
                     const searchText = `${brand} ${model}`.trim();
 
                     return (
                       <button
-                        key={car._id}
+                        key={`${car.title}-${index}`}
                         type="button"
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => handleSuggestionClick(searchText)}
@@ -232,7 +203,6 @@ const HeroFormLayout = ({ brands, bodyTypes }: SearchFormProps) => {
                           px-4 py-4
                           flex items-center gap-4
                           hover:bg-gray-50
-                          transition
                         "
                       >
                         <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500">
@@ -249,7 +219,6 @@ const HeroFormLayout = ({ brands, bodyTypes }: SearchFormProps) => {
                     );
                   })}
 
-                  {/* Show all */}
                   <button
                     type="button"
                     onMouseDown={(e) => e.preventDefault()}
@@ -281,9 +250,6 @@ const HeroFormLayout = ({ brands, bodyTypes }: SearchFormProps) => {
 
 export default HeroFormLayout;
 
-/* =========================
-   Helpers
-========================= */
 const tokenizeCarTitle = (title = "") => {
   const parts = title.split(" ");
   return {

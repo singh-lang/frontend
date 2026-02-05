@@ -1,27 +1,40 @@
-// src/lib/api/carSearchApi.ts
 import { baseApi } from "@/lib/api/baseApi";
+import type { CarTypes } from "@/types/homePageTypes";
 
+export interface SearchQueryArgs {
+  query: string;
+  page?: number;
+}
 
-
+export interface SearchResponse {
+  success: boolean;
+  result: CarTypes[];
+  page: number;
+  totalPages: number;
+  totalResults: number;
+}
 
 export const carSearchApi = baseApi.injectEndpoints({
+  overrideExisting: true,
   endpoints: (builder) => ({
-    getSearchedCars: builder.query({
-      query: (param) => {
-        const searchParams = new URLSearchParams();
-        if (param) searchParams.append("search", param);
+    getSearchedCars: builder.query<SearchResponse, SearchQueryArgs>({
+      query: ({ query, page = 1 }) => {
+        const params = new URLSearchParams();
 
-        const queryString = searchParams.toString();
+        if (query && query.trim()) {
+          params.append("query", query.trim());
+        }
+
+        params.append("page", String(page));
 
         return {
-          url: `cars/search${queryString ? `?${queryString}` : ""}`,
+          url: `/cars/search-by-any-field?${params.toString()}`,
           method: "GET",
         };
       },
     }),
   }),
-  overrideExisting: false,
 });
 
-// ✅ Export both standard and lazy hooks
-export const { useGetSearchedCarsQuery, useLazyGetSearchedCarsQuery } = carSearchApi;
+export const { useGetSearchedCarsQuery, useLazyGetSearchedCarsQuery } =
+  carSearchApi;

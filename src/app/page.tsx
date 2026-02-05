@@ -48,6 +48,7 @@ export const metadata: Metadata = {
     other: { "facebook-domain-verification": "6k689o08nv1m93spf16swtbkexeim5" },
   },
 };
+export const dynamic = "force-dynamic";
 
 export default async function Page() {
   const [categoryListings, categories, masterData] = await Promise.all([

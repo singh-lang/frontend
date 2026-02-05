@@ -35,7 +35,6 @@ export async function generateMetadata({
   };
 }
 
-
 /* --------------------- PAGE --------------------- */
 export default async function Page({ params, searchParams }: PageProps) {
   const { filterType, filterId } = await params;
@@ -55,7 +54,7 @@ export default async function Page({ params, searchParams }: PageProps) {
     sp.startDate,
     sp.endDate,
   ].some(Boolean);
- 
+
   const apiRes = hasFilters
     ? await getFilteredData({ ...sp, page: String(currentPage) })
     : await getCatalogData(filterType, filterId, String(currentPage));
@@ -86,7 +85,7 @@ export default async function Page({ params, searchParams }: PageProps) {
           <div className="w-full space-y-2">
             <TopFiltersBar data={masterData} />
 
-            <CarCards  />
+            <CarCards />
             <ComparisonBar />
           </div>
         </div>

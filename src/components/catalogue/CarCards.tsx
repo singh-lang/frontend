@@ -11,6 +11,7 @@ import {
   useLazyApplyFiltersQuery,
   useLazyFetchCatalogDataQuery,
 } from "@/lib/api/catalog";
+import { useLazyGetSearchedCarsQuery } from "@/lib/api/carSearchApi";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { setCatalogCars } from "@/lib/slice/catalogCarsSlice";
@@ -28,76 +29,93 @@ const CarCards = () => {
   const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
 
-  const filterType = params.filterType as string;
-  const filterId = params.filterId as string;
-
+  const [searchCars] = useLazyGetSearchedCarsQuery();
   const [getCars] = useLazyApplyFiltersQuery();
   const [getCatalogCars] = useLazyFetchCatalogDataQuery();
 
-  const { carsData, page, totalPages } = useAppSelector(
-    (s) => s.catalogCars
-  );
+  const filterType = params.filterType as string;
+  const filterId = params.filterId as string;
 
+  const { carsData, page, totalPages } = useAppSelector((s) => s.catalogCars);
   const filtersState = useAppSelector((s) => s.catalogFilters);
 
   const searchFilters = useMemo(
     () => getUrlSearchParams(searchParams, "object"),
-    [searchParams]
+    [searchParams],
   );
-
-  // 🔑 LOCAL UI STATE (ONLY FOR SKELETON)
   const [showSkeleton, setShowSkeleton] = useState(true);
   const skeletonShownRef = useRef(false);
+  const isPaginatingRef = useRef(false);
+  useEffect(() => {
+    const urlPage = Number(searchParams.get("page") || 1);
+    const query = searchParams.get("query")?.trim();
 
- useEffect(() => {
-  const urlPage = Number(searchParams.get("page") || 1);
+    if (query) {
+      setShowSkeleton(true);
 
-  // Skeleton ONLY first load
-  if (!skeletonShownRef.current && !isPaginatingRef.current) {
-    setShowSkeleton(true);
-  }
-
-  fetchCars({
-    getCars,
-    getCatalogCars,
-    router,
-    hasActive: hasActiveFilters(filtersState),
-    filters: getFilters({ ...filtersState, page: urlPage }),
-    searchFilters,
-    setCars: (payload) => {
-      dispatch(
-        setCatalogCars({
-          carsData: payload.docs,
-          page: payload.page,
-          totalPages: payload.totalPages,
+      searchCars({ query, page: urlPage })
+        .unwrap()
+        .then((res) => {
+          dispatch(
+            setCatalogCars({
+              carsData: res.result || [],
+              page: res.page || 1,
+              totalPages: res.totalPages || 1,
+            }),
+          );
         })
-      );
+        .catch(() => {
+          dispatch(
+            setCatalogCars({
+              carsData: [],
+              page: 1,
+              totalPages: 1,
+            }),
+          );
+        })
+        .finally(() => setShowSkeleton(false));
 
-      skeletonShownRef.current = true;
-      setShowSkeleton(false);
+      return;
+    }
 
-      // 🔑 pagination done
-      isPaginatingRef.current = false;
-    },
-    filterType,
-    filterId,
-    page: urlPage,
-    sort: filtersState.sort,
-    searchParams,
-  });
-}, [searchParams.toString(), dispatch]);
+    if (!skeletonShownRef.current && !isPaginatingRef.current) {
+      setShowSkeleton(true);
+    }
 
-const isPaginatingRef = useRef(false);
+    fetchCars({
+      getCars,
+      getCatalogCars,
+      router,
+      hasActive: hasActiveFilters(filtersState),
+      filters: getFilters({ ...filtersState, page: urlPage }),
+      searchFilters,
+      setCars: (payload) => {
+        dispatch(
+          setCatalogCars({
+            carsData: payload.docs,
+            page: payload.page,
+            totalPages: payload.totalPages,
+          }),
+        );
+        skeletonShownRef.current = true;
+        setShowSkeleton(false);
+        isPaginatingRef.current = false;
+      },
+      filterType,
+      filterId,
+      page: urlPage,
+      sort: filtersState.sort,
+      searchParams,
+    });
+  }, [searchParams.toString()]);
 
   const paginate = (newPage: number) => {
-  isPaginatingRef.current = true; // 👈 IMPORTANT
-
-  const paramsCopy = new URLSearchParams(searchParams);
-  paramsCopy.set("page", String(newPage));
-  router.push(`?${paramsCopy}`, { scroll: false });
-  window.scrollTo(0, 0);
-};
-
+    isPaginatingRef.current = true;
+    const paramsCopy = new URLSearchParams(searchParams);
+    paramsCopy.set("page", String(newPage));
+    router.push(`?${paramsCopy}`, { scroll: false });
+    window.scrollTo(0, 0);
+  };
 
   return (
     <>
