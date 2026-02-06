@@ -179,7 +179,6 @@ export default function ImportantInfoSection() {
           ))}
         </Popup>
       )}
-      
     </>
   );
 }

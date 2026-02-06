@@ -322,6 +322,7 @@ export default function BookingPage() {
     if (!guestName.trim()) return "Full name is required";
     if (!guestPhone.trim()) return "Phone number is required";
     if (!guestEmail.trim()) return "Email address is required";
+     if (!agree) return "Please accept terms and conditions";
     return null;
   };
 
@@ -880,6 +881,81 @@ export default function BookingPage() {
                   {infoOpen && (
                     <div className="mt-4 rounded-2xl border border-gray-200 bg-gray-50 p-4">
                       <ImportantInfo />
+                      
+               <div
+  className="
+    bg-white mt-4 rounded-3xl
+    border border-gray-200
+    shadow-[0_12px_40px_rgba(15,23,42,0.06)]
+    p-5
+    space-y-4
+  "
+>
+  {/* HEADER */}
+  <div className="flex items-center justify-between">
+    <div>
+      <p className="text-sm font-semibold text-gray-900">
+        Deposit Option
+      </p>
+     
+    </div>
+
+    {/* TOGGLE */}
+    <button
+      onClick={() => setDepositFree((prev) => !prev)}
+      className={`relative w-12 h-6 rounded-full transition-colors
+        ${depositFree ? "bg-site-accent" : "bg-gray-300"}
+      `}
+    >
+      <span
+        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full
+          bg-white shadow transition-transform
+          ${depositFree ? "translate-x-6" : "translate-x-0"}
+        `}
+      />
+    </button>
+  </div>
+
+  {/* OPTION CARD */}
+  <div
+    className="
+      bg-gray-50 rounded-2xl
+      p-4
+      flex items-center justify-between
+      gap-4
+    "
+  >
+    <div className="flex items-start gap-3">
+      <div className="w-10 h-10 rounded-full bg-white shadow-sm
+                      flex items-center justify-center text-lg">
+        💳
+      </div>
+
+      <div>
+        <p className="text-sm font-semibold text-gray-900">
+          {depositFree ? "Deposit-free Fee" : "Security Deposit"}
+        </p>
+
+        <p className="text-xs text-gray-500 mt-0.5 max-w-[220px]">
+          {depositFree
+            ? "Charged per rental day to avoid paying a refundable deposit."
+            : "Fully refundable within 21 days after the car is returned."}
+        </p>
+      </div>
+    </div>
+
+    <div className="text-right">
+      <p className="text-xs text-gray-500 font-medium">Amount</p>
+      <p className="text-lg font-bold text-site-accent">
+        AED{" "}
+        {depositFree
+          ? (depositFreeDailyFee * rentalDays).toLocaleString()
+          : securityDeposit.toLocaleString()}
+      </p>
+    </div>
+  </div>
+</div>
+
                     </div>
                   )}
                 </div>
@@ -1197,8 +1273,8 @@ export default function BookingPage() {
                     </div>
                   </div>
                 </div>
-                <div className={card}>
-                  <div className="flex items-center justify-between mb-4">
+                <div className="bg-white rounded-3xl border border-gray-200 shadow-[0_12px_40px_rgba(15,23,42,0.06)] p-4">
+                  <div className="flex items-center justify-between ">
                     <div>
                       <p className="font-semibold text-dark-base">Add-ons</p>
                       <p className="text-xs text-grey">
@@ -1271,6 +1347,51 @@ export default function BookingPage() {
                     </div>
                   )}
                 </div>
+                 <div className={card}>
+                    <h3 className="text-base font-extrabold text-gray-900 mb-3">
+                      Agreement
+                    </h3>
+                    <label className="flex items-start gap-3 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={agree}
+                        onChange={(e) => setAgree(e.target.checked)}
+                        className="mt-1 h-5 w-5 rounded border-gray-300 text-site-accent focus:ring-site-accent"
+                      />
+                      <div className="flex flex-col">
+                        {/* Row 1 */}
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-semibold text-gray-900">
+                            I agree to the terms and conditions
+                          </p>
+
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 text-gray-600 text-xs font-bold">
+                            i
+                          </span>
+                        </div>
+
+                        {/* Row 2 */}
+                        <p className="text-xs text-gray-500 mt-1">
+                          I have reviewed the rental agreement and agree to all
+                          stated terms and conditions
+                        </p>
+                      </div>
+                    </label>
+                    <div className="mt-4  border-t border-gray-200  p-3 flex gap-3">
+                      <div className="text-yellow-500 text-lg">✍️</div>
+                      <div>
+                        <p className="text-sm font-bold text-gray-900">
+                          Physical Signature Required
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                          A physical copy of this agreement must be signed upon
+                          pickup or delivery of the vehicle. This digital
+                          approval is for your convenience and does not replace
+                          the physical signature requirement.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 <div className="flex gap-4">
                   <button
                     type="button"
@@ -1509,7 +1630,7 @@ export default function BookingPage() {
                 {!showStripe ? (
                   <button
                     onClick={handleCreateBooking}
-                    disabled={!canPayFinal || createLoading}
+                    disabled={!agree|| !canPayFinal || createLoading}
                     className={`mt-4 ${primaryBtn}`}
                   >
                     {createLoading ? "Preparing payment..." : "Confirm & Pay"}
@@ -2491,8 +2612,8 @@ export default function BookingPage() {
   {!showStripe ? (
     <button
       onClick={handleCreateBooking}
-      disabled={!canPayFinal || createLoading}
-      className={`w-1/2 ${primaryBtn}`}
+      disabled={!agree || !canPayFinal || createLoading}
+      className={`w-1/2 rounded-full ${primaryBtn}`}
     >
       {createLoading ? "Preparing payment..." : "Confirm & Pay"}
     </button>
