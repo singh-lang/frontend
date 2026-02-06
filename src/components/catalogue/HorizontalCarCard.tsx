@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect,useRef  } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -122,6 +122,15 @@ const CompactCarCard = ({ car }: CompactCarCardProps) => {
   const handleMouseLeave = () => {
     setIsHovering(false);
   };
+  const startX = useRef(0);
+const isScrolling = useRef(false);
+
+const nextImage = () =>
+  setActiveIndex((p) => (p === images.length - 1 ? 0 : p + 1));
+
+const prevImage = () =>
+  setActiveIndex((p) => (p === 0 ? images.length - 1 : p - 1));
+
   useEffect(() => {
     if (showSheet) {
       document.body.style.overflow = "hidden";
@@ -134,6 +143,18 @@ const CompactCarCard = ({ car }: CompactCarCardProps) => {
     };
   }, [showSheet]);
   const [isMobile, setIsMobile] = useState(false);
+useEffect(() => {
+  if (!showGallery) return;
+
+  const handleKey = (e: KeyboardEvent) => {
+    if (e.key === "ArrowRight") nextImage();
+    if (e.key === "ArrowLeft") prevImage();
+    if (e.key === "Escape") setShowGallery(false);
+  };
+
+  window.addEventListener("keydown", handleKey);
+  return () => window.removeEventListener("keydown", handleKey);
+}, [showGallery, images.length]);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
@@ -197,15 +218,15 @@ const CompactCarCard = ({ car }: CompactCarCardProps) => {
               >
                 <span
                   className="
-        text-white/90
-        text-sm
-        font-semibold
-        bg-black/60
-        px-4 py-2
-        rounded-full
-      "
+                text-white/90
+                text-sm
+                font-semibold
+                bg-black/60
+                px-4 py-2
+                rounded-full
+              "
                 >
-                  Click To Large
+                  More Photos
                 </span>
               </div>
             </div>
@@ -215,61 +236,73 @@ const CompactCarCard = ({ car }: CompactCarCardProps) => {
               {car?.car?.category || "Car"}
             </div>
 
-            {showGallery && images.length > 0 && (
-              <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
-                {/* Close */}
-                <button
-                  onClick={() => setShowGallery(false)}
-                  className="absolute top-4 right-4 text-white text-3xl font-bold"
-                >
-                  ✕
-                </button>
+          {showGallery && images.length > 0 && (
+  <div
+    className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center"
+    onWheel={(e) => {
+      if (isScrolling.current) return;
+      isScrolling.current = true;
 
-                {/* Image */}
-                <div className="relative w-full max-w-4xl h-[70vh] px-4">
-                  <Image
-                    src={images[activeIndex].url}
-                    alt="car image"
-                    fill
-                    className="object-contain rounded-lg"
-                  />
-                </div>
+      e.deltaY > 0 ? nextImage() : prevImage();
 
-                {/* Left */}
-                <button
-                  onClick={() =>
-                    setActiveIndex((prev) =>
-                      prev === 0 ? images.length - 1 : prev - 1,
-                    )
-                  }
-                  className="
-    absolute left-4
-    w-10 h-10
-    flex items-center justify-center
-    rounded-full
-    bg-gradient-to-r from-site-accent to-slate-teal
-   
-    text-white text-2xl
-    shadow-md
-  
-    transition"
-                >
-                  ‹
-                </button>
+      setTimeout(() => {
+        isScrolling.current = false;
+      }, 500);
+    }}
+    onTouchStart={(e) => (startX.current = e.touches[0].clientX)}
+    onTouchEnd={(e) => {
+      const diff = startX.current - e.changedTouches[0].clientX;
+      if (diff > 50) nextImage();
+      if (diff < -50) prevImage();
+    }}
+  >
+    {/* Close */}
+    <button
+      onClick={() => setShowGallery(false)}
+      className="absolute top-4 right-4 text-white text-3xl font-bold"
+    >
+      ✕
+    </button>
 
-                {/* Right */}
-                <button
-                  onClick={() =>
-                    setActiveIndex((prev) =>
-                      prev === images.length - 1 ? 0 : prev + 1,
-                    )
-                  }
-                  className="absolute right-4 w-10 h-10 flex items-center justify-center rounded-full bg-gradient-to-r from-site-accent to-slate-teal  text-white text-2xl shadow-md  transition"
-                >
-                  ›
-                </button>
-              </div>
-            )}
+    {/* SLIDER */}
+    <div className="relative w-full max-w-4xl h-[70vh] overflow-hidden px-4">
+      <div
+        className="flex h-full transition-transform duration-500 ease-in-out"
+        style={{ transform: `translateX(-${activeIndex * 100}%)` }}
+      >
+        {images.map((img, i) => (
+          <div key={i} className="relative min-w-full h-full">
+            <Image
+              src={img.url}
+              alt="car image"
+              fill
+              className="object-contain select-none"
+              draggable={false}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+
+    {/* Left */}
+    <button
+      onClick={prevImage}
+      className="absolute left-4 w-10 h-10 flex items-center justify-center rounded-full
+      bg-gradient-to-r from-site-accent to-slate-teal text-white text-2xl shadow-md"
+    >
+      ‹
+    </button>
+
+    {/* Right */}
+    <button
+      onClick={nextImage}
+      className="absolute right-4 w-10 h-10 flex items-center justify-center rounded-full
+      bg-gradient-to-r from-site-accent to-slate-teal text-white text-2xl shadow-md"
+    >
+      ›
+    </button>
+  </div>
+)}
 
             <div className="absolute top-3 left-3 bg-white/90 px-3 py-1 rounded-full text-xs font-semibold text-gray-700">
               {car?.car?.category || "Car"}

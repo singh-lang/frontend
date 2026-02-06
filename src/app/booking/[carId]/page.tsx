@@ -224,11 +224,16 @@ export default function BookingPage() {
         discount: res.data.discount,
       });
 
-      toast.success(`Coupon applied! -AED ${res.data.discount}`);
-    } catch (err: any) {
-      setAppliedCoupon(null);
-      setCouponError(err?.data?.message || "Invalid coupon");
-    }
+    toast.success(`Coupon applied! -AED ${res.data.discount}`);
+} catch (err: unknown) {  // Using unknown for error type
+  if (err instanceof Error) {  // TypeGuard to check if it's an Error object
+    setAppliedCoupon(null);
+    setCouponError(err?.message || "Invalid coupon");  // Accessing the message properly
+  } else {
+    // Fallback if the error is not of type Error
+    setCouponError("Invalid coupon");
+  }
+}
   };
 
   const handleContinue = () => {
@@ -2077,8 +2082,37 @@ export default function BookingPage() {
                           )}
                         </>
                       )}
+                  <div className="flex items-center justify-between   gap-4">
+                    <div>
+                      <p className="text-sm font-extrabold text-gray-900">
+                        Important Info
+                      </p>
+                      <p className="text-xs font-semibold text-gray-500">
+                        Optional
+                      </p>
+                    </div>
 
-                      <div className="flex items-center justify-between  border-gray-200 pb-3 mt-4">
+                    <button
+                      type="button"
+                      onClick={() => setInfoOpen((prev) => !prev)}
+                      className={`relative w-12 h-6 rounded-full transition-colors ${
+                        infoOpen ? "bg-site-accent" : "bg-gray-300"
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                          infoOpen ? "translate-x-6" : ""
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {infoOpen && (
+                    <div className="mt-4 rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                      <ImportantInfo />
+                    </div>
+                  )}
+                      <div className="flex items-center justify-between border-t py-3 border-gray-200 pb-3 mt-4">
                         <div>
                           <p className="font-semibold text-gray-900 pt-3">
                             Security Deposit
@@ -2365,7 +2399,40 @@ export default function BookingPage() {
                       <span>Pay Now</span>
                       <span>AED {formatMoney(frontendPayNow)}</span>
                     </div>
+                       <div className="mt-4">
+                    <label className="text-sm font-semibold text-gray-700">
+                      Coupon Code
+                    </label>
 
+                    <div className="flex gap-2 mt-2">
+                      <input
+                        value={couponCode}
+                        onChange={(e) =>
+                          setCouponCode(e.target.value.toUpperCase())
+                        }
+                        placeholder="Enter coupon"
+                        className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold"
+                      />
+
+                      <button
+                        onClick={handleApplyCoupon}
+                        disabled={couponLoading}
+                        className="rounded-xl bg-site-accent px-4 py-2 text-white text-sm font-bold"
+                      >
+                        {couponLoading ? "Applying..." : "Apply"}
+                      </button>
+                    </div>
+
+                    {couponError && (
+                      <p className="text-xs text-red-500 mt-1">{couponError}</p>
+                    )}
+
+                    {appliedCoupon && (
+                      <p className="text-xs text-green-600 mt-1">
+                        Coupon applied: −AED {appliedCoupon.discount}
+                      </p>
+                    )}
+                  </div>
                     <div className="flex justify-between text-xs font-semibold text-gray-500">
                       <span>Pay later at handover</span>
                       <span className="text-gray-900 font-extrabold">
@@ -2407,31 +2474,60 @@ export default function BookingPage() {
                 </div>
               )}
               {mobileStep === 3 && (
-                <div className="mt-1 flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setMobileStep(2)}
-                    className="flex-1 rounded-full border border-gray-200 py-3 text-gray-800 font-extrabold text-sm"
-                  >
-                    Back
-                  </button>
-                  <button
-                    onClick={handleConfirmPayMobile}
-                    className={`flex-1 rounded-full py-3 text-sm font-extrabold transition
-    ${
-      !guestName.trim() ||
-      !guestPhone.trim() ||
-      !guestEmail.trim() ||
-      !agree ||
-      !canPayFinal
-        ? "bg-site-accent opacity-50 text-white cursor-not-allowed"
-        : "bg-gradient-to-r from-site-accent to-slate-teal text-white shadow-md"
-    }
-  `}
-                  >
-                    {createLoading ? "Redirecting..." : "Confirm & Pay"}
-                  </button>
-                </div>
+<div className="mt-1 flex gap-3 items-start">
+  {/* ⬅️ Back button */}
+  {!showStripe && (
+    <button
+      type="button"
+      onClick={() => setMobileStep(2)}
+      className="w-1/2 rounded-full border border-gray-200 py-3
+                 text-gray-800 font-extrabold text-sm"
+    >
+      Back
+    </button>
+  )}
+
+  {/* 💳 Confirm & Pay OR Stripe */}
+  {!showStripe ? (
+    <button
+      onClick={handleCreateBooking}
+      disabled={!canPayFinal || createLoading}
+      className={`w-1/2 ${primaryBtn}`}
+    >
+      {createLoading ? "Preparing payment..." : "Confirm & Pay"}
+    </button>
+  ) : (
+    mounted &&
+    clientSecret && (
+      <div
+        className="
+          w-full
+          max-h-[70vh]
+          overflow-y-auto
+          overscroll-contain
+          pb-6
+        "
+      >
+        <Elements stripe={stripePromise} options={{ clientSecret }}>
+          <StripeCheckoutInline
+            onSuccess={() => {
+              toast.success("Booking confirmed");
+
+              if (!createdBookingId) {
+                toast.error("Booking ID missing");
+                return;
+              }
+
+              router.push(`/payments/rental/${createdBookingId}`);
+            }}
+          />
+        </Elements>
+      </div>
+    )
+  )}
+</div>
+
+
               )}
             </div>
           </div>

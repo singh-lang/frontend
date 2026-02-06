@@ -1,5 +1,5 @@
 "use client";
-
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
@@ -29,6 +29,7 @@ export default function RentalPaymentSuccessPage() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showProfileSetup, setShowProfileSetup] = useState(false);
+const router = useRouter();
 
   useEffect(() => {
     if (!bookingId) return;
@@ -90,6 +91,24 @@ export default function RentalPaymentSuccessPage() {
 
   return (
     <>
+    <button
+  onClick={() => router.push("/")}
+  className="
+    absolute top-6 left-6
+    md:top-8 md:left-8
+    rounded-full
+    border border-gray-300
+    bg-white
+    px-4 py-2
+    text-sm font-semibold text-gray-700
+    hover:bg-gray-600 hover:text-white
+    transition
+    shadow-sm
+  "
+>
+  ← Home
+</button>
+
       <main className="min-h-screen bg-gradient-to-b from-[#f8fafc] to-[#eef2f7] flex items-center justify-center px-4">
         <section className="w-full max-w-md bg-white rounded-3xl border border-gray-200 shadow-[0_20px_50px_rgba(15,23,42,0.08)] p-6 text-center">
           <div className=" text-center items-center justify-center flex">
