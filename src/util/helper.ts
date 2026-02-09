@@ -13,7 +13,8 @@ export interface FilterState {
   location?: string;
   sort?: string;
   page?: number;
-
+  priceFrom?: number;
+  priceTo?: number;
   regionalSpec?: string[];
   seatingCapacity?: string[];
   transmission?: string[];
@@ -34,6 +35,7 @@ export const hasActiveFilters = (f: FilterState): boolean =>
     f.priceRange && f.priceRange[1] > 0,
     f.location,
     f.sort,
+  f.priceFrom !== undefined || f.priceTo !== undefined,
 
     f.regionalSpec?.length,
     f.seatingCapacity?.length,
@@ -47,24 +49,25 @@ export const hasActiveFilters = (f: FilterState): boolean =>
  * ------------------------------------------------------- */
 export const getFilters = (f: FilterState): Record<string, FilterValues> => {
   const out: Record<string, FilterValues> = {};
-  if (f.search) out.search = f.search; // ✅ ADD THIS
+
+  if (f.search) out.search = f.search;
   if (f.category?.length) out.category = f.category;
   if (f.brand?.length) out.brand = f.brand;
   if (f.bodyType?.length) out.bodyType = f.bodyType;
 
-  if (f.noDeposit) out.noDeposit = f.noDeposit;
-  if (f.priceRange && f.priceRange[1] > 0) out.priceRange = f.priceRange[1]; // backend only wants max
+  if (f.noDeposit !== undefined) out.noDeposit = f.noDeposit;
+
+  // ✅ PRICE RANGE (THIS FIXES EVERYTHING)
+  if (f.priceFrom !== undefined) out.priceFrom = f.priceFrom;
+  if (f.priceTo !== undefined) out.priceTo = f.priceTo;
 
   if (f.location) out.location = f.location;
   if (f.sort) out.sort = f.sort;
   if (f.page) out.page = f.page;
 
-  /* NEW BACKEND FIELDS */
   if (f.regionalSpec?.length) out.regionalSpec = f.regionalSpec;
   if (f.seatingCapacity?.length) out.seatingCapacity = f.seatingCapacity;
   if (f.transmission?.length) out.transmission = f.transmission;
-  /** ⭐ FINAL & CORRECT COLOR HANDLING ⭐ */
-  // ✅ correct
   if (f.exteriorColor?.length) out.exteriorColor = f.exteriorColor;
   if (f.interiorColor?.length) out.interiorColor = f.interiorColor;
 

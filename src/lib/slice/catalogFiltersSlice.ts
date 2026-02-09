@@ -10,7 +10,8 @@ export interface FilterState {
   sort: string;
   isLoading: boolean;
   error: string | null;
-
+  priceFrom?: number;
+priceTo?: number;
   regionalSpec: string[]; // backend: regionalSpecs: [{_id,name}]
   seatingCapacity: string[]; // backend: seatingCapacities: [{_id,seats}]
   transmission: string[]; // backend: transmissions: [{_id,transmission}]
@@ -30,7 +31,8 @@ const initialState: FilterState = {
   sort: "",
   isLoading: false,
   error: null,
-
+    priceFrom: undefined,
+  priceTo: undefined,
   regionalSpec: [],
   seatingCapacity: [],
   transmission: [],

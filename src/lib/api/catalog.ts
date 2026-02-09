@@ -5,16 +5,13 @@ import { notFound } from "next/navigation";
 import { baseApi } from "./baseApi";
 
 /* --------------------------- TYPES --------------------------- */
-
 export interface ApiCarResponse {
   success: boolean;
   data: {
     docs: CarTypes[];
-    page: number;
-    totalPages: number;
+    totalDocs: number;
   };
 }
-
 export type FilterValues =
   | string
   | number
@@ -40,16 +37,14 @@ function appendParamsSafe(
   });
 }
 
-/* ---------------------- FETCH CATALOG DATA ---------------------- */
 export const getCatalogData = async (
   filterType: string,
   filterId: string,
-  pageNum?: number | string,
 ): Promise<ApiCarResponse> => {
-  const page = pageNum ? `?page=${pageNum}` : "";
+
 
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_BASE_URL}/cars/${filterType}/${filterId}${page}`,
+`${process.env.NEXT_PUBLIC_BASE_URL}/cars/${filterType}/${filterId}`,
     { next: { revalidate: 450 } },
   );
 
@@ -108,25 +103,26 @@ const catalogApi = baseApi.injectEndpoints({
       },
     }),
 
-    fetchCatalogData: builder.query<
-      ApiCarResponse,
-      { filterType: string; filterId: string; page?: number; sort?: string }
-    >({
-      query: ({ filterType, filterId, page, sort }) => {
-        const p = new URLSearchParams();
-        if (page) p.set("page", String(page));
-        if (sort) p.set("sort", String(sort));
+  fetchCatalogData: builder.query<
+  ApiCarResponse,
+  { filterType: string; filterId: string; sort?: string }
+>({
 
-        return {
-          url: `/cars/${filterType}/${filterId}?${p.toString()}`,
-          method: "GET",
-        };
-      },
+query: ({ filterType, filterId, sort }) => {
+  const p = new URLSearchParams();
+  if (sort) p.set("sort", String(sort));
+
+  return {
+    url: `/cars/${filterType}/${filterId}${p.toString() ? `?${p}` : ""}`,
+    method: "GET",
+  };
+},
+
     }),
   }),
 });
 const sanitizeSearchParams = (params: URLSearchParams) => {
-  const allowed = ["search", "page", "limit", "sort"];
+const allowed = ["search", "sort"];
 
   const clean = new URLSearchParams();
 

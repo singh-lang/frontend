@@ -43,7 +43,7 @@ export default async function Page({ params, searchParams }: PageProps) {
   const masterData = (await getFilterMasterData())?.data;
 
   // SAFE PAGE VALUE
-  const currentPage = sp.page && Number(sp.page) > 0 ? Number(sp.page) : 1;
+  // const currentPage = sp.page && Number(sp.page) > 0 ? Number(sp.page) : 1;
 
   // CHECK ACTIVE FILTERS
   const hasFilters = [
@@ -55,20 +55,17 @@ export default async function Page({ params, searchParams }: PageProps) {
     sp.endDate,
   ].some(Boolean);
 
-  const apiRes = hasFilters
-    ? await getFilteredData({ ...sp, page: String(currentPage) })
-    : await getCatalogData(filterType, filterId, String(currentPage));
+const apiRes = hasFilters
+  ? await getFilteredData(sp)
+  : await getCatalogData(filterType, filterId);
 
   const rawData = apiRes.data;
 
   /* --------------------- SAFE CASTING --------------------- */
-  const data: { docs: CarTypes[]; page: number; totalPages: number } = {
-    docs: rawData.docs as unknown as CarTypes[],
-    page: rawData.page,
-    totalPages: rawData.totalPages,
-  };
-
-  /* --------------------- UI --------------------- */
+const data: { docs: CarTypes[]; totalDocs: number } = {
+  docs: rawData.docs as CarTypes[],
+  totalDocs: rawData.totalDocs,
+};
   return (
     <>
       <CatalogHeader data={masterData} />

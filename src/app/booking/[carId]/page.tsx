@@ -39,7 +39,7 @@ import {
   useCalculateBookingMutation,
   useCreateBookingMutation,
 } from "@/lib/api/booking";
-import { getCar } from "@/lib/api/car";
+import { getCar } from "@/lib/api/allcarapi";
 import type { CarTypes } from "@/types/homePageTypes";
 import { useGetDepositFreePricingFrontendQuery } from "@/lib/api/depositFreeFrontendApi";
 import { useGetAddonsByCarQuery } from "@/lib/api/carAddonsApi";
@@ -287,6 +287,10 @@ export default function BookingPage() {
       skip: !carId,
     },
   );
+  useEffect(() => {
+  console.log("carData:", carData);
+}, [carData]);
+
   const pageWrap = "min-h-screen bg-[#f5f7fb]";
   const container = "mx-auto max-w-6xl px-4 py-8";
   const card =
@@ -439,50 +443,73 @@ export default function BookingPage() {
     : securityDepositAmount; // ✅ ONE TIME
 
   // const frontendPayLater = frontendTotal - frontendPayNow;
-  useEffect(() => {
-    if (!carId) return;
-    const fetchCar = async () => {
-      try {
-        setCarLoading(true);
-        const res = await getCar(carId);
-        setCarData(res?.data || null);
-      } catch (err) {
-        console.error("Failed to fetch car", err);
-      } finally {
-        setCarLoading(false);
-      }
-    };
-    fetchCar();
-  }, [carId]);
+useEffect(() => {
+  if (!carId) return;
 
+  const fetchCar = async () => {
+    try {
+      setCarLoading(true);
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/cars/getAllListingsWithoutPagination`,
+        { cache: "no-store" }
+      );
+
+      const json = await res.json();
+
+      const car =
+        json?.listings?.find((c: CarTypes) => c._id === carId) || null;
+
+      setCarData(car);
+    } catch (err) {
+      console.error("Failed to fetch car", err);
+      setCarData(null);
+    } finally {
+      setCarLoading(false);
+    }
+  };
+
+  fetchCar();
+}, [carId]);
+
+const carTitle = useMemo(() => {
+  if (!carData) return "";
+
+  const brand = carData.car?.carBrand?.name ?? "";
+  const model = carData.car?.carModel ?? "";
+  const year = carData.car?.modelYear ?? "";
+
+  return [brand, model, year].filter(Boolean).join(" ");
+}, [carData]);
   const securityDeposit = hasSecurityDeposit
     ? (carData?.securityDeposit ?? 0)
     : 0;
-  const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
-  const carImages = useMemo(() => {
-    if (!carData?.car) return [];
-    const images: string[] = [];
+const carImages = useMemo(() => {
+  if (!carData?.car) return [];
 
-    if (carData.car.coverImage?.url) {
-      images.push(
-        carData.car.coverImage.url.startsWith("http")
-          ? carData.car.coverImage.url
-          : `${BASE_URL}${carData.car.coverImage.url}`,
+  const imgs: string[] = [];
+
+  if (carData.car.coverImage?.url) {
+    imgs.push(
+      carData.car.coverImage.url.startsWith("http")
+        ? carData.car.coverImage.url
+        : `${BASE_URL}${carData.car.coverImage.url}`,
+    );
+  }
+
+  carData.car.images?.forEach((img) => {
+    if (img?.url) {
+      imgs.push(
+        img.url.startsWith("http") ? img.url : `${BASE_URL}${img.url}`,
       );
     }
+  });
 
-    if (Array.isArray(carData.car.images)) {
-      carData.car.images.forEach((img) => {
-        if (img?.url) {
-          images.push(
-            img.url.startsWith("http") ? img.url : `${BASE_URL}${img.url}`,
-          );
-        }
-      });
-    }
-    return images;
-  }, [carData, BASE_URL]);
+  return imgs;
+}, [carData]);
+
   const loadPickupReturnCharges = async () => {
     if (!carId) return;
     if ((pickupType === "DELIVERY" || returnType === "RETURN") && !emirateId)
@@ -661,7 +688,7 @@ export default function BookingPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             bookingId,
-            amount: frontendPayNow * 100, // AED → fils
+             amount: frontendPayNow , // AED → fils * 100
             currency: "aed",
           }),
         },
@@ -1424,10 +1451,14 @@ export default function BookingPage() {
               {carImages.length > 0 ? (
                 <div className="rounded-2xl overflow-hidden border border-gray-200 bg-gray-50">
                   <img
-                    src={carImages[0]}
-                    alt="car"
-                    className="w-full h-[160px] object-cover"
-                  />
+  src={carImages[0]}
+  alt="car"
+  className="w-full h-[160px] object-cover"
+  onError={(e) => {
+    e.currentTarget.src = "/placeholder-car.png";
+  }}
+/>
+
                 </div>
               ) : (
                 <div className="rounded-2xl border border-gray-200 bg-gray-50 h-[160px] flex items-center justify-center text-gray-400 font-bold">

@@ -11,6 +11,8 @@ import { setCatalogCars } from "@/lib/slice/catalogCarsSlice";
 import { useRouter } from "next/navigation";
 import { getFilters } from "@/util/helper";
 import HeroFormLayout from "@/components/home/HeroSearchComponent";
+import { setCarsLoading } from "@/lib/slice/catalogCarsSlice";
+
 import {
   ChevronDown,
   SlidersHorizontal,
@@ -73,7 +75,7 @@ export default function TopFiltersBar({ data }: TopFiltersBarProps) {
   });
 
   const [openFullFilter, setOpenFullFilter] = useState(false);
-
+const [openPrice, setOpenPrice] = useState(false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const [getCars] = useLazyApplyFiltersQuery();
 
@@ -85,6 +87,7 @@ export default function TopFiltersBar({ data }: TopFiltersBarProps) {
 
   const closeAll = () => {
     setOpenDesktop({ deposit: false, brand: false });
+      setOpenPrice(false); // ✅ ADD THIS
   };
 
   useEffect(() => {
@@ -96,40 +99,50 @@ export default function TopFiltersBar({ data }: TopFiltersBarProps) {
     return () => document.removeEventListener("click", handler);
   }, []);
 
-  const applyFilters = async (extra = {}) => {
-    const final = getFilters({
-      ...filters,
-      ...extra,
-      page: 1,
-      sort,
-    });
+const applyFilters = async (extra = {}) => {
+  dispatch(setCarsLoading({ isLoading: true }));
 
-    const res = await getCars(final).unwrap();
-    dispatch(
-      setCatalogCars({
-        carsData: res.data.docs,
-        page: res.data.page,
-        totalPages: res.data.totalPages,
-      }),
-    );
-    router.push(`/catalog/all/cars?page=1`, { scroll: false });
-  };
+  const final = getFilters({
+    ...filters,
+    ...extra,
+    sort,
+  });
 
-  const clearFilters = async () => {
-    dispatch(removeCatalogFilters());
-    setSort("newest");
+  const res = await getCars(final).unwrap();
 
-    const res = await getCars({ page: 1 }).unwrap();
-    dispatch(
-      setCatalogCars({
-        carsData: res.data.docs,
-        page: res.data.page,
-        totalPages: res.data.totalPages,
-      }),
-    );
-    setOpenFullFilter(false);
-    closeAll();
-  };
+  const cars =
+    res?.data?.docs ||   // ✅ if backend fixed
+    res?.data ||     // ✅ if backend still old
+    [];
+
+  dispatch(
+    setCatalogCars({
+      carsData: cars,
+    })
+  );
+};
+
+const clearFilters = async () => {
+  dispatch(removeCatalogFilters());
+  setSort("newest");
+
+  const res = await getCars({ sort: "newest" }).unwrap();
+
+  const cars =
+    res?.data?.docs ||
+    res?.data ||
+    [];
+
+  dispatch(
+    setCatalogCars({
+      carsData: cars,
+    })
+  );
+
+  setOpenFullFilter(false);
+  closeAll();
+  
+};
 
   const [openSort, setOpenSort] = useState(false);
 
@@ -206,6 +219,133 @@ export default function TopFiltersBar({ data }: TopFiltersBarProps) {
                 </div>
               )}
             </div>
+              {/* PRICE RANGE */}
+{/* PRICE */}
+          <div className="hidden md:block relative flex-1 md:flex-none">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpenPrice((p) => !p);
+              }}
+              className="
+                flex items-center justify-between
+                w-[150px] md:w-[220px]
+                h-9 md:h-11
+                px-4 md:px-5
+                rounded-full
+                border border-gray-200 bg-white
+                text-gray-800 text-sm font-medium
+                shadow-sm hover:shadow-md transition
+              "
+            >
+              <span className="flex items-center gap-2">
+            {filters.priceFrom !== undefined || filters.priceTo !== undefined ? (
+              <span className="text-sm font-semibold text-black">
+                {filters.priceFrom !== undefined && filters.priceTo !== undefined
+                  ? `AED ${filters.priceFrom} - AED ${filters.priceTo}`
+                  : filters.priceFrom !== undefined
+                  ? `AED ${filters.priceFrom}+AED`
+                  : `Up to AED${filters.priceTo}`}
+              </span>
+            ) : (
+              "Price"
+            )}
+          </span>
+
+              <ChevronDown size={16} />
+            </button>
+
+            {/* PRICE DROPDOWN */}
+          {openPrice && (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="
+              absolute  top-full mt-1 z-[9999]
+              w-[280px]
+              bg-white
+              border border-gray-200
+              rounded-2xl
+              shadow-xl
+              p-4
+              space-y-3
+              "
+            >
+              <p className="text-sm font-semibold text-gray-900">
+                Price Range
+              </p>
+
+              {/* FROM - TO ROW */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  placeholder="From"
+                  value={filters.priceFrom ?? ""}
+                  onChange={(e) => {
+                    const val = e.target.value === "" ? undefined : Number(e.target.value);
+                    dispatch(setCatalogFilters({ priceFrom: val }));
+                  }}
+                  className="
+                    w-1/2 h-10 px-3 rounded-xl
+                    border border-gray-200
+                    text-sm
+                    focus:ring-2 focus:ring-site-accent/30
+                  "
+                />
+
+                <span className="text-gray-400 font-semibold">—</span>
+
+                <input
+                  type="number"
+                  placeholder="To"
+                  value={filters.priceTo ?? ""}
+                  onChange={(e) => {
+                    const val = e.target.value === "" ? undefined : Number(e.target.value);
+                    dispatch(setCatalogFilters({ priceTo: val }));
+                  }}
+                  className="
+                    w-1/2 h-10 px-3 rounded-xl
+                    border border-gray-200
+                    text-sm
+                    focus:ring-2 focus:ring-site-accent/30
+                  "
+                />
+              </div>
+
+              {/* VALIDATION MESSAGE */}
+              {filters.priceFrom !== undefined &&
+                filters.priceTo !== undefined &&
+                filters.priceFrom > filters.priceTo && (
+                  <p className="text-xs text-red-500 font-medium">
+                    From price should be less than To price
+                  </p>
+                )}
+
+              {/* APPLY BUTTON */}
+              <button
+                type="button"
+                disabled={
+                  filters.priceFrom !== undefined &&
+                  filters.priceTo !== undefined &&
+                  filters.priceFrom > filters.priceTo
+                }
+                onClick={() => {
+                  applyFilters();
+                  setOpenPrice(false);
+                }}
+                className="
+                  w-full h-10 rounded-xl
+                  bg-gradient-to-r from-site-accent to-slate-teal
+                  text-white
+                  text-sm font-semibold
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                  hover:opacity-90 transition
+                "
+              >
+                Apply
+              </button>
+            </div>
+          )}
+          </div>
 
             {/* Brand */}
             <div className="relative flex-1 md:flex-none">
@@ -266,17 +406,17 @@ export default function TopFiltersBar({ data }: TopFiltersBarProps) {
                   setOpenSort((p) => !p);
                 }}
                 className="
-    flex items-center justify-between
-    w-[150px] md:w-[220px]
-    h-9 md:h-11
-    px-4 md:px-5
-    rounded-full md:rounded-xl
-   bg-white
-    border border-soft-grey/40
-    text-gray-800 text-sm  font-medium
-    shadow-sm hover:shadow-md
-    transition
-  "
+                flex items-center justify-between
+                w-[150px] md:w-[220px]
+                h-9 md:h-11
+                px-4 md:px-5
+                rounded-full md:rounded-xl
+              bg-white
+                border border-soft-grey/40
+                text-gray-800 text-sm  font-medium
+                shadow-sm hover:shadow-md
+                transition
+              "
               >
                 <span className="truncate">{selectedSortLabel}</span>
                 <ChevronDown size={16} />
@@ -285,15 +425,15 @@ export default function TopFiltersBar({ data }: TopFiltersBarProps) {
               {openSort && (
                 <div
                   className="
-      absolute left-0 top-full mt-2 z-[9999]
-      w-[220px]
-      bg-gradient-to-br from-off-white to-white
-      border border-soft-grey/40
-      rounded-xl
-      shadow-xl
-      p-2
-      space-y-1
-    "
+                absolute left-0 top-full mt-2 z-[9999]
+                w-[220px]
+                bg-gradient-to-br from-off-white to-white
+                border border-soft-grey/40
+                rounded-xl
+                shadow-xl
+                p-2
+                space-y-1
+              "
                 >
                   {sortOptions.map((opt) => (
                     <button
@@ -306,17 +446,17 @@ export default function TopFiltersBar({ data }: TopFiltersBarProps) {
                         setOpenSort(false);
                       }}
                       className={`
-    w-full flex items-center justify-between
-    px-3 py-2 rounded-lg
-    text-sm font-medium
-    transition
-    ${
-      sort === opt.value
-        ? " text-white bg-site-accent "
-        : "text-gray-700 hover:bg-site-accent/10"
-    }
-  `}
-                    >
+                            w-full flex items-center justify-between
+                            px-3 py-2 rounded-lg
+                            text-sm font-medium
+                            transition
+                            ${
+                              sort === opt.value
+                                ? " text-white bg-site-accent "
+                                : "text-gray-700 hover:bg-site-accent/10"
+                            }
+                          `}
+                          >
                       <span>{opt.label}</span>
 
                       {sort === opt.value && (
@@ -328,33 +468,160 @@ export default function TopFiltersBar({ data }: TopFiltersBarProps) {
               )}
             </div>
           </div>
-          <div className="mt-3 md:hidden flex items-center justify-center gap-2">
-            <span className="font-semibold text-sm shrink-0">Sort</span>
+         <div className="flex items-center gap-4 w-full mt-2 md:hidden">
+  {/* SORT DROPDOWN */}
+  <select
+    className="
+      h-9 md:h-11
+      px-3 md:px-4
+      rounded-full
+      border border-gray-200
+      bg-white
+      text-gray-800
+      text-sm font-medium
+      shadow-sm
+      hover:shadow-md
+      transition
+      w-[150px]
+    "
+  >
+    <option value="newest">Newest Cars</option>
+    <option value="lowestPrice">Price: Low to High</option>
+    <option value="highestPrice">Price: High to Low</option>
+    <option value="mostBooked">Most Booked</option>
+  </select>
 
-            <select
-              value={sort}
-              onChange={(e) => {
-                const newSort = e.target.value;
-                setSort(newSort);
-                dispatch(setCatalogFilters({ sort: newSort }));
-                applyFilters({ sort: newSort });
-              }}
-              className="
-             
-              h-9 px-3
-              rounded-full border border-gray-200 bg-white
-              text-gray-800 text-sm font-medium
-              shadow-sm hover:shadow-md transition
-            "
-            >
-              <option value="newest">Newest Cars</option>
-              <option value="lowestPrice">Price: High to Low</option>
-              <option value="highestPrice">Price: Low to High</option>
-              <option value="mostBooked">Most Booked</option>
-            </select>
-          </div>
+  {/* PRICE FILTER */}
+  <div className="relative">
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        setOpenPrice((p) => !p);
+      }}
+      className="
+        flex items-center justify-between
+        h-9 md:h-11
+        px-3 md:px-5
+        rounded-full
+        border border-gray-200
+        bg-white
+        text-gray-800
+        text-sm font-medium
+        shadow-sm
+        hover:shadow-md
+        transition
+        w-[150px] md:w-[240px]
+      "
+    >
+      <span className="truncate">
+        {filters.priceFrom !== undefined || filters.priceTo !== undefined ? (
+          <span className="font-semibold text-black">
+            {filters.priceFrom !== undefined &&
+            filters.priceTo !== undefined
+              ? `AED ${filters.priceFrom} + AED ${filters.priceTo}`
+              : filters.priceFrom !== undefined
+              ? `AED ${filters.priceFrom}+`
+              : `Up to AED ${filters.priceTo}`}
+          </span>
+        ) : (
+          "Price"
+        )}
+      </span>
+
+      <ChevronDown size={16} />
+    </button>
+
+    {/* PRICE DROPDOWN */}
+    {openPrice && (
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="
+          absolute right-0 top-full mt-2 z-[9999]
+          w-[280px]
+          bg-white
+          border border-gray-200
+          rounded-2xl
+          shadow-xl
+          p-4
+          space-y-3
+        "
+      >
+        <p className="text-sm font-semibold text-gray-900">
+          Price Range
+        </p>
+
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            placeholder="From"
+            value={filters.priceFrom ?? ""}
+            onChange={(e) => {
+              const val =
+                e.target.value === ""
+                  ? undefined
+                  : Number(e.target.value);
+              dispatch(setCatalogFilters({ priceFrom: val }));
+            }}
+            className="w-1/2 h-10 px-3 rounded-xl border border-gray-200 text-sm"
+          />
+
+          <span className="text-gray-400 font-semibold">—</span>
+
+          <input
+            type="number"
+            placeholder="To"
+            value={filters.priceTo ?? ""}
+            onChange={(e) => {
+              const val =
+                e.target.value === ""
+                  ? undefined
+                  : Number(e.target.value);
+              dispatch(setCatalogFilters({ priceTo: val }));
+            }}
+            className="w-1/2 h-10 px-3 rounded-xl border border-gray-200 text-sm"
+          />
+        </div>
+
+        {filters.priceFrom !== undefined &&
+          filters.priceTo !== undefined &&
+          filters.priceFrom > filters.priceTo && (
+            <p className="text-xs text-red-500 font-medium">
+              From price should be less than To price
+            </p>
+          )}
+
+        <button
+          disabled={
+            filters.priceFrom !== undefined &&
+            filters.priceTo !== undefined &&
+            filters.priceFrom > filters.priceTo
+          }
+          onClick={() => {
+            applyFilters();
+            setOpenPrice(false);
+          }}
+          className="
+            w-full h-10 rounded-xl
+            bg-gradient-to-r from-site-accent to-slate-teal
+            text-white text-sm font-semibold
+            hover:opacity-90 transition
+            disabled:opacity-50
+          "
+        >
+          Apply
+        </button>
+      </div>
+    )}
+  </div>
+</div>
+
+
         </div>
       </div>
+      {/* Price Range */}
+
+
+
 
       {/* FULL FILTER DRAWER */}
       {openFullFilter && (

@@ -6,14 +6,12 @@ export interface SearchQueryArgs {
   page?: number;
 }
 
+
 export interface SearchResponse {
   success: boolean;
   result: CarTypes[];
-  page: number;
-  totalPages: number;
   totalResults: number;
 }
-
 export const carSearchApi = baseApi.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
