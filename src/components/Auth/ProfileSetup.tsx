@@ -13,6 +13,7 @@ import {
 import { useState, useRef } from "react";
 import Image from "next/image";
 import { useAuth } from "../../contexts/AuthContext";
+import { getToken } from "@/util/cookieMethods";
 
 interface ProfileSetupProps {
   isOpen: boolean;
@@ -104,20 +105,20 @@ export default function ProfileSetup({
               preview: reader.result as string,
               status: "verified" as const, // FIXED
             }
-          : doc
+          : doc,
       );
 
       setDocuments(updated);
 
       const allVerified = updated.every((d) => d.status === "verified");
 
-      if (allVerified) {
-        updateProfile({
-          profileComplete: true,
-          documentsUploaded: true,
-          isVerified: true,
-        });
-      }
+      // if (allVerified) {
+      //   updateProfile({
+      //     profileComplete: true,
+      //     documentsUploaded: true,
+      //     isVerified: true,
+      //   });
+      // }
     };
 
     reader.readAsDataURL(file);
@@ -136,7 +137,7 @@ export default function ProfileSetup({
 
   const handleFileInputChange = (
     e: React.ChangeEvent<HTMLInputElement>,
-    type: DocType
+    type: DocType,
   ) => {
     const file = e.target.files?.[0];
     if (file) handleFileSelect(type, file);
@@ -152,31 +153,73 @@ export default function ProfileSetup({
               preview: null,
               status: "pending" as const, // FIXED
             }
-          : doc
-      )
+          : doc,
+      ),
     );
   };
+  const handleSubmit = async () => {
+    const allVerified = documents.every((doc) => doc.file);
+    if (!allVerified) return;
 
-  const handleSubmit = () => {
-    const allVerified = documents.every((doc) => doc.status === "verified");
-    if (allVerified) {
+    const formData = new FormData();
+
+    formData.append("origin", userType === "resident" ? "1" : "2");
+
+    documents.forEach((doc) => {
+      if (!doc.file) return;
+
+      let fieldName = doc.type;
+      if (doc.type === "idp") fieldName = "drivingLicense";
+
+      formData.append(fieldName, doc.file);
+    });
+
+    try {
+      const token = getToken(); // ✅ THIS WAS MISSING
+
+      if (!token) {
+        alert("Session expired. Please login again.");
+        return;
+      }
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_URL}/complete-profile`, // ✅ FIXED URL
+        {
+          method: "POST",
+          body: formData,
+          headers: {
+            Authorization: `Bearer ${token}`, // ✅ FIXED
+          },
+          credentials: "include",
+        },
+      );
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || "Upload failed");
+      }
+
       updateProfile({
         profileComplete: true,
-        isVerified: true,
         documentsUploaded: true,
+        isVerified: true,
       });
+
       onComplete();
+    } catch (err) {
+      console.error("Upload error:", err);
+      alert("Failed to upload documents. Please login again.");
     }
   };
 
   const progress = Math.round(
     (documents.filter((d) => d.status !== "pending").length /
       documents.length) *
-      100
+      100,
   );
 
   const allUploaded = documents.every(
-    (d) => d.status === "uploaded" || d.status === "verified"
+    (d) => d.status === "uploaded" || d.status === "verified",
   );
 
   const allVerified = documents.every((d) => d.status === "verified");
