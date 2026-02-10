@@ -7,7 +7,8 @@ export interface FilterState {
   bodyType: string[];
   priceRange: [number, number];
   location: string;
-  sort: string;
+   sort: string;
+  hasUserSorted: boolean;
   isLoading: boolean;
   error: string | null;
   priceFrom?: number;
@@ -28,8 +29,9 @@ const initialState: FilterState = {
   bodyType: [],
   priceRange: [0, 0],
   location: "",
-  sort: "",
-  isLoading: false,
+ sort: "newest",
+   hasUserSorted: false,
+   isLoading: false,
   error: null,
     priceFrom: undefined,
   priceTo: undefined,

@@ -32,6 +32,7 @@ export default function SortingBar({
         priceRange,
         location,
         sort: e.target.value,
+          hasUserSorted: true,
       })
     );
   };

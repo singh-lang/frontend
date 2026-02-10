@@ -39,7 +39,6 @@ export async function generateMetadata({
 export default async function Page({ params, searchParams }: PageProps) {
   const { filterType, filterId } = await params;
   const sp = await searchParams;
-
   const masterData = (await getFilterMasterData())?.data;
 
   // SAFE PAGE VALUE
@@ -53,6 +52,7 @@ export default async function Page({ params, searchParams }: PageProps) {
     sp.priceRange,
     sp.startDate,
     sp.endDate,
+    sp.sort,
   ].some(Boolean);
 
 const apiRes = hasFilters
@@ -66,6 +66,8 @@ const data: { docs: CarTypes[]; totalDocs: number } = {
   docs: rawData.docs as CarTypes[],
   totalDocs: rawData.totalDocs,
 };
+  
+
   return (
     <>
       <CatalogHeader data={masterData} />

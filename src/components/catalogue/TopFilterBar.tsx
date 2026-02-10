@@ -67,7 +67,7 @@ export default function TopFiltersBar({ data }: TopFiltersBarProps) {
     exteriorColor = [],
   } = filters;
 
-  const [sort, setSort] = useState(filters?.sort || "newest");
+const sort = filters.sort || "newest";
 
   const [openDesktop, setOpenDesktop] = useState({
     deposit: false,
@@ -105,34 +105,44 @@ const applyFilters = async (extra = {}) => {
   const final = getFilters({
     ...filters,
     ...extra,
-    sort,
+  });
+
+  const res = await getCars(final).unwrap();
+  const cars = res?.data?.docs || res?.data || [];
+
+  dispatch(setCatalogCars({ carsData: cars }));
+};
+
+const handleSortChange = async (value: string) => {
+  dispatch(setCatalogFilters({ sort: value }));
+
+  dispatch(setCarsLoading({ isLoading: true }));
+
+  const final = getFilters({
+    ...filters,
+    sort: value, // ✅ direct value
+  });
+
+  const res = await getCars(final).unwrap();
+
+  const cars = res?.data?.docs || res?.data || [];
+
+  dispatch(setCatalogCars({ carsData: cars }));
+};
+
+const clearFilters = async () => {
+  dispatch(removeCatalogFilters());
+  dispatch(setCarsLoading({ isLoading: true }));
+  const final = getFilters({
+    sort: "newest",
   });
 
   const res = await getCars(final).unwrap();
 
   const cars =
-    res?.data?.docs ||   // ✅ if backend fixed
-    res?.data ||     // ✅ if backend still old
-    [];
-
-  dispatch(
-    setCatalogCars({
-      carsData: cars,
-    })
-  );
-};
-
-const clearFilters = async () => {
-  dispatch(removeCatalogFilters());
-  setSort("newest");
-
-  const res = await getCars({ sort: "newest" }).unwrap();
-
-  const cars =
     res?.data?.docs ||
     res?.data ||
     [];
-
   dispatch(
     setCatalogCars({
       carsData: cars,
@@ -141,15 +151,15 @@ const clearFilters = async () => {
 
   setOpenFullFilter(false);
   closeAll();
-  
 };
+
 
   const [openSort, setOpenSort] = useState(false);
 
   const sortOptions = [
     { value: "newest", label: "Newest Cars" },
-    { value: "lowestPrice", label: "Price: High to Low" },
-    { value: "highestPrice", label: "Price: Low to High" },
+    { value: "lowestPrice", label: "Price: Low to High" },
+    { value: "highestPrice", label: "Price: High to Low" },
     { value: "mostBooked", label: "Most Booked" },
   ];
   const selectedSortLabel =
@@ -440,11 +450,9 @@ const clearFilters = async () => {
                       key={opt.value}
                       type="button"
                       onClick={() => {
-                        setSort(opt.value);
-                        dispatch(setCatalogFilters({ sort: opt.value }));
-                        applyFilters({ sort: opt.value });
-                        setOpenSort(false);
-                      }}
+  handleSortChange(opt.value);
+  setOpenSort(false);
+}}
                       className={`
                             w-full flex items-center justify-between
                             px-3 py-2 rounded-lg
@@ -469,27 +477,29 @@ const clearFilters = async () => {
             </div>
           </div>
          <div className="flex items-center gap-4 w-full mt-2 md:hidden">
-  {/* SORT DROPDOWN */}
-  <select
-    className="
-      h-9 md:h-11
-      px-3 md:px-4
-      rounded-full
-      border border-gray-200
-      bg-white
-      text-gray-800
-      text-sm font-medium
-      shadow-sm
-      hover:shadow-md
-      transition
-      w-[150px]
-    "
-  >
-    <option value="newest">Newest Cars</option>
-    <option value="lowestPrice">Price: Low to High</option>
-    <option value="highestPrice">Price: High to Low</option>
-    <option value="mostBooked">Most Booked</option>
-  </select>
+<select
+  value={sort}   // ✅ controlled
+  onChange={(e) => handleSortChange(e.target.value)} // ✅ API call
+  className="
+    h-9 md:h-11
+    px-3 md:px-4
+    rounded-full
+    border border-gray-200
+    bg-white
+    text-gray-800
+    text-sm font-medium
+    shadow-sm
+    hover:shadow-md
+    transition
+    w-[150px]
+  "
+>
+  <option value="newest">Newest Cars</option>
+  <option value="lowestPrice">Price: Low to High</option>
+  <option value="highestPrice">Price: High to Low</option>
+  <option value="mostBooked">Most Booked</option>
+</select>
+
 
   {/* PRICE FILTER */}
   <div className="relative">
