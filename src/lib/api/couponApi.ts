@@ -52,7 +52,7 @@ const couponApi = baseApi.injectEndpoints({
 
     getCoupons: builder.query<CouponListResponse, void>({
       query: () => ({
-        url: "/admin/coupons", 
+        url: "/coupons", 
         method: "GET",
       }),
     }),

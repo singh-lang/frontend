@@ -17,6 +17,14 @@ import {
   fetchMasterData,
 } from "@/lib/api/home";
 import VendorBanner from "@/components/home/VendorBanner";
+import {
+  Star,
+  Crown,
+  Flame,
+  TrendingUp,
+  Award,
+  ThumbsUp,
+} from "lucide-react";
 
 export const metadata: Metadata = {
   title: "TheDriveHub | Compare & Book Car Rentals in Dubai, Abu Dhabi and UAE",
@@ -165,7 +173,12 @@ export default async function Page() {
             }
             sectionTitle="Luxury Collection"
             sectionDescription="Experience the ultimate in automotive excellence"
-            bg="#efeeea"
+              sectionIcon={
+                <div className="p-2 bg-gradient-to-r from-site-accent to-slate-teal rounded-full">
+                  <Crown className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
+                </div>
+              } 
+             bg="#efeeea"
             buttonsColor="#efeeea"
           />
         </section>
@@ -200,6 +213,11 @@ export default async function Page() {
             }
             sectionTitle="Sports Cars"
             sectionDescription="High-performance vehicles for the thrill seekers"
+            sectionIcon={
+              <div className="p-2 bg-gradient-to-r from-site-accent to-slate-teal rounded-full">
+                <Flame className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
+              </div>
+            }  
             bg="#efeeea"
             buttonsColor="#fff"
           />
@@ -230,6 +248,11 @@ export default async function Page() {
             sectionId="all"
             sectionTitle="Popular Cars"
             sectionDescription="High-performance vehicles for the thrill seekers"
+            sectionIcon={
+            <div className="p-2 bg-gradient-to-r from-site-accent to-slate-teal rounded-full">
+              <TrendingUp className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
+            </div>
+          }  
             bg="#fff"
             buttonsColor="#efeeea"
           />
@@ -245,6 +268,11 @@ export default async function Page() {
             sectionId="all"
             sectionTitle="Best Cars"
             sectionDescription="High-performance vehicles for the thrill seekers"
+            sectionIcon={
+            <div className="p-2 bg-gradient-to-r from-site-accent to-slate-teal rounded-full">
+              <Award className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
+            </div>
+          }  
             bg="#efeeea"
             buttonsColor="#fff"
           />
@@ -260,21 +288,26 @@ export default async function Page() {
             sectionId="all"
             sectionTitle="Top Choice"
             sectionDescription="High-performance vehicles for the thrill seekers"
+            sectionIcon={
+            <div className="p-2 bg-gradient-to-r from-site-accent to-slate-teal rounded-full">
+              <ThumbsUp className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
+            </div>
+          }  
             bg="#fff"
             buttonsColor="#efeeea"
           />
         </section>
       )}
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 md:pt-6 pb-12 md:pb-16">
+      {/* <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 md:pt-6 pb-12 md:pb-16">
         <VendorBanner />
-      </section>
+      </section> */}
 
       <DocumentsRequired />
 
-      <section className="py-16 bg-gradient-to-r from-site-accent to-slate-teal relative overflow-hidden">
+      {/* <section className="py-16 bg-gradient-to-r from-site-accent to-slate-teal relative overflow-hidden">
         <MobileAppBanner />
-      </section>
+      </section> */}
 
       <section className="py-10 md:py-12 bg-gradient-to-b from-white to-off-white relative overflow-hidden">
         <WhatWeOffer />

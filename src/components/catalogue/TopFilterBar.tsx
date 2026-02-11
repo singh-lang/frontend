@@ -450,9 +450,9 @@ const clearFilters = async () => {
                       key={opt.value}
                       type="button"
                       onClick={() => {
-  handleSortChange(opt.value);
-  setOpenSort(false);
-}}
+                    handleSortChange(opt.value);
+                    setOpenSort(false);
+                  }}
                       className={`
                             w-full flex items-center justify-between
                             px-3 py-2 rounded-lg
@@ -476,164 +476,158 @@ const clearFilters = async () => {
               )}
             </div>
           </div>
-         <div className="flex items-center gap-4 w-full mt-2 md:hidden">
-<select
-  value={sort}   // ✅ controlled
-  onChange={(e) => handleSortChange(e.target.value)} // ✅ API call
-  className="
-    h-9 md:h-11
-    px-3 md:px-4
-    rounded-full
-    border border-gray-200
-    bg-white
-    text-gray-800
-    text-sm font-medium
-    shadow-sm
-    hover:shadow-md
-    transition
-    w-[150px]
-  "
->
-  <option value="newest">Newest Cars</option>
-  <option value="lowestPrice">Price: Low to High</option>
-  <option value="highestPrice">Price: High to Low</option>
-  <option value="mostBooked">Most Booked</option>
-</select>
-
-
-  {/* PRICE FILTER */}
-  <div className="relative">
-    <button
-      onClick={(e) => {
-        e.stopPropagation();
-        setOpenPrice((p) => !p);
-      }}
-      className="
-        flex items-center justify-between
-        h-9 md:h-11
-        px-3 md:px-5
-        rounded-full
-        border border-gray-200
-        bg-white
-        text-gray-800
-        text-sm font-medium
-        shadow-sm
-        hover:shadow-md
-        transition
-        w-[150px] md:w-[240px]
-      "
-    >
-      <span className="truncate">
-        {filters.priceFrom !== undefined || filters.priceTo !== undefined ? (
-          <span className="font-semibold text-black">
-            {filters.priceFrom !== undefined &&
-            filters.priceTo !== undefined
-              ? `AED ${filters.priceFrom} + AED ${filters.priceTo}`
-              : filters.priceFrom !== undefined
-              ? `AED ${filters.priceFrom}+`
-              : `Up to AED ${filters.priceTo}`}
-          </span>
-        ) : (
-          "Price"
-        )}
-      </span>
-
-      <ChevronDown size={16} />
-    </button>
-
-    {/* PRICE DROPDOWN */}
-    {openPrice && (
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="
-          absolute right-0 top-full mt-2 z-[9999]
-          w-[280px]
-          bg-white
-          border border-gray-200
-          rounded-2xl
-          shadow-xl
-          p-4
-          space-y-3
-        "
-      >
-        <p className="text-sm font-semibold text-gray-900">
-          Price Range
-        </p>
-
-        <div className="flex items-center gap-2">
-          <input
-            type="number"
-            placeholder="From"
-            value={filters.priceFrom ?? ""}
-            onChange={(e) => {
-              const val =
-                e.target.value === ""
-                  ? undefined
-                  : Number(e.target.value);
-              dispatch(setCatalogFilters({ priceFrom: val }));
-            }}
-            className="w-1/2 h-10 px-3 rounded-xl border border-gray-200 text-sm"
-          />
-
-          <span className="text-gray-400 font-semibold">—</span>
-
-          <input
-            type="number"
-            placeholder="To"
-            value={filters.priceTo ?? ""}
-            onChange={(e) => {
-              const val =
-                e.target.value === ""
-                  ? undefined
-                  : Number(e.target.value);
-              dispatch(setCatalogFilters({ priceTo: val }));
-            }}
-            className="w-1/2 h-10 px-3 rounded-xl border border-gray-200 text-sm"
-          />
-        </div>
-
-        {filters.priceFrom !== undefined &&
-          filters.priceTo !== undefined &&
-          filters.priceFrom > filters.priceTo && (
-            <p className="text-xs text-red-500 font-medium">
-              From price should be less than To price
-            </p>
-          )}
-
-        <button
-          disabled={
-            filters.priceFrom !== undefined &&
-            filters.priceTo !== undefined &&
-            filters.priceFrom > filters.priceTo
-          }
-          onClick={() => {
-            applyFilters();
-            setOpenPrice(false);
-          }}
+         <div className="flex items-center gap-6 w-full mt-2 md:hidden">
+        <select
+          value={sort}   // ✅ controlled
+          onChange={(e) => handleSortChange(e.target.value)} // ✅ API call
           className="
-            w-full h-10 rounded-xl
-            bg-gradient-to-r from-site-accent to-slate-teal
-            text-white text-sm font-semibold
-            hover:opacity-90 transition
-            disabled:opacity-50
+            h-9 md:h-11
+            px-3 md:px-4
+            rounded-full
+            border border-gray-200
+            bg-white
+            text-gray-800
+            text-sm font-medium
+            shadow-sm
+            hover:shadow-md
+            transition
+            w-[150px]
           "
         >
-          Apply
-        </button>
-      </div>
-    )}
-  </div>
-</div>
+          <option value="newest">Newest Cars</option>
+          <option value="lowestPrice">Price: Low to High</option>
+          <option value="highestPrice">Price: High to Low</option>
+          <option value="mostBooked">Most Booked</option>
+        </select>
+
+
+          {/* PRICE FILTER */}
+          <div className="relative">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpenPrice((p) => !p);
+              }}
+              className="
+                flex items-center justify-between
+                h-9 md:h-11
+                px-3 md:px-5
+                rounded-full
+                border border-gray-200
+                bg-white
+                text-gray-800
+                text-sm font-medium
+                shadow-sm
+                hover:shadow-md
+                transition
+                w-[150px] md:w-[240px]
+              "
+            >
+              <span className="truncate">
+                {filters.priceFrom !== undefined || filters.priceTo !== undefined ? (
+                  <span className="font-semibold text-black">
+                    {filters.priceFrom !== undefined &&
+                    filters.priceTo !== undefined
+                      ? `AED ${filters.priceFrom} + AED ${filters.priceTo}`
+                      : filters.priceFrom !== undefined
+                      ? `AED ${filters.priceFrom}+`
+                      : `Up to AED ${filters.priceTo}`}
+                  </span>
+                ) : (
+                  "Price"
+                )}
+              </span>
+
+              <ChevronDown size={16} />
+            </button>
+
+            {/* PRICE DROPDOWN */}
+            {openPrice && (
+              <div
+                onClick={(e) => e.stopPropagation()}
+                className="
+                  absolute right-0 top-full mt-2 z-[9999]
+                  w-[280px]
+                  bg-white
+                  border border-gray-200
+                  rounded-2xl
+                  shadow-xl
+                  p-4
+                  space-y-3
+                "
+              >
+                <p className="text-sm font-semibold text-gray-900">
+                  Price Range
+                </p>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    placeholder="From"
+                    value={filters.priceFrom ?? ""}
+                    onChange={(e) => {
+                      const val =
+                        e.target.value === ""
+                          ? undefined
+                          : Number(e.target.value);
+                      dispatch(setCatalogFilters({ priceFrom: val }));
+                    }}
+                    className="w-1/2 h-10 px-3 rounded-xl border border-gray-200 text-sm"
+                  />
+
+                  <span className="text-gray-400 font-semibold">—</span>
+
+                  <input
+                    type="number"
+                    placeholder="To"
+                    value={filters.priceTo ?? ""}
+                    onChange={(e) => {
+                      const val =
+                        e.target.value === ""
+                          ? undefined
+                          : Number(e.target.value);
+                      dispatch(setCatalogFilters({ priceTo: val }));
+                    }}
+                    className="w-1/2 h-10 px-3 rounded-xl border border-gray-200 text-sm"
+                  />
+                </div>
+
+                {filters.priceFrom !== undefined &&
+                  filters.priceTo !== undefined &&
+                  filters.priceFrom > filters.priceTo && (
+                    <p className="text-xs text-red-500 font-medium">
+                      From price should be less than To price
+                    </p>
+                  )}
+
+                <button
+                  disabled={
+                    filters.priceFrom !== undefined &&
+                    filters.priceTo !== undefined &&
+                    filters.priceFrom > filters.priceTo
+                  }
+                  onClick={() => {
+                    applyFilters();
+                    setOpenPrice(false);
+                  }}
+                  className="
+                    w-full h-10 rounded-xl
+                    bg-gradient-to-r from-site-accent to-slate-teal
+                    text-white text-sm font-semibold
+                    hover:opacity-90 transition
+                    disabled:opacity-50
+                  "
+                >
+                  Apply
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
 
 
         </div>
       </div>
-      {/* Price Range */}
-
-
-
-
-      {/* FULL FILTER DRAWER */}
       {openFullFilter && (
         <div className="fixed inset-0 z-[99999] bg-black/50 backdrop-blur-[2px] flex">
           {/* LEFT DRAWER */}

@@ -426,8 +426,6 @@ export default function BookingPage() {
     addonsTotal +
     (isDepositFree ? depositFreeTotal : securityDepositAmount);
   const couponDiscount = appliedCoupon?.discount ?? 0;
-
-  // const discountedTotal = Math.max(frontendTotal - couponDiscount, 0);
   const originalPayNow = calc
     ? Math.round((frontendTotal * calc.prepaymentPercent) / 100)
     : 0;
@@ -442,8 +440,6 @@ export default function BookingPage() {
   const depositAmount = depositFree
     ? depositFreeDailyFee * rentalDays // ✅ deposit-free → daily × days
     : securityDepositAmount; // ✅ ONE TIME
-
-  // const frontendPayLater = frontendTotal - frontendPayNow;
 useEffect(() => {
   if (!carId) return;
 
@@ -588,63 +584,6 @@ const carImages = useMemo(() => {
       return false;
     }
   };
-
-  // const handleCreateBooking = async () => {
-  //   if (!calc || calc.totalAmount <= 0) {
-  //     return toast.error("Please calculate price first");
-  //   }
-  //   try {
-  //     const res = await createBooking({
-  //       carId,
-  //       pickupDate,
-  //       pickupTime,
-  //       dropoffDate,
-  //       dropoffTime,
-  //       priceType,
-  //       pickupType,
-  //       returnType,
-  //       emirateId,
-  //       deliveryRequired: pickupType === "DELIVERY" || returnType === "RETURN",
-  //       address: pickupType === "DELIVERY" ? address : undefined,
-  //       guestName,
-  //       guestPhone,
-  //       guestEmail,
-  //       totalAmount: calc.totalAmount,
-  //       prepaymentPercent: calc.prepaymentPercent,
-  //       prepaymentAmount: frontendPayNow,
-  //       remainingAmount: frontendPayLater,
-  //     }).unwrap();
-  //     const bookingId = res?.data?._id;
-  //     if (!bookingId) return toast.error("Booking created but ID missing");
-  //     // const paymentUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/payments/rental/${bookingId}?token=${res.data.paymentToken}`;
-  //     // window.location.href = paymentUrl;
-  //     const paymentRes = await fetch(
-  //       "http://localhost:5000/v2/payments/create-intent",
-  //       {
-  //         method: "POST",
-  //         headers: { "Content-Type": "application/json" },
-  //         body: JSON.stringify({
-  //           bookingId,
-  //           amount: frontendPayNow * 100, // AED → fils
-  //           currency: "aed",
-  //         }),
-  //       },
-  //     );
-
-  //     const paymentData = await paymentRes.json();
-
-  //     if (!paymentData.clientSecret) {
-  //       toast.error("Payment initialization failed");
-  //       return;
-  //     }
-
-  //     setClientSecret(paymentData.clientSecret);
-  //     setShowStripe(true);
-  //   } catch (error: unknown) {
-  //     const e = error as ApiError;
-  //     toast.error(e?.data?.message || "Booking failed");
-  //   }
-  // };
   const handleCreateBooking = async () => {
     if (!calc || calc.totalAmount <= 0) {
       toast.error("Please calculate price first");
@@ -751,7 +690,7 @@ const carImages = useMemo(() => {
   return (
     
     <div className={pageWrap}>
- <div className="hidden md:block">
+ <div >
   <Navbar />
 </div>
 
@@ -836,7 +775,7 @@ const carImages = useMemo(() => {
                             "0",
                           );
                           const dd = String(date.getDate()).padStart(2, "0");
-                          setPickupDate(`${yyyy}-${mm}-${dd}`); // ✅ local date (no -1 day issue)
+                          setPickupDate(`${yyyy}-${mm}-${dd}`); 
                         }}
                         minDate={new Date()}
                         placeholderText="dd-mm-yyyy"
@@ -916,78 +855,78 @@ const carImages = useMemo(() => {
                       <ImportantInfo />
                       
                <div
-  className="
-    bg-white mt-4 rounded-3xl
-    border border-gray-200
-    shadow-[0_12px_40px_rgba(15,23,42,0.06)]
-    p-5
-    space-y-4
-  "
->
-  {/* HEADER */}
-  <div className="flex items-center justify-between">
-    <div>
-      <p className="text-sm font-semibold text-gray-900">
-        Deposit Option
-      </p>
-     
-    </div>
+                  className="
+                    bg-white mt-4 rounded-3xl
+                    border border-gray-200
+                    shadow-[0_12px_40px_rgba(15,23,42,0.06)]
+                    p-5
+                    space-y-4
+                  "
+                >
+                  {/* HEADER */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">
+                        Deposit Option
+                      </p>
+                    
+                    </div>
 
-    {/* TOGGLE */}
-    <button
-      onClick={() => setDepositFree((prev) => !prev)}
-      className={`relative w-12 h-6 rounded-full transition-colors
-        ${depositFree ? "bg-site-accent" : "bg-gray-300"}
-      `}
-    >
-      <span
-        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full
-          bg-white shadow transition-transform
-          ${depositFree ? "translate-x-6" : "translate-x-0"}
-        `}
-      />
-    </button>
-  </div>
+                    {/* TOGGLE */}
+                    <button
+                      onClick={() => setDepositFree((prev) => !prev)}
+                      className={`relative w-12 h-6 rounded-full transition-colors
+                        ${depositFree ? "bg-site-accent" : "bg-gray-300"}
+                      `}
+                    >
+                      <span
+                        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full
+                          bg-white shadow transition-transform
+                          ${depositFree ? "translate-x-6" : "translate-x-0"}
+                        `}
+                      />
+                    </button>
+                  </div>
 
-  {/* OPTION CARD */}
-  <div
-    className="
-      bg-gray-50 rounded-2xl
-      p-4
-      flex items-center justify-between
-      gap-4
-    "
-  >
-    <div className="flex items-start gap-3">
-      <div className="w-10 h-10 rounded-full bg-white shadow-sm
-                      flex items-center justify-center text-lg">
-        💳
-      </div>
+                  {/* OPTION CARD */}
+                  <div
+                    className="
+                      bg-gray-50 rounded-2xl
+                      p-4
+                      flex items-center justify-between
+                      gap-4
+                    "
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-full bg-white shadow-sm
+                                      flex items-center justify-center text-lg">
+                        💳
+                      </div>
 
-      <div>
-        <p className="text-sm font-semibold text-gray-900">
-          {depositFree ? "Deposit-free Fee" : "Security Deposit"}
-        </p>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {depositFree ? "Deposit-free Fee" : "Security Deposit"}
+                        </p>
 
-        <p className="text-xs text-gray-500 mt-0.5 max-w-[220px]">
-          {depositFree
-            ? "Charged per rental day to avoid paying a refundable deposit."
-            : "Fully refundable within 21 days after the car is returned."}
-        </p>
-      </div>
-    </div>
+                        <p className="text-xs text-gray-500 mt-0.5 max-w-[220px]">
+                          {depositFree
+                            ? "Charged per rental day to avoid paying a refundable deposit."
+                            : "Fully refundable within 21 days after the car is returned."}
+                        </p>
+                      </div>
+                    </div>
 
-    <div className="text-right">
-      <p className="text-xs text-gray-500 font-medium">Amount</p>
-      <p className="text-lg font-bold text-site-accent">
-        AED{" "}
-        {depositFree
-          ? (depositFreeDailyFee * rentalDays).toLocaleString()
-          : securityDeposit.toLocaleString()}
-      </p>
-    </div>
-  </div>
-</div>
+                    <div className="text-right">
+                      <p className="text-xs text-gray-500 font-medium">Amount</p>
+                      <p className="text-lg font-bold text-site-accent">
+                        AED{" "}
+                        {depositFree
+                          ? (depositFreeDailyFee * rentalDays).toLocaleString()
+                          : securityDeposit.toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
                     </div>
                   )}
@@ -1694,7 +1633,7 @@ const carImages = useMemo(() => {
               </div>
             </div>
           </div>
-          <div className="lg:hidden fixed inset-0 bg-white z-40 flex flex-col">
+          <div className="lg:hidden  mt-20 fixed inset-0 bg-white z-40 flex flex-col">
             <div className="p-4 border-b border-gray-200 bg-white">
               <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-3">
                 <div className="flex items-start gap-3">
@@ -1944,16 +1883,16 @@ const carImages = useMemo(() => {
                               value={pickupTime}
                               onChange={(e) => setPickupTime(e.target.value)}
                               className="
-            w-[150px]
-            bg-gray-100
-            text-sm
-            p-2
-            border-2 border-gray-300 rounded-2xl
-            font-semibold
-            text-gray-900
-            outline-none
-            text-center
-          "
+                              w-[150px]
+                              bg-gray-100
+                              text-sm
+                              p-2
+                              border-2 border-gray-300 rounded-2xl
+                              font-semibold
+                              text-gray-900
+                              outline-none
+                              text-center
+                            "
                             />
                           </div>
 
@@ -1975,16 +1914,16 @@ const carImages = useMemo(() => {
                               value={dropoffTime}
                               onChange={(e) => setDropoffTime(e.target.value)}
                               className="
-            w-[150px]
-            bg-gray-100
-            p-2
-            text-sm
-            border-2 border-gray-300 rounded-2xl
-            font-semibold
-            text-gray-900
-            outline-none
-            text-center
-          "
+                            w-[150px]
+                            bg-gray-100
+                            p-2
+                            text-sm
+                            border-2 border-gray-300 rounded-2xl
+                            font-semibold
+                            text-gray-900
+                            outline-none
+                            text-center
+                          "
                             />
                           </div>
                         </div>
@@ -2339,22 +2278,7 @@ const carImages = useMemo(() => {
                         Your Details
                       </p>
                     </div>
-                    {/* 
-          <button
-            type="button"
-            onClick={() => setDetailsOpen((prev) => !prev)}
-            className="h-9 w-9 rounded-full  flex items-center justify-center"
-          >
-            {detailsOpen ? (
-              <Minus className="w-5 h-5 text-gray-800" />
-            ) : (
-              <Plus className="w-5 h-5 text-gray-800" />
-            )}
-          </button> */}
                   </div>
-
-                  {/* DETAILS BODY */}
-                  {/* {detailsOpen && ( */}
                   <div className="space-y-4 mt-3">
                     <div>
                       <label className="text-gray-700 font-semibold text-sm">
@@ -2367,12 +2291,12 @@ const carImages = useMemo(() => {
                           onChange={(e) => setGuestName(e.target.value)}
                           placeholder="Enter your full name"
                           className="
-                  w-full min-w-0
-                  bg-transparent
-                  outline-none
-                  text-base md:text-sm
-                  font-semibold
-                "
+                            w-full min-w-0
+                            bg-transparent
+                            outline-none
+                            text-base md:text-sm
+                            font-semibold
+                          "
                         />
                       </div>
                     </div>
@@ -2397,12 +2321,12 @@ const carImages = useMemo(() => {
                           }}
                           placeholder="50XXXXXXX"
                           className="
-                    w-full min-w-0
-                    bg-transparent
-                    outline-none
-                    text-base md:text-sm
-                    font-semibold
-                  "
+                          w-full min-w-0
+                          bg-transparent
+                          outline-none
+                          text-base md:text-sm
+                          font-semibold
+                        "
                         />
                       </div>
                     </div>
@@ -2419,12 +2343,12 @@ const carImages = useMemo(() => {
                           onChange={(e) => setGuestEmail(e.target.value)}
                           placeholder="Enter your email address"
                           className="
-                  w-full min-w-0
-                  bg-transparent
-                  outline-none
-                  text-base md:text-sm
-                  font-semibold
-                "
+                            w-full min-w-0
+                            bg-transparent
+                            outline-none
+                            text-base md:text-sm
+                            font-semibold
+                          "
                         />
                       </div>
                     </div>
@@ -2632,60 +2556,58 @@ const carImages = useMemo(() => {
                 </div>
               )}
               {mobileStep === 3 && (
-<div className="mt-1 flex gap-3 items-start">
-  {/* ⬅️ Back button */}
-  {!showStripe && (
-    <button
-      type="button"
-      onClick={() => setMobileStep(2)}
-      className="w-1/2 rounded-full border border-gray-200 py-3
-                 text-gray-800 font-extrabold text-sm"
-    >
-      Back
-    </button>
-  )}
+            <div className="mt-1 flex gap-3 items-start">
+              {/* ⬅️ Back button */}
+              {!showStripe && (
+                <button
+                  type="button"
+                  onClick={() => setMobileStep(2)}
+                  className="w-1/2 rounded-full border border-gray-200 py-3
+                            text-gray-800 font-extrabold text-sm"
+                >
+                  Back
+                </button>
+              )}
 
-  {/* 💳 Confirm & Pay OR Stripe */}
-  {!showStripe ? (
-    <button
-      onClick={handleCreateBooking}
-      disabled={!agree || !canPayFinal || createLoading}
-      className={`w-1/2 rounded-full ${primaryBtn}`}
-    >
-      {createLoading ? "Preparing payment..." : "Confirm & Pay"}
-    </button>
-  ) : (
-    mounted &&
-    clientSecret && (
-      <div
-        className="
-          w-full
-          max-h-[70vh]
-          overflow-y-auto
-          overscroll-contain
-          pb-6
-        "
-      >
-        <Elements stripe={stripePromise} options={{ clientSecret }}>
-          <StripeCheckoutInline
-            onSuccess={() => {
-              toast.success("Booking confirmed");
+              {/* 💳 Confirm & Pay OR Stripe */}
+              {!showStripe ? (
+                <button
+                  onClick={handleCreateBooking}
+                  disabled={!agree || !canPayFinal || createLoading}
+                  className={`w-1/2 rounded-full ${primaryBtn}`}
+                >
+                  {createLoading ? "Preparing payment..." : "Confirm & Pay"}
+                </button>
+              ) : (
+                mounted &&
+                clientSecret && (
+                  <div
+                    className="
+                      w-full
+                      max-h-[70vh]
+                      overflow-y-auto
+                      overscroll-contain
+                      pb-6
+                    "
+                  >
+                    <Elements stripe={stripePromise} options={{ clientSecret }}>
+                      <StripeCheckoutInline
+                        onSuccess={() => {
+                          toast.success("Booking confirmed");
 
-              if (!createdBookingId) {
-                toast.error("Booking ID missing");
-                return;
-              }
+                          if (!createdBookingId) {
+                            toast.error("Booking ID missing");
+                            return;
+                          }
 
-              router.push(`/payments/rental/${createdBookingId}`);
-            }}
-          />
-        </Elements>
-      </div>
-    )
-  )}
-</div>
-
-
+                          router.push(`/payments/rental/${createdBookingId}`);
+                        }}
+                      />
+                    </Elements>
+                  </div>
+                )
+              )}
+            </div>
               )}
             </div>
           </div>

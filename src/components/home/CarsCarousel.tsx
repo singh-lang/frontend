@@ -15,6 +15,7 @@ interface Cars {
   sectionDescription: string;
   bg?: string;
   buttonsColor: string;
+sectionIcon?: React.ReactNode;
 }
 
 export default function CarsCarousel({
@@ -24,8 +25,8 @@ export default function CarsCarousel({
   sectionId,
   sectionTitle,
   sectionDescription,
-  // bg = "#fff",
-  buttonsColor = "#fff",
+ sectionIcon,
+ buttonsColor = "#fff",
 }: Cars) {
   const [
     ,
@@ -149,9 +150,17 @@ export default function CarsCarousel({
                 </span>
               </div>
             )}
-            <h2 className={"text-2xl font-bold  text-dark-base lg:text-4xl"}>
-              {sectionTitle}
-            </h2>
+         <div className="flex items-center gap-2">
+  {sectionIcon && (
+    <span className="flex items-center justify-center">
+      {sectionIcon}
+    </span>
+  )}
+  <h2 className="text-2xl font-bold text-dark-base lg:text-4xl">
+    {sectionTitle}
+  </h2>
+</div>
+
             <p className="text-grey mt-2 text-base max-w-2xl">
               {sectionDescription}
             </p>

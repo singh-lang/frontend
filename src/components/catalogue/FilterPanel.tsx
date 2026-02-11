@@ -87,44 +87,32 @@ const handleCopy = (code: string, id: string) => {
       <h3 className="text-lg font-extrabold text-gray-900">
         Find rentals near
       </h3>
-
-      {/* RETURN LOCATION */}
-      <button className="w-full flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-700">
-        <MapPin className="w-5 h-5 text-gray-500" />
-        <span className="truncate">{returnLocation}</span>
-      </button>
-
-      {/* DRIVER AGE */}
-      <button className="w-full flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-700">
-        <User className="w-5 h-5 text-gray-500" />
-        <span>{driverAge}</span>
-      </button>
-
-      {/* PICKUP LOCATION */}
-      <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+<div className="space-y-2">
+  <button className="w-full flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-700">
+    <MapPin className="w-5 h-5 text-gray-500" />
+    <span className="truncate">{returnLocation}</span>
+  </button>
+  <button className="w-full flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-700">
+    <User className="w-5 h-5 text-gray-500" />
+    <span>{driverAge}</span>
+  </button>
+     <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
         <MapPin className="w-5 h-5 text-gray-500" />
         <p className="text-sm font-semibold text-gray-700 truncate">
           {pickup}
         </p>
       </div>
-
-      {/* DATE RANGE */}
       <div className="flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
         <CalendarDays className="w-5 h-5 text-gray-500" />
         <p className="text-sm font-semibold text-gray-700 truncate">
           {dateRange}
         </p>
       </div>
-
-      {/* SEARCH BUTTON */}
+    </div>
       <button className="w-full rounded-xl bg-gradient-to-r from-site-accent to-slate-teal px-4 py-3 text-sm font-bold text-white shadow hover:opacity-95 transition">
         Search
       </button>
-
-      {/* ================= COUPON SECTION ================= */}
-      <div className="pt-4">
-
-        {/* HEADER */}
+      <div className="">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold text-gray-900">
             Available Coupons
