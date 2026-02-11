@@ -43,6 +43,7 @@ import { getCar } from "@/lib/api/allcarapi";
 import type { CarTypes } from "@/types/homePageTypes";
 import { useGetDepositFreePricingFrontendQuery } from "@/lib/api/depositFreeFrontendApi";
 import { useGetAddonsByCarQuery } from "@/lib/api/carAddonsApi";
+import Navbar from "@/components/home/Navbar";
 
 type PriceType = "daily" | "weekly" | "monthly";
 
@@ -748,9 +749,14 @@ const carImages = useMemo(() => {
     loadAllPickupCharges();
   }, [carId]);
   return (
+    
     <div className={pageWrap}>
-      <div className={container}>
-        <div className="flex items-center justify-center mb-8">
+ <div className="hidden md:block">
+  <Navbar />
+</div>
+
+          <div className={container}>
+        <div className="flex items-center justify-center mt-20 mb-8">
           <div className="hidden md:flex items-center gap-6 text-sm font-semibold">
             {steps.map((s, index) => (
               <React.Fragment key={s.id}>

@@ -1,5 +1,7 @@
 import { baseApi } from "./baseApi";
 
+/* ================= APPLY COUPON ================= */
+
 export interface ApplyCouponRequest {
   code: string;
   orderAmount: number;
@@ -11,6 +13,26 @@ export interface ApplyCouponResponse {
   originalAmount: number;
   discount: number;
   finalAmount: number;
+}
+
+/* ================= GET COUPONS ================= */
+
+export interface Coupon {
+  _id: string;
+  code: string;
+  couponType: "PERCENTAGE" | "AMOUNT";
+  percentage?: number;
+  amount?: number;
+  minOrderAmount?: number;
+  maxDiscountAmount?: number;
+  validFrom: string;
+  validTill: string;
+  isActive: boolean;
+}
+
+export interface CouponListResponse {
+  success: boolean;
+  data: Coupon[];
 }
 
 const couponApi = baseApi.injectEndpoints({
@@ -27,8 +49,20 @@ const couponApi = baseApi.injectEndpoints({
         body,
       }),
     }),
+
+    getCoupons: builder.query<CouponListResponse, void>({
+      query: () => ({
+        url: "/admin/coupons", 
+        method: "GET",
+      }),
+    }),
+
   }),
 });
 
-export const { useApplyCouponMutation } = couponApi;
+export const {
+  useApplyCouponMutation,
+  useGetCouponsQuery,   // ✅ export this
+} = couponApi;
+
 export default couponApi;

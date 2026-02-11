@@ -7,7 +7,6 @@ import CarCards from "@/components/catalogue/CarCards";
 import ComparisonBar from "@/components/shared/ComparisonBar";
 import HeroFormLayout from "@/components/home/HeroSearchComponent";
 import SideFilterPanel from "@/components/catalogue/FilterPanel";
-
 import { CarTypes } from "@/types/homePageTypes";
 import {
   getCatalogData,
@@ -17,6 +16,8 @@ import {
 
 import type { SearchParams } from "@/types/catalog";
 import TopFiltersBar from "@/components/catalogue/TopFilterBar";
+import OffersPage from "@/app/Coupons/page";
+import Navbar from "@/components/home/Navbar";
 interface PageProps {
   params: Promise<{ filterType: string; filterId: string }>;
   searchParams: Promise<SearchParams>;
@@ -70,14 +71,18 @@ const data: { docs: CarTypes[]; totalDocs: number } = {
 
   return (
     <>
-      <CatalogHeader data={masterData} />
+      {/* <CatalogHeader data={masterData} /> */}
+      <div className="mt-15">
+        <Navbar/>
+      </div>
+    
 
       {/* Main Layout */}
       <div className="w-full max-w-[1400px] mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6">
           {/* LEFT SIDE FILTER PANEL */}
-          <div className="w-full max-w-[400px] lg:max-w-none mx-auto lg:mx-0">
-            <SideFilterPanel data={masterData} />
+          <div className="w-full max-w-[400px] lg:max-w-none mt-10 mx-auto lg:mx-0">
+         <SideFilterPanel />
           </div>
 
           {/* RIGHT SIDE CAR LIST */}

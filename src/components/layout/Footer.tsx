@@ -1,4 +1,3 @@
-"use client";
 
 import React from "react";
 import Image from "next/image";
@@ -219,6 +218,35 @@ export default function Footer() {
         <p className="text-center sm:text-left text-black/40 text-xs">
           © 2025 The Drive Hub. All rights reserved.
         </p>
+     <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 bg-gradient-to-r from-white to-gray-50 rounded-xl px-4 py-2 border border-gray-200">
+                <img
+                  src="/assets/Payment/google-pay.svg"
+                  alt="Google Pay"
+                  className="h-6 hover:scale-110 transition-transform duration-300"
+                />
+                <img
+                  src="/assets/Payment/visa-v3.svg"
+                  alt="Visa"
+                  className="h-6 hover:scale-110 transition-transform duration-300"
+                />
+                <img
+                  src="/assets/Payment/mastercard-v3.svg"
+                  alt="Mastercard"
+                  className="h-7 hover:scale-110 transition-transform duration-300"
+                />
+                <img
+                  src="/assets/Payment/apple-pay.svg"
+                  alt="Apple Pay"
+                  className="h-8 hover:scale-110 transition-transform duration-300"
+                />
+                <img
+                  src="/assets/Payment/american-express.svg"
+                  alt="American Express"
+                  className="h-8 hover:scale-110 transition-transform duration-300"
+                />
+              </div>
+            </div>
 
         {/* Invisible but clickable developer credit */}
         <a

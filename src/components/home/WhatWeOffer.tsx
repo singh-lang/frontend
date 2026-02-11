@@ -71,32 +71,34 @@ const WhatWeOffer = () => {
                 className="group relative p-5 md:p-6 rounded-xl bg-white hover:bg-gradient-to-br hover:from-white hover:to-site-accent/5 shadow-md hover:shadow-lg transition-all duration-300 border border-soft-grey/30 hover:border-site-accent/30 animate-scale-in"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-start justify-between">
-                    <div className="w-12 h-12 bg-gradient-to-br from-site-accent/20 to-site-accent/10 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 group-hover:shadow-md">
-                      <Icon className="w-6 h-6 text-site-accent transition-transform group-hover:scale-110" />
-                    </div>
-                    <div className="w-6 h-6 bg-site-accent/0 group-hover:bg-gradient-to-r group-hover:from-site-accent group-hover:to-slate-teal rounded-full flex items-center justify-center transition-all duration-300">
-                      <ArrowRight className="w-3.5 h-3.5 text-transparent group-hover:text-white transition-colors" />
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-lg md:text-xl font-bold text-dark-base mb-2 group-hover:text-site-accent transition-colors duration-300 leading-tight">
-                      {offering.title}
-                    </h3>
-                    <p className="text-grey leading-normal mb-3 text-xs md:text-sm">
-                      {offering.description}
-                    </p>
-                    <Link
-                      href={offering.link}
-                      className="inline-flex items-center gap-2 text-site-accent font-semibold text-sm group-hover:gap-3 transition-all duration-300"
-                    >
-                      <span>Learn More</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </Link>
-                  </div>
-                </div>
+           <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-site-accent/20 to-site-accent/10 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 group-hover:shadow-md">
+                <Icon className="w-5 h-5 text-site-accent transition-transform group-hover:scale-110" />
+              </div>
 
+              <h3 className="text-lg md:text-xl font-bold text-dark-base group-hover:text-site-accent transition-colors duration-300 leading-tight">
+                {offering.title}
+              </h3>
+            </div>
+
+            <div className="w-7 h-7 rounded-full flex items-center justify-center bg-site-accent/0 group-hover:bg-gradient-to-r group-hover:from-site-accent group-hover:to-slate-teal transition-all duration-300">
+              <ArrowRight className="w-3.5 h-3.5 text-transparent group-hover:text-white transition-colors duration-300" />
+            </div>
+          </div>
+
+          <p className="text-grey  text-xs md:text-sm">
+            {offering.description}
+          </p>
+          <Link
+            href={offering.link}
+            className="inline-flex items-center gap-2 text-site-accent font-semibold text-sm group-hover:gap-3 transition-all duration-300"
+          >
+            <span>Learn More</span>
+            <ArrowRight className="w-4 h-4" />
+          </Link>
+        </div>
                 <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-site-accent/0 to-site-accent/0 group-hover:from-site-accent/5 group-hover:to-transparent transition-all duration-300 pointer-events-none"></div>
               </div>
             );

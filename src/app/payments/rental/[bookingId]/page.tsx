@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import AuthModal from "@/components/Auth/AuthModel";
 import ProfileSetup from "@/components/Auth/ProfileSetup";
 import Image from "next/image";
+import Navbar from "@/components/home/Navbar";
 
 type Booking = {
   bookingId: string;
@@ -55,26 +56,37 @@ const router = useRouter();
     load();
   }, [bookingId]);
 
-  const sendGuestAccess = async () => {
-    if (!booking?.bookingId) return;
-    setSending(true);
+const sendGuestAccess = async () => {
+  if (!booking?.bookingId) return;
 
+  setSending(true);
+
+  try {
     const res = await fetch(
       `${process.env.NEXT_PUBLIC_BASE_URL}/auth/guest/send-temp-password`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bookingId: booking.bookingId }),
-      },
+      }
     );
 
     const data = await res.json();
-    if (data.success) {
-      setSuccessMsg("Login details sent to your email.");
-    }
 
+    if (data.success) {
+      alert(data.message || "Login details sent to your email.");
+      setSuccessMsg(data.message || "Login details sent to your email.");
+    } else {
+      // 🔴 API error message
+      alert(data.message || "Something went wrong.");
+    }
+  } catch (error) {
+    alert("Network error. Please try again later.");
+  } finally {
     setSending(false);
-  };
+  }
+};
+
 
   const handleAuthSuccess = () => {
     setShowAuthModal(false);
@@ -91,23 +103,9 @@ const router = useRouter();
 
   return (
     <>
-    <button
-  onClick={() => router.push("/")}
-  className="
-    absolute top-6 left-6
-    md:top-8 md:left-8
-    rounded-full
-    border border-gray-300
-    bg-white
-    px-4 py-2
-    text-sm font-semibold text-gray-700
-    hover:bg-gray-600 hover:text-white
-    transition
-    shadow-sm
-  "
->
-  ← Home
-</button>
+<div className="mt-20">
+        <Navbar/>
+      </div>
 
       <main className="min-h-screen bg-gradient-to-b from-[#f8fafc] to-[#eef2f7] flex items-center justify-center px-4">
         <section className="w-full max-w-md bg-white rounded-3xl border border-gray-200 shadow-[0_20px_50px_rgba(15,23,42,0.08)] p-6 text-center">
