@@ -150,7 +150,7 @@ export default async function Page() {
           className="block"
         >
           <Image
-            src="/assets/MK AUTOS.gif"
+            src="/assets/Falcon Drive - GIF.gif"
             alt="Fancy animation"
             width={1216}
             height={550.78}
@@ -229,7 +229,7 @@ export default async function Page() {
           className="block"
         >
           <Image
-            src="/assets/EUROLINE.gif"
+            src="/assets/Princess Car rental.gif"
             alt="Fancy animation"
             width={1216}
             height={550.78}

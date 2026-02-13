@@ -243,14 +243,15 @@ export default function ProfileSetup({
            -------------------------------------------------------------- */}
 
         <div className="p-8">
-          <Image
-            src="/dlogo.png"
-            width={200}
-            height={60}
-            unoptimized
-            alt="logo"
-            className="h-12 w-auto mb-4"
-          />
+           <div className=" flex">
+            <Image
+              src="/assets/logo.svg"
+              alt="Company logo"
+              width={150}
+              height={50}
+            />
+          </div>
+
 
           <h2 className="text-3xl font-bold text-dark-base mb-2">
             Complete Your Profile

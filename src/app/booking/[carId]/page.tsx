@@ -1623,8 +1623,7 @@ const carImages = useMemo(() => {
                             toast.error("Booking ID missing");
                             return;
                           }
-
-                          router.push(`/payments/rental/${createdBookingId}`);
+                         router.push(`/payments/rental/${createdBookingId}`);
                         }}
                       />
                     </Elements>
@@ -2599,7 +2598,6 @@ const carImages = useMemo(() => {
                             toast.error("Booking ID missing");
                             return;
                           }
-
                           router.push(`/payments/rental/${createdBookingId}`);
                         }}
                       />
