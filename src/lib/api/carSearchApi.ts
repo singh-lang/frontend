@@ -1,38 +1,73 @@
 import { baseApi } from "@/lib/api/baseApi";
 import type { CarTypes } from "@/types/homePageTypes";
 
+/* ================= TYPES ================= */
+
 export interface SearchQueryArgs {
   query: string;
-  page?: number;
 }
-
 
 export interface SearchResponse {
   success: boolean;
   result: CarTypes[];
   totalResults: number;
 }
+
+/* ================= API ================= */
+
 export const carSearchApi = baseApi.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
+    /* ---------- SEARCH CARS ---------- */
     getSearchedCars: builder.query<SearchResponse, SearchQueryArgs>({
-      query: ({ query, page = 1 }) => {
-        const params = new URLSearchParams();
+      query: ({ query }) => ({
+        url: "/cars/search-by-any-field",
+        params: { query },
+      }),
 
-        if (query && query.trim()) {
-          params.append("query", query.trim());
-        }
+      transformResponse: (response: any): SearchResponse => ({
+        success: response?.success ?? true,
+        result:
+          response?.result ??
+          response?.listings ??
+          response?.data ??
+          [],
+        totalResults:
+          response?.totalResults ??
+          response?.total ??
+          response?.result?.length ??
+          0,
+      }),
+    }),
 
-        params.append("page", String(page));
+    /* ---------- ALL CARS (NO PAGINATION) ---------- */
+    getAllCars: builder.query<SearchResponse, void>({
+      query: () => ({
+        url: "/cars/getAllListingsWithoutPagination",
+      }),
 
-        return {
-          url: `/cars/search-by-any-field?${params.toString()}`,
-          method: "GET",
-        };
-      },
+      transformResponse: (response: any): SearchResponse => ({
+        success: response?.success ?? true,
+        result:
+          response?.result ??
+          response?.listings ??
+          response?.data ??
+          [],
+        totalResults:
+          response?.totalResults ??
+          response?.total ??
+          response?.result?.length ??
+          0,
+      }),
     }),
   }),
 });
 
-export const { useGetSearchedCarsQuery, useLazyGetSearchedCarsQuery } =
-  carSearchApi;
+/* ================= HOOK EXPORTS ================= */
+
+export const {
+  useGetSearchedCarsQuery,
+  useLazyGetSearchedCarsQuery,
+  useGetAllCarsQuery,
+  useLazyGetAllCarsQuery,
+} = carSearchApi;

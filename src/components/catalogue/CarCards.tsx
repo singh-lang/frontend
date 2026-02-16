@@ -6,7 +6,11 @@ import { useSearchParams } from "next/navigation";
 import HorizontalCarCard from "./HorizontalCarCard";
 import HorizontalCarCardSkeleton from "./HorizontalCarCardSkeleton";
 
-import { useLazyGetSearchedCarsQuery } from "@/lib/api/carSearchApi";
+import {
+  useLazyGetSearchedCarsQuery,
+  useLazyGetAllCarsQuery,
+} from "@/lib/api/carSearchApi";
+
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { setCatalogCars } from "@/lib/slice/catalogCarsSlice";
 
@@ -16,38 +20,50 @@ const CarCards = () => {
 
   const { carsData } = useAppSelector((s) => s.catalogCars);
 
-  const [getSearchedCars, { isFetching }] = useLazyGetSearchedCarsQuery();
+  const [getSearchedCars, { isFetching: searchLoading }] =
+    useLazyGetSearchedCarsQuery();
+
+  const [getAllCars, { isFetching: allLoading }] =
+    useLazyGetAllCarsQuery();
 
   const [firstLoad, setFirstLoad] = useState(true);
 
   useEffect(() => {
     const search = searchParams.get("query")?.trim();
 
-    if (!search) {
-      dispatch(setCatalogCars({ carsData: [] }));
-      setFirstLoad(false);
-      return;
+    // 🔎 SEARCH MODE
+    if (search) {
+      getSearchedCars({ query: search })
+        .unwrap()
+        .then((res) => {
+          dispatch(setCatalogCars({ carsData: res.result || [] }));
+        })
+        .catch(() => {
+          dispatch(setCatalogCars({ carsData: [] }));
+        })
+        .finally(() => setFirstLoad(false));
     }
 
-    getSearchedCars({ query: search })
-      .unwrap()
-      .then((res) => {
-        dispatch(
-          setCatalogCars({
-            carsData: res.result || [],
-          })
-        );
-      })
-      .catch(() => {
-        dispatch(setCatalogCars({ carsData: [] }));
-      })
-      .finally(() => setFirstLoad(false));
+    // 📦 BROWSE MODE (ALL CARS)
+    else {
+      getAllCars()
+        .unwrap()
+        .then((res) => {
+          dispatch(setCatalogCars({ carsData: res.result || [] }));
+        })
+        .catch(() => {
+          dispatch(setCatalogCars({ carsData: [] }));
+        })
+        .finally(() => setFirstLoad(false));
+    }
   }, [searchParams.toString()]);
+
+  const loading = searchLoading || allLoading;
 
   return (
     <>
-      {firstLoad && isFetching &&
-        Array.from({ length: 4 }).map((_, i) => (
+      {firstLoad && loading &&
+        Array.from({ length: 6 }).map((_, i) => (
           <HorizontalCarCardSkeleton key={i} />
         ))}
 
@@ -55,7 +71,7 @@ const CarCards = () => {
         <HorizontalCarCard key={car._id} car={car} />
       ))}
 
-      {!isFetching && carsData.length === 0 && (
+      {!loading && carsData.length === 0 && (
         <div className="text-center text-xl font-bold">
           No Cars Found
         </div>
