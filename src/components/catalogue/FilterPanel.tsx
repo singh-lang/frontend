@@ -11,6 +11,7 @@ import {
 import Link from "next/link";
 import { useGetCouponsQuery } from "@/lib/api/couponApi";
 import { TagIcon, CheckIcon, ClipboardIcon } from "@heroicons/react/24/outline";
+import DirhamSymbol from "../shared/DirhamSymbol";
 
 interface Coupon {
   _id: string;
@@ -178,10 +179,17 @@ const handleCopy = (code: string, id: string) => {
   </button>
 </div>
         <p className="text-sm font-medium text-gray-600 mt-1">
-          {coupon.couponType === "PERCENTAGE"
-            ? `${coupon.percentage}% OFF`
-            : `Flat ₹${coupon.amount} OFF`}
-        </p>
+  {coupon.couponType === "PERCENTAGE" ? (
+    `${coupon.percentage}% OFF`
+  ) : (
+    <span className="flex items-center gap-1">
+      Flat
+      <DirhamSymbol className="w-[16px] h-[20px]  top-[1px]" />
+      {coupon.amount} OFF
+    </span>
+  )}
+</p>
+
        <div className="flex items-center justify-between mt-2">
   <p className="text-xs font-medium text-gray-400">
     Valid till{" "}
