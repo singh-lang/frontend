@@ -5,9 +5,10 @@ import type { CarTypes } from "@/types/homePageTypes";
 
 export interface SearchQueryArgs {
   query: string;
+    page?: number;   
 }
 
-export interface SearchResponse {
+export interface CarsApiResponse {
   success: boolean;
   result: CarTypes[];
   totalResults: number;
@@ -18,52 +19,22 @@ export interface SearchResponse {
 export const carSearchApi = baseApi.injectEndpoints({
   overrideExisting: true,
   endpoints: (builder) => ({
-    /* ---------- SEARCH CARS ---------- */
-    getSearchedCars: builder.query<SearchResponse, SearchQueryArgs>({
+    /* 🔎 SEARCH CARS */
+    getSearchedCars: builder.query<CarsApiResponse, SearchQueryArgs>({
       query: ({ query }) => ({
         url: "/cars/search-by-any-field",
         params: { query },
       }),
-
-      transformResponse: (response: any): SearchResponse => ({
-        success: response?.success ?? true,
-        result:
-          response?.result ??
-          response?.listings ??
-          response?.data ??
-          [],
-        totalResults:
-          response?.totalResults ??
-          response?.total ??
-          response?.result?.length ??
-          0,
-      }),
     }),
 
-    /* ---------- ALL CARS (NO PAGINATION) ---------- */
-    getAllCars: builder.query<SearchResponse, void>({
+    getAllCars: builder.query<CarsApiResponse, void>({
       query: () => ({
         url: "/cars/getAllListingsWithoutPagination",
-      }),
-
-      transformResponse: (response: any): SearchResponse => ({
-        success: response?.success ?? true,
-        result:
-          response?.result ??
-          response?.listings ??
-          response?.data ??
-          [],
-        totalResults:
-          response?.totalResults ??
-          response?.total ??
-          response?.result?.length ??
-          0,
       }),
     }),
   }),
 });
 
-/* ================= HOOK EXPORTS ================= */
 
 export const {
   useGetSearchedCarsQuery,

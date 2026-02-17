@@ -6,18 +6,21 @@ import { useSearchParams } from "next/navigation";
 import HorizontalCarCard from "./HorizontalCarCard";
 import HorizontalCarCardSkeleton from "./HorizontalCarCardSkeleton";
 
-import {
-  useLazyGetSearchedCarsQuery,
-  useLazyGetAllCarsQuery,
-} from "@/lib/api/carSearchApi";
+import { useLazyGetSearchedCarsQuery } from "@/lib/api/carSearchApi";
+import { useLazyGetAllCarsQuery } from "@/lib/api/allcarapi";
 
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
 import { setCatalogCars } from "@/lib/slice/catalogCarsSlice";
-
+import { CarTypes } from "@/types/homePageTypes";
 const CarCards = () => {
   const searchParams = useSearchParams();
   const dispatch = useAppDispatch();
-
+  interface CatalogCarsState {
+  carsData: CarTypes[];
+}
+const initialState: CatalogCarsState = {
+  carsData: [],
+};
   const { carsData } = useAppSelector((s) => s.catalogCars);
 
   const [getSearchedCars, { isFetching: searchLoading }] =
@@ -33,7 +36,7 @@ const CarCards = () => {
 
     // 🔎 SEARCH MODE
     if (search) {
-      getSearchedCars({ query: search })
+      getSearchedCars({ query: search, page: 1 })
         .unwrap()
         .then((res) => {
           dispatch(setCatalogCars({ carsData: res.result || [] }));
@@ -44,12 +47,12 @@ const CarCards = () => {
         .finally(() => setFirstLoad(false));
     }
 
-    // 📦 BROWSE MODE (ALL CARS)
+    // 📦 ALL CARS MODE
     else {
       getAllCars()
         .unwrap()
         .then((res) => {
-          dispatch(setCatalogCars({ carsData: res.result || [] }));
+          dispatch(setCatalogCars({ carsData: res.listings || [] }));
         })
         .catch(() => {
           dispatch(setCatalogCars({ carsData: [] }));
@@ -60,13 +63,18 @@ const CarCards = () => {
 
   const loading = searchLoading || allLoading;
 
-  return (
-    <>
-      {firstLoad && loading &&
-        Array.from({ length: 6 }).map((_, i) => (
+  if (loading && firstLoad) {
+    return (
+      <>
+        {Array.from({ length: 10 }).map((_, i) => (
           <HorizontalCarCardSkeleton key={i} />
         ))}
+      </>
+    );
+  }
 
+  return (
+    <>
       {carsData.map((car) => (
         <HorizontalCarCard key={car._id} car={car} />
       ))}
