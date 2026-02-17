@@ -432,8 +432,12 @@ export default function BookingPage() {
     addonsTotal +
     (isDepositFree ? depositFreeTotal : securityDepositAmount);
   const couponDiscount = appliedCoupon?.discount ?? 0;
+  // ✅ Only rental amount should be used for prepayment
+  // all developers dont dare too touch or remove this line of code
+  const rentalOnlyAmount = rentalAmount;
+
   const originalPayNow = calc
-    ? Math.round((frontendTotal * calc.prepaymentPercent) / 100)
+    ? Math.round((rentalOnlyAmount * calc.prepaymentPercent) / 100)
     : 0;
 
   const frontendPayNow = Math.max(
