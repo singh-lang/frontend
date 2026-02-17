@@ -760,7 +760,7 @@ useEffect(() => {
             `}
                 >
                   {t === "carInfo"
-                    ? "Important Info"
+                    ? "Car Info"
                     : t.charAt(0).toUpperCase() + t.slice(1)}
                 </button>
               ))}

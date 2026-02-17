@@ -3,6 +3,17 @@ export interface CarTypes {
   _id: string;
   vendor: {
     _id: string;
+      name?: string;
+    email?: string;
+    address?: {
+      street?: string;
+      city?: string;
+      state?: string;
+      country?: string;
+      mapUrl?: string;
+    };
+   
+
     profilePicture: {
       url: string;
     };

@@ -212,12 +212,18 @@ export default function BookingPage() {
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
 
+    // ✅ already applied check
+    if (appliedCoupon) {
+      toast.info("Coupon already applied");
+      return;
+    }
+
     setCouponError(null);
 
     try {
       const res = await applyCoupon({
         code: couponCode,
-        orderAmount: originalPayNow, // ✅ PAY NOW BASE
+        orderAmount: originalPayNow,
       }).unwrap();
 
       setAppliedCoupon({
@@ -227,13 +233,11 @@ export default function BookingPage() {
 
       toast.success(`Coupon applied! -AED ${res.data.discount}`);
     } catch (err: unknown) {
-      // Using unknown for error type
+      setAppliedCoupon(null);
+
       if (err instanceof Error) {
-        // TypeGuard to check if it's an Error object
-        setAppliedCoupon(null);
-        setCouponError(err?.message || "Invalid coupon"); // Accessing the message properly
+        setCouponError(err.message || "Invalid coupon");
       } else {
-        // Fallback if the error is not of type Error
         setCouponError("Invalid coupon");
       }
     }
@@ -1629,7 +1633,6 @@ export default function BookingPage() {
                             toast.error("Booking ID missing");
                             return;
                           }
-
                           router.push(`/payments/rental/${createdBookingId}`);
                         }}
                       />
@@ -2610,7 +2613,6 @@ export default function BookingPage() {
                                 toast.error("Booking ID missing");
                                 return;
                               }
-
                               router.push(
                                 `/payments/rental/${createdBookingId}`,
                               );

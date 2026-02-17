@@ -59,7 +59,7 @@ const HeroFormLayout = ({ brands, bodyTypes }: SearchFormProps) => {
       setIsSearchOpen(true);
       triggerSearch({
         query: searchValue.trim(),
-        page: 1,
+         page: 1,
       });
     }, 400);
 
