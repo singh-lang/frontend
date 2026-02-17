@@ -225,16 +225,18 @@ export default function BookingPage() {
         discount: res.data.discount,
       });
 
-    toast.success(`Coupon applied! -AED ${res.data.discount}`);
-} catch (err: unknown) {  // Using unknown for error type
-  if (err instanceof Error) {  // TypeGuard to check if it's an Error object
-    setAppliedCoupon(null);
-    setCouponError(err?.message || "Invalid coupon");  // Accessing the message properly
-  } else {
-    // Fallback if the error is not of type Error
-    setCouponError("Invalid coupon");
-  }
-}
+      toast.success(`Coupon applied! -AED ${res.data.discount}`);
+    } catch (err: unknown) {
+      // Using unknown for error type
+      if (err instanceof Error) {
+        // TypeGuard to check if it's an Error object
+        setAppliedCoupon(null);
+        setCouponError(err?.message || "Invalid coupon"); // Accessing the message properly
+      } else {
+        // Fallback if the error is not of type Error
+        setCouponError("Invalid coupon");
+      }
+    }
   };
 
   const handleContinue = () => {
@@ -289,8 +291,8 @@ export default function BookingPage() {
     },
   );
   useEffect(() => {
-  console.log("carData:", carData);
-}, [carData]);
+    console.log("carData:", carData);
+  }, [carData]);
 
   const pageWrap = "min-h-screen bg-[#f5f7fb]";
   const container = "mx-auto max-w-6xl px-4 py-8";
@@ -327,7 +329,7 @@ export default function BookingPage() {
     if (!guestName.trim()) return "Full name is required";
     if (!guestPhone.trim()) return "Phone number is required";
     if (!guestEmail.trim()) return "Email address is required";
-     if (!agree) return "Please accept terms and conditions";
+    if (!agree) return "Please accept terms and conditions";
     return null;
   };
 
@@ -440,72 +442,72 @@ export default function BookingPage() {
   const depositAmount = depositFree
     ? depositFreeDailyFee * rentalDays // ✅ deposit-free → daily × days
     : securityDepositAmount; // ✅ ONE TIME
-useEffect(() => {
-  if (!carId) return;
+  useEffect(() => {
+    if (!carId) return;
 
-  const fetchCar = async () => {
-    try {
-      setCarLoading(true);
+    const fetchCar = async () => {
+      try {
+        setCarLoading(true);
 
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BASE_URL}/cars/getAllListingsWithoutPagination`,
-        { cache: "no-store" }
-      );
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BASE_URL}/cars/getAllListingsWithoutPagination`,
+          { cache: "no-store" },
+        );
 
-      const json = await res.json();
+        const json = await res.json();
 
-      const car =
-        json?.listings?.find((c: CarTypes) => c._id === carId) || null;
+        const car =
+          json?.listings?.find((c: CarTypes) => c._id === carId) || null;
 
-      setCarData(car);
-    } catch (err) {
-      console.error("Failed to fetch car", err);
-      setCarData(null);
-    } finally {
-      setCarLoading(false);
-    }
-  };
+        setCarData(car);
+      } catch (err) {
+        console.error("Failed to fetch car", err);
+        setCarData(null);
+      } finally {
+        setCarLoading(false);
+      }
+    };
 
-  fetchCar();
-}, [carId]);
+    fetchCar();
+  }, [carId]);
 
-const carTitle = useMemo(() => {
-  if (!carData) return "";
+  const carTitle = useMemo(() => {
+    if (!carData) return "";
 
-  const brand = carData.car?.carBrand?.name ?? "";
-  const model = carData.car?.carModel ?? "";
-  const year = carData.car?.modelYear ?? "";
+    const brand = carData.car?.carBrand?.name ?? "";
+    const model = carData.car?.carModel ?? "";
+    const year = carData.car?.modelYear ?? "";
 
-  return [brand, model, year].filter(Boolean).join(" ");
-}, [carData]);
+    return [brand, model, year].filter(Boolean).join(" ");
+  }, [carData]);
   const securityDeposit = hasSecurityDeposit
     ? (carData?.securityDeposit ?? 0)
     : 0;
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+  const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
-const carImages = useMemo(() => {
-  if (!carData?.car) return [];
+  const carImages = useMemo(() => {
+    if (!carData?.car) return [];
 
-  const imgs: string[] = [];
+    const imgs: string[] = [];
 
-  if (carData.car.coverImage?.url) {
-    imgs.push(
-      carData.car.coverImage.url.startsWith("http")
-        ? carData.car.coverImage.url
-        : `${BASE_URL}${carData.car.coverImage.url}`,
-    );
-  }
-
-  carData.car.images?.forEach((img) => {
-    if (img?.url) {
+    if (carData.car.coverImage?.url) {
       imgs.push(
-        img.url.startsWith("http") ? img.url : `${BASE_URL}${img.url}`,
+        carData.car.coverImage.url.startsWith("http")
+          ? carData.car.coverImage.url
+          : `${BASE_URL}${carData.car.coverImage.url}`,
       );
     }
-  });
 
-  return imgs;
-}, [carData]);
+    carData.car.images?.forEach((img) => {
+      if (img?.url) {
+        imgs.push(
+          img.url.startsWith("http") ? img.url : `${BASE_URL}${img.url}`,
+        );
+      }
+    });
+
+    return imgs;
+  }, [carData]);
 
   const loadPickupReturnCharges = async () => {
     if (!carId) return;
@@ -628,7 +630,7 @@ const carImages = useMemo(() => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             bookingId,
-             amount: frontendPayNow , // AED → fils * 100
+            amount: frontendPayNow, // AED → fils * 100
             currency: "aed",
           }),
         },
@@ -688,13 +690,12 @@ const carImages = useMemo(() => {
     loadAllPickupCharges();
   }, [carId]);
   return (
-    
     <div className={pageWrap}>
- <div >
-  <Navbar />
-</div>
+      <div>
+        <Navbar />
+      </div>
 
-          <div className={container}>
+      <div className={container}>
         <div className="flex items-center justify-center mt-20 mb-8">
           <div className="hidden md:flex items-center gap-6 text-sm font-semibold">
             {steps.map((s, index) => (
@@ -775,7 +776,7 @@ const carImages = useMemo(() => {
                             "0",
                           );
                           const dd = String(date.getDate()).padStart(2, "0");
-                          setPickupDate(`${yyyy}-${mm}-${dd}`); 
+                          setPickupDate(`${yyyy}-${mm}-${dd}`);
                         }}
                         minDate={new Date()}
                         placeholderText="dd-mm-yyyy"
@@ -853,81 +854,87 @@ const carImages = useMemo(() => {
                   {infoOpen && (
                     <div className="mt-4 rounded-2xl border border-gray-200 bg-gray-50 p-4">
                       <ImportantInfo />
-                      
-               <div
-                  className="
+
+                      <div
+                        className="
                     bg-white mt-4 rounded-3xl
                     border border-gray-200
                     shadow-[0_12px_40px_rgba(15,23,42,0.06)]
                     p-5
                     space-y-4
                   "
-                >
-                  {/* HEADER */}
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">
-                        Deposit Option
-                      </p>
-                    
-                    </div>
+                      >
+                        {/* HEADER */}
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-semibold text-gray-900">
+                              Deposit Option
+                            </p>
+                          </div>
 
-                    {/* TOGGLE */}
-                    <button
-                      onClick={() => setDepositFree((prev) => !prev)}
-                      className={`relative w-12 h-6 rounded-full transition-colors
+                          {/* TOGGLE */}
+                          <button
+                            onClick={() => setDepositFree((prev) => !prev)}
+                            className={`relative w-12 h-6 rounded-full transition-colors
                         ${depositFree ? "bg-site-accent" : "bg-gray-300"}
                       `}
-                    >
-                      <span
-                        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full
+                          >
+                            <span
+                              className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full
                           bg-white shadow transition-transform
                           ${depositFree ? "translate-x-6" : "translate-x-0"}
                         `}
-                      />
-                    </button>
-                  </div>
+                            />
+                          </button>
+                        </div>
 
-                  {/* OPTION CARD */}
-                  <div
-                    className="
+                        {/* OPTION CARD */}
+                        <div
+                          className="
                       bg-gray-50 rounded-2xl
                       p-4
                       flex items-center justify-between
                       gap-4
                     "
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-white shadow-sm
-                                      flex items-center justify-center text-lg">
-                        💳
+                        >
+                          <div className="flex items-start gap-3">
+                            <div
+                              className="w-10 h-10 rounded-full bg-white shadow-sm
+                                      flex items-center justify-center text-lg"
+                            >
+                              💳
+                            </div>
+
+                            <div>
+                              <p className="text-sm font-semibold text-gray-900">
+                                {depositFree
+                                  ? "Deposit-free Fee"
+                                  : "Security Deposit"}
+                              </p>
+
+                              <p className="text-xs text-gray-500 mt-0.5 max-w-[220px]">
+                                {depositFree
+                                  ? "Charged per rental day to avoid paying a refundable deposit."
+                                  : "Fully refundable within 21 days after the car is returned."}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="text-right">
+                            <p className="text-xs text-gray-500 font-medium">
+                              Amount
+                            </p>
+                            <p className="text-lg font-bold text-site-accent">
+                              AED{" "}
+                              {depositFree
+                                ? (
+                                    depositFreeDailyFee * rentalDays
+                                  ).toLocaleString()
+                                : securityDeposit.toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
                       </div>
-
-                      <div>
-                        <p className="text-sm font-semibold text-gray-900">
-                          {depositFree ? "Deposit-free Fee" : "Security Deposit"}
-                        </p>
-
-                        <p className="text-xs text-gray-500 mt-0.5 max-w-[220px]">
-                          {depositFree
-                            ? "Charged per rental day to avoid paying a refundable deposit."
-                            : "Fully refundable within 21 days after the car is returned."}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="text-right">
-                      <p className="text-xs text-gray-500 font-medium">Amount</p>
-                      <p className="text-lg font-bold text-site-accent">
-                        AED{" "}
-                        {depositFree
-                          ? (depositFreeDailyFee * rentalDays).toLocaleString()
-                          : securityDeposit.toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
                     </div>
                   )}
                 </div>
@@ -1319,51 +1326,51 @@ const carImages = useMemo(() => {
                     </div>
                   )}
                 </div>
-                 <div className={card}>
-                    <h3 className="text-base font-extrabold text-gray-900 mb-3">
-                      Agreement
-                    </h3>
-                    <label className="flex items-start gap-3 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={agree}
-                        onChange={(e) => setAgree(e.target.checked)}
-                        className="mt-1 h-5 w-5 rounded border-gray-300 text-site-accent focus:ring-site-accent"
-                      />
-                      <div className="flex flex-col">
-                        {/* Row 1 */}
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-semibold text-gray-900">
-                            I agree to the terms and conditions
-                          </p>
+                <div className={card}>
+                  <h3 className="text-base font-extrabold text-gray-900 mb-3">
+                    Agreement
+                  </h3>
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={agree}
+                      onChange={(e) => setAgree(e.target.checked)}
+                      className="mt-1 h-5 w-5 rounded border-gray-300 text-site-accent focus:ring-site-accent"
+                    />
+                    <div className="flex flex-col">
+                      {/* Row 1 */}
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold text-gray-900">
+                          I agree to the terms and conditions
+                        </p>
 
-                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 text-gray-600 text-xs font-bold">
-                            i
-                          </span>
-                        </div>
+                        <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 text-gray-600 text-xs font-bold">
+                          i
+                        </span>
+                      </div>
 
-                        {/* Row 2 */}
-                        <p className="text-xs text-gray-500 mt-1">
-                          I have reviewed the rental agreement and agree to all
-                          stated terms and conditions
-                        </p>
-                      </div>
-                    </label>
-                    <div className="mt-4  border-t border-gray-200  p-3 flex gap-3">
-                      <div className="text-yellow-500 text-lg">✍️</div>
-                      <div>
-                        <p className="text-sm font-bold text-gray-900">
-                          Physical Signature Required
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1 leading-relaxed">
-                          A physical copy of this agreement must be signed upon
-                          pickup or delivery of the vehicle. This digital
-                          approval is for your convenience and does not replace
-                          the physical signature requirement.
-                        </p>
-                      </div>
+                      {/* Row 2 */}
+                      <p className="text-xs text-gray-500 mt-1">
+                        I have reviewed the rental agreement and agree to all
+                        stated terms and conditions
+                      </p>
+                    </div>
+                  </label>
+                  <div className="mt-4  border-t border-gray-200  p-3 flex gap-3">
+                    <div className="text-yellow-500 text-lg">✍️</div>
+                    <div>
+                      <p className="text-sm font-bold text-gray-900">
+                        Physical Signature Required
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                        A physical copy of this agreement must be signed upon
+                        pickup or delivery of the vehicle. This digital approval
+                        is for your convenience and does not replace the
+                        physical signature requirement.
+                      </p>
                     </div>
                   </div>
+                </div>
                 <div className="flex gap-4">
                   <button
                     type="button"
@@ -1396,14 +1403,13 @@ const carImages = useMemo(() => {
               {carImages.length > 0 ? (
                 <div className="rounded-2xl overflow-hidden border border-gray-200 bg-gray-50">
                   <img
-  src={carImages[0]}
-  alt="car"
-  className="w-full h-[160px] object-cover"
-  onError={(e) => {
-    e.currentTarget.src = "/placeholder-car.png";
-  }}
-/>
-
+                    src={carImages[0]}
+                    alt="car"
+                    className="w-full h-[160px] object-cover"
+                    onError={(e) => {
+                      e.currentTarget.src = "/placeholder-car.png";
+                    }}
+                  />
                 </div>
               ) : (
                 <div className="rounded-2xl border border-gray-200 bg-gray-50 h-[160px] flex items-center justify-center text-gray-400 font-bold">
@@ -1606,7 +1612,7 @@ const carImages = useMemo(() => {
                 {!showStripe ? (
                   <button
                     onClick={handleCreateBooking}
-                    disabled={!agree|| !canPayFinal || createLoading}
+                    disabled={!agree || !canPayFinal || createLoading}
                     className={`mt-4 ${primaryBtn}`}
                   >
                     {createLoading ? "Preparing payment..." : "Confirm & Pay"}
@@ -2179,36 +2185,36 @@ const carImages = useMemo(() => {
                           )}
                         </>
                       )}
-                  <div className="flex items-center justify-between   gap-4">
-                    <div>
-                      <p className="text-sm font-extrabold text-gray-900">
-                        Important Info
-                      </p>
-                      <p className="text-xs font-semibold text-gray-500">
-                        Optional
-                      </p>
-                    </div>
+                      <div className="flex items-center justify-between   gap-4">
+                        <div>
+                          <p className="text-sm font-extrabold text-gray-900">
+                            Important Info
+                          </p>
+                          <p className="text-xs font-semibold text-gray-500">
+                            Optional
+                          </p>
+                        </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setInfoOpen((prev) => !prev)}
-                      className={`relative w-12 h-6 rounded-full transition-colors ${
-                        infoOpen ? "bg-site-accent" : "bg-gray-300"
-                      }`}
-                    >
-                      <span
-                        className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
-                          infoOpen ? "translate-x-6" : ""
-                        }`}
-                      />
-                    </button>
-                  </div>
+                        <button
+                          type="button"
+                          onClick={() => setInfoOpen((prev) => !prev)}
+                          className={`relative w-12 h-6 rounded-full transition-colors ${
+                            infoOpen ? "bg-site-accent" : "bg-gray-300"
+                          }`}
+                        >
+                          <span
+                            className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                              infoOpen ? "translate-x-6" : ""
+                            }`}
+                          />
+                        </button>
+                      </div>
 
-                  {infoOpen && (
-                    <div className="mt-4 rounded-2xl border border-gray-200 bg-gray-50 p-4">
-                      <ImportantInfo />
-                    </div>
-                  )}
+                      {infoOpen && (
+                        <div className="mt-4 rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                          <ImportantInfo />
+                        </div>
+                      )}
                       <div className="flex items-center justify-between border-t py-3 border-gray-200 pb-3 mt-4">
                         <div>
                           <p className="font-semibold text-gray-900 pt-3">
@@ -2481,40 +2487,42 @@ const carImages = useMemo(() => {
                       <span>Pay Now</span>
                       <span>AED {formatMoney(frontendPayNow)}</span>
                     </div>
-                       <div className="mt-4">
-                    <label className="text-sm font-semibold text-gray-700">
-                      Coupon Code
-                    </label>
+                    <div className="mt-4">
+                      <label className="text-sm font-semibold text-gray-700">
+                        Coupon Code
+                      </label>
 
-                    <div className="flex gap-2 mt-2">
-                      <input
-                        value={couponCode}
-                        onChange={(e) =>
-                          setCouponCode(e.target.value.toUpperCase())
-                        }
-                        placeholder="Enter coupon"
-                        className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold"
-                      />
+                      <div className="flex gap-2 mt-2">
+                        <input
+                          value={couponCode}
+                          onChange={(e) =>
+                            setCouponCode(e.target.value.toUpperCase())
+                          }
+                          placeholder="Enter coupon"
+                          className="flex-1 rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold"
+                        />
 
-                      <button
-                        onClick={handleApplyCoupon}
-                        disabled={couponLoading}
-                        className="rounded-xl bg-site-accent px-4 py-2 text-white text-sm font-bold"
-                      >
-                        {couponLoading ? "Applying..." : "Apply"}
-                      </button>
+                        <button
+                          onClick={handleApplyCoupon}
+                          disabled={couponLoading}
+                          className="rounded-xl bg-site-accent px-4 py-2 text-white text-sm font-bold"
+                        >
+                          {couponLoading ? "Applying..." : "Apply"}
+                        </button>
+                      </div>
+
+                      {couponError && (
+                        <p className="text-xs text-red-500 mt-1">
+                          {couponError}
+                        </p>
+                      )}
+
+                      {appliedCoupon && (
+                        <p className="text-xs text-green-600 mt-1">
+                          Coupon applied: −AED {appliedCoupon.discount}
+                        </p>
+                      )}
                     </div>
-
-                    {couponError && (
-                      <p className="text-xs text-red-500 mt-1">{couponError}</p>
-                    )}
-
-                    {appliedCoupon && (
-                      <p className="text-xs text-green-600 mt-1">
-                        Coupon applied: −AED {appliedCoupon.discount}
-                      </p>
-                    )}
-                  </div>
                     <div className="flex justify-between text-xs font-semibold text-gray-500">
                       <span>Pay later at handover</span>
                       <span className="text-gray-900 font-extrabold">
@@ -2556,58 +2564,63 @@ const carImages = useMemo(() => {
                 </div>
               )}
               {mobileStep === 3 && (
-            <div className="mt-1 flex gap-3 items-start">
-              {/* ⬅️ Back button */}
-              {!showStripe && (
-                <button
-                  type="button"
-                  onClick={() => setMobileStep(2)}
-                  className="w-1/2 rounded-full border border-gray-200 py-3
+                <div className="mt-1 flex gap-3 items-start">
+                  {/* ⬅️ Back button */}
+                  {!showStripe && (
+                    <button
+                      type="button"
+                      onClick={() => setMobileStep(2)}
+                      className="w-1/2 rounded-full border border-gray-200 py-3
                             text-gray-800 font-extrabold text-sm"
-                >
-                  Back
-                </button>
-              )}
+                    >
+                      Back
+                    </button>
+                  )}
 
-              {/* 💳 Confirm & Pay OR Stripe */}
-              {!showStripe ? (
-                <button
-                  onClick={handleCreateBooking}
-                  disabled={!agree || !canPayFinal || createLoading}
-                  className={`w-1/2 rounded-full ${primaryBtn}`}
-                >
-                  {createLoading ? "Preparing payment..." : "Confirm & Pay"}
-                </button>
-              ) : (
-                mounted &&
-                clientSecret && (
-                  <div
-                    className="
+                  {/* 💳 Confirm & Pay OR Stripe */}
+                  {!showStripe ? (
+                    <button
+                      onClick={handleCreateBooking}
+                      disabled={!agree || !canPayFinal || createLoading}
+                      className={`w-1/2 rounded-full ${primaryBtn}`}
+                    >
+                      {createLoading ? "Preparing payment..." : "Confirm & Pay"}
+                    </button>
+                  ) : (
+                    mounted &&
+                    clientSecret && (
+                      <div
+                        className="
                       w-full
                       max-h-[70vh]
                       overflow-y-auto
                       overscroll-contain
                       pb-6
                     "
-                  >
-                    <Elements stripe={stripePromise} options={{ clientSecret }}>
-                      <StripeCheckoutInline
-                        onSuccess={() => {
-                          toast.success("Booking confirmed");
+                      >
+                        <Elements
+                          stripe={stripePromise}
+                          options={{ clientSecret }}
+                        >
+                          <StripeCheckoutInline
+                            onSuccess={() => {
+                              toast.success("Booking confirmed");
 
-                          if (!createdBookingId) {
-                            toast.error("Booking ID missing");
-                            return;
-                          }
+                              if (!createdBookingId) {
+                                toast.error("Booking ID missing");
+                                return;
+                              }
 
-                          router.push(`/payments/rental/${createdBookingId}`);
-                        }}
-                      />
-                    </Elements>
-                  </div>
-                )
-              )}
-            </div>
+                              router.push(
+                                `/payments/rental/${createdBookingId}`,
+                              );
+                            }}
+                          />
+                        </Elements>
+                      </div>
+                    )
+                  )}
+                </div>
               )}
             </div>
           </div>
