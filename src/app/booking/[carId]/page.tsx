@@ -210,32 +210,39 @@ export default function BookingPage() {
     address,
   ]);
   const handleApplyCoupon = async () => {
-    if (!couponCode.trim()) return;
+  if (!couponCode.trim()) return;
 
-    setCouponError(null);
+  // ✅ already applied check
+  if (appliedCoupon) {
+    toast.info("Coupon already applied");
+    return;
+  }
 
-    try {
-      const res = await applyCoupon({
-        code: couponCode,
-        orderAmount: originalPayNow, // ✅ PAY NOW BASE
-      }).unwrap();
+  setCouponError(null);
 
-      setAppliedCoupon({
-        couponId: res.data.couponId,
-        discount: res.data.discount,
-      });
+  try {
+    const res = await applyCoupon({
+      code: couponCode,
+      orderAmount: originalPayNow,
+    }).unwrap();
+
+    setAppliedCoupon({
+      couponId: res.data.couponId,
+      discount: res.data.discount,
+    });
 
     toast.success(`Coupon applied! -AED ${res.data.discount}`);
-} catch (err: unknown) {  // Using unknown for error type
-  if (err instanceof Error) {  // TypeGuard to check if it's an Error object
+  } catch (err: unknown) {
     setAppliedCoupon(null);
-    setCouponError(err?.message || "Invalid coupon");  // Accessing the message properly
-  } else {
-    // Fallback if the error is not of type Error
-    setCouponError("Invalid coupon");
+
+    if (err instanceof Error) {
+      setCouponError(err.message || "Invalid coupon");
+    } else {
+      setCouponError("Invalid coupon");
+    }
   }
-}
-  };
+};
+
 
   const handleContinue = () => {
     const err = validateMobileStep1();

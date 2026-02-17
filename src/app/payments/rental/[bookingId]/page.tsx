@@ -695,6 +695,8 @@ const vendorMobile =
                       >
                         Sign in with temporary password
                       </button>
+{/* Modals */}
+
 
                       {successMsg && (
                         <p className="mt-3 text-xs font-semibold text-green-600">
@@ -722,6 +724,7 @@ const vendorMobile =
         isOpen={showProfileSetup}
         onClose={() => setShowProfileSetup(false)}
         onComplete={() => setShowProfileSetup(false)}
+        allowSkip={false} 
       />
     </>
   );

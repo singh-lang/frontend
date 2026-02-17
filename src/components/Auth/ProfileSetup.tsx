@@ -19,6 +19,7 @@ interface ProfileSetupProps {
   isOpen: boolean;
   onClose: () => void;
   onComplete: () => void;
+  allowSkip?: boolean;
 }
 
 type UserType = "resident" | "tourist";
@@ -44,6 +45,7 @@ export default function ProfileSetup({
   isOpen,
   onClose,
   onComplete,
+  allowSkip = true, 
 }: ProfileSetupProps) {
   const { updateProfile } = useAuth();
 
@@ -415,22 +417,25 @@ export default function ProfileSetup({
           </div>
 
           {/* BUTTONS */}
-          <div className="mt-6 flex gap-3">
-            <button
-              onClick={onClose}
-              className="flex-1 py-3 bg-white border border-grey/20 rounded-xl font-semibold hover:bg-grey/5"
-            >
-              Skip for Now
-            </button>
+     <div className="mt-6 flex gap-3">
+  {allowSkip && (
+    <button
+      onClick={onClose}
+      className="flex-1 py-3 bg-white border border-grey/20 rounded-xl font-semibold hover:bg-grey/5"
+    >
+      Skip for Now
+    </button>
+  )}
 
-            <button
-              onClick={handleSubmit}
-              disabled={!allUploaded}
-              className="flex-1 py-3 bg-accent text-white rounded-xl font-semibold disabled:opacity-50"
-            >
-              {allVerified ? "Done" : "Submit Documents"}
-            </button>
-          </div>
+  <button
+    onClick={handleSubmit}
+    disabled={!allUploaded}
+    className="flex-1 py-3 bg-accent text-gray-700 border border-gray-40 rounded-xl font-semibold disabled:opacity-50"
+  >
+    {allVerified ? "Done" : "Submit Documents"}
+  </button>
+</div>
+
 
           <p className="text-xs text-grey text-center mt-4">
             Your documents are securely encrypted. We never share your data.
