@@ -863,10 +863,10 @@ const frontendTotal =
                   </div>
 
                   {infoOpen && (
-                    <div className="mt-4 rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                    <div className="mt-4  rounded-2xl border border-gray-200 bg-gray-50 p-4">
                       <ImportantInfo />
 
-                                 {depositFreeAvailable ? (
+     {depositFreeAvailable ? (
   /* ===== Deposit-Free Available ===== */
   <div className={card}>
     <div className="flex items-center justify-between">
@@ -921,9 +921,8 @@ const frontendTotal =
     </div>
   </div>
 ) : (
-  /* ===== ONLY SECURITY DEPOSIT ===== */
-  <div className={card}>
-    <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
+<div className={`${card} mt-4`}>
+      <div className="bg-gray-50  rounded-xl p-4 flex items-center justify-between">
       <div className="flex items-center gap-3">
         <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
           💳
