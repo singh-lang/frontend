@@ -275,22 +275,34 @@ const vendorMobile =
       <main className="pt-30 pb-16 px-4 sm:px-6 lg:px-8 bg-gray-50 min-h-screen">
         <div className="max-w-7xl mx-auto">
           {/* Header Section */}
-        <div className="mb-8">
-  <div className="flex flex-col items-center justify-center text-center gap-2">
-    
-    <h1 className="text-2xl font-bold text-gray-900">
-      Booking confirmed
-    </h1>
+    <div className="mb-8">
+  <div className="flex items-start gap-4">
 
-    <p className="text-base text-gray-500 font-medium">
-      {booking.prepaymentPaid
-        ? "Your payment was successful."
-        : "Payment is processing. This usually takes a few seconds."}
-    </p>
+    {/* Drive Hub Logo */}
+    <Image
+      src="/assets/drivehub_logo_loader.svg"
+      alt="Drive Hub"
+      width={120}
+      height={32}
+      className="h-8 w-auto opacity-90"
+      priority
+    />
+
+    {/* Title + subtitle */}
+    <div className="flex flex-col">
+      <h1 className="text-2xl font-bold text-gray-900">
+        Booking confirmed
+      </h1>
+
+      <p className="text-base text-gray-500 font-medium mt-1">
+        {booking.prepaymentPaid
+          ? "Your payment was successful."
+          : "Payment is processing. This usually takes a few seconds."}
+      </p>
+    </div>
 
   </div>
 </div>
-
           <div className="grid lg:grid-cols-3 gap-6 ">
             <div className="lg:col-span-2 space-y-6">
   <div className="bg-white rounded-3xl border border-gray-200 shadow-sm p-5">
@@ -483,9 +495,21 @@ const vendorMobile =
               </div>
             </div>
             <div className="lg:col-span-1">
+  
+  {/* Seal Logo
+  <div className="flex justify-end mb-2 pr-2">
+    <Image
+      src="/assets/drivehub_logo_loader.svg"
+      alt="Drive Hub"
+      width={120}
+      height={32}
+      className="h-8 w-auto opacity-80"
+    />
+  </div> */}
               <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden sticky top-24 shadow-sm hover:shadow-md transition-shadow duration-300">
                 <div className="relative px-6 py-5 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
                   <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-site-accent to-slate-teal rounded-r-full"></div>
+                 
                   <h2 className="text-base font-semibold text-gray-900 pl-3">
                     Payment Summary
                   </h2>
@@ -668,36 +692,42 @@ const vendorMobile =
                 onClick={sendGuestAccess}
                 disabled={sending}
                 className="
-                    w-full h-[52px]
-                    rounded-full
+                     w-full
+                  min-h-[48px] sm:h-[52px]
+                  px-4 sm:px-6
+                  rounded-full
                   bg-gradient-to-r from-site-accent to-slate-teal
-                    text-white
-                    text-sm font-bold
-                    flex items-center justify-center
-                    disabled:opacity-50
+                  text-white
+                  text-sm sm:text-sm
+                  font-semibold
+                  leading-tight
+                  flex items-center justify-center text-center
+                  disabled:opacity-50
                   "
                       >
-                        {sending ? "Sending login details…" : "Email login details"}
+                        {sending ? "Sending login details…" : "click here to get your temprary password on your mail"}
                       </button>
 
                       <button
                         onClick={() => setShowAuthModal(true)}
                         className="
-                    w-full h-[52px] mt-3
+                    w-full  min-h-[48px] sm:h-[52px] mt-3
+                        px-4 sm:px-6
                     rounded-full
                     border border-gray-900
                     text-gray-900
-                    text-sm font-bold
+                   font-bold
                     hover:bg-gray-900 hover:text-white
                     transition
                     flex items-center justify-center
+                    text-sm sm:text-sm
+                    leading-tight
+                    disabled:opacity-50
                   "
                       >
-                        Sign in with temporary password
+                       use your temporary password to complete your booking
                       </button>
 {/* Modals */}
-
-
                       {successMsg && (
                         <p className="mt-3 text-xs font-semibold text-green-600">
                           {successMsg}

@@ -54,7 +54,17 @@ const CompactCarCard = ({ car }: CompactCarCardProps) => {
       car,
     )}\n\n*Any changes made to this message will result in the inquiry not being sent to the dealer.*`,
   );
+useEffect(() => {
+  if (showGallery) {
+    document.body.style.overflow = "hidden";
+  } else {
+    document.body.style.overflow = "auto";
+  }
 
+  return () => {
+    document.body.style.overflow = "auto";
+  };
+}, [showGallery]);
   const callNumber =
     car?.vendor?.vendorDetails?.contact?.mobileNum || "+971501234567";
 
