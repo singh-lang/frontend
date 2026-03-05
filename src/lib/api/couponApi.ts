@@ -13,6 +13,7 @@ export interface ApplyCouponResponse {
   originalAmount: number;
   discount: number;
   finalAmount: number;
+  couponScope: "PAY_NOW" | "TOTAL"; // ✅ ADD THIS
 }
 
 /* ================= GET COUPONS ================= */
@@ -52,17 +53,16 @@ const couponApi = baseApi.injectEndpoints({
 
     getCoupons: builder.query<CouponListResponse, void>({
       query: () => ({
-        url: "/coupons", 
+        url: "/coupons",
         method: "GET",
       }),
     }),
-
   }),
 });
 
 export const {
   useApplyCouponMutation,
-  useGetCouponsQuery,   // ✅ export this
+  useGetCouponsQuery, // ✅ export this
 } = couponApi;
 
 export default couponApi;

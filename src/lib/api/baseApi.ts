@@ -52,13 +52,16 @@ const baseQueryWithReauth: BaseQueryFn<
   }
 
   // 🔐 ONLY FOR AUTHENTICATED ROUTES
-  if (result.error && result.error.status === 401) {
+  if (
+    result.error &&
+    (result.error.status === 401 || result.error.status === 403)
+  ) {
     console.warn("Access token expired — attempting refresh...");
 
     const refreshResult = await baseQuery(
       { url: "/refresh", method: "POST", body: { role: 3 } },
       api,
-      extraOptions
+      extraOptions,
     );
 
     const refreshData = refreshResult.data as RefreshResponse | undefined;
@@ -66,11 +69,8 @@ const baseQueryWithReauth: BaseQueryFn<
 
     if (newToken) {
       setToken(newToken);
-
-      // retry original request
       result = await baseQuery(args, api, extraOptions);
     } else {
-      console.warn("Refresh failed — clearing session");
       removeToken();
     }
   }

@@ -100,6 +100,7 @@ export default function BookingPage() {
   const [appliedCoupon, setAppliedCoupon] = useState<{
     couponId: string;
     discount: number;
+    couponScope: "PAY_NOW" | "TOTAL";
   } | null>(null);
 
   const [maxStepReached, setMaxStepReached] = useState(1);
@@ -228,6 +229,7 @@ export default function BookingPage() {
       setAppliedCoupon({
         couponId: res.data.couponId,
         discount: res.data.discount,
+        couponScope: res.data.couponScope,
       });
 
       toast.success(`Coupon applied! -AED ${res.data.discount}`);
@@ -423,18 +425,14 @@ export default function BookingPage() {
   const depositFreeFee = depositFree ? depositFreeDailyFee : 0;
   const depositFreeTotal = depositFreeDailyFee * rentalDays;
   const depositFreeAvailable = depositFreeDailyFee > 0;
-const isDepositFree = depositFreeAvailable && depositFree;
- const depositAmountTotal = isDepositFree
-  ? depositFreeDailyFee * rentalDays
-  : securityDepositAmount;
+  const isDepositFree = depositFreeAvailable && depositFree;
+  const depositAmountTotal = isDepositFree
+    ? depositFreeDailyFee * rentalDays
+    : securityDepositAmount;
 
-const frontendTotal =
-  rentalAmount +
-  pickupFee +
-  returnFee +
-  addonsTotal +
-  depositAmountTotal;
-  const couponDiscount = appliedCoupon?.discount ?? 0;
+  const frontendTotal =
+    rentalAmount + pickupFee + returnFee + addonsTotal + depositAmountTotal;
+
   // ✅ Only rental amount should be used for prepayment
   // all developers dont dare too touch or remove this line of code
   const rentalOnlyAmount = rentalAmount;
@@ -442,13 +440,33 @@ const frontendTotal =
   const originalPayNow = calc
     ? Math.round((rentalOnlyAmount * calc.prepaymentPercent) / 100)
     : 0;
+  const couponDiscount = appliedCoupon?.discount ?? 0;
+  const couponScope = appliedCoupon?.couponScope ?? "PAY_NOW";
 
-  const frontendPayNow = Math.max(
-    originalPayNow - (appliedCoupon?.discount ?? 0),
-    0,
-  );
+  let frontendPayNow = originalPayNow;
+  let frontendPayLater = frontendTotal - originalPayNow;
+  let adjustedTotal = frontendTotal;
 
-  const frontendPayLater = frontendTotal - originalPayNow;
+  if (appliedCoupon) {
+    if (couponScope === "PAY_NOW") {
+      frontendPayNow = Math.max(originalPayNow - couponDiscount, 0);
+
+      // keep pay later same
+      frontendPayLater = frontendTotal - originalPayNow;
+
+      adjustedTotal = frontendPayNow + frontendPayLater;
+    }
+
+    if (couponScope === "TOTAL") {
+      adjustedTotal = Math.max(frontendTotal - couponDiscount, 0);
+
+      frontendPayNow = Math.round(
+        (adjustedTotal * calc!.prepaymentPercent) / 100,
+      );
+
+      frontendPayLater = adjustedTotal - frontendPayNow;
+    }
+  }
 
   const depositAmount = depositFree
     ? depositFreeDailyFee * rentalDays // ✅ deposit-free → daily × days
@@ -609,7 +627,7 @@ const frontendTotal =
         carId,
         pickupDate,
         pickupTime,
-        dropoffDate,   
+        dropoffDate,
         dropoffTime,
         priceType,
         pickupType,
@@ -624,6 +642,9 @@ const frontendTotal =
         prepaymentPercent: calc.prepaymentPercent,
         prepaymentAmount: frontendPayNow,
         remainingAmount: frontendPayLater,
+        // ✅ ADD THESE
+        couponId: appliedCoupon?.couponId || null,
+        couponDiscount: appliedCoupon?.discount || 0,
       }).unwrap();
 
       const bookingId = res?.data?._id;
@@ -835,84 +856,89 @@ const frontendTotal =
                     </div>
                   </div>
                 </div>
-             {depositFreeAvailable ? (
-  /* ===== Deposit-Free Available ===== */
-  <div className={card}>
-    <div className="flex items-center justify-between">
-      <div>
-        <p className="font-semibold text-gray-900">
-          Enjoy a deposit-free ride for AED {depositFreeDailyFee} per day
-        </p>
-        <p className="text-sm text-gray-600 p-2">
-          You can rent a car without any deposit by including the
-          additional service fee in your rental price
-        </p>
-      </div>
+                {depositFreeAvailable ? (
+                  /* ===== Deposit-Free Available ===== */
+                  <div className={card}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold text-gray-900">
+                          Enjoy a deposit-free ride for AED{" "}
+                          {depositFreeDailyFee} per day
+                        </p>
+                        <p className="text-sm text-gray-600 p-2">
+                          You can rent a car without any deposit by including
+                          the additional service fee in your rental price
+                        </p>
+                      </div>
 
-      <button
-        onClick={() => setDepositFree((prev) => !prev)}
-        className={`relative w-12 h-6 rounded-full transition-colors ${
-          depositFree ? "bg-site-accent" : "bg-gray-300"
-        }`}
-      >
-        <span
-          className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-            depositFree ? "translate-x-6" : "translate-x-0"
-          }`}
-        />
-      </button>
-    </div>
+                      <button
+                        onClick={() => setDepositFree((prev) => !prev)}
+                        className={`relative w-12 h-6 rounded-full transition-colors ${
+                          depositFree ? "bg-site-accent" : "bg-gray-300"
+                        }`}
+                      >
+                        <span
+                          className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                            depositFree ? "translate-x-6" : "translate-x-0"
+                          }`}
+                        />
+                      </button>
+                    </div>
 
-    <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
-          💳
-        </div>
+                    <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
+                          💳
+                        </div>
 
-        <div>
-          <p className="font-medium text-gray-900">
-            {depositFree ? "Deposit-free Fee" : "Security Deposit"}
-          </p>
-          <p className="text-xs text-gray-500">
-            {depositFree
-              ? "Applied per rental day"
-              : "Refunded within 21 days after you return the car"}
-          </p>
-        </div>
-      </div>
+                        <div>
+                          <p className="font-medium text-gray-900">
+                            {depositFree
+                              ? "Deposit-free Fee"
+                              : "Security Deposit"}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {depositFree
+                              ? "Applied per rental day"
+                              : "Refunded within 21 days after you return the car"}
+                          </p>
+                        </div>
+                      </div>
 
-      <p className="text-lg font-semibold text-site-accent">
-        AED{" "}
-        {depositFree
-          ? (depositFreeDailyFee * rentalDays).toLocaleString()
-          : securityDeposit.toLocaleString()}
-      </p>
-    </div>
-  </div>
-) : (
-  /* ===== ONLY SECURITY DEPOSIT ===== */
-  <div className={card}>
-    <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
-          💳
-        </div>
+                      <p className="text-lg font-semibold text-site-accent">
+                        AED{" "}
+                        {depositFree
+                          ? (depositFreeDailyFee * rentalDays).toLocaleString()
+                          : securityDeposit.toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  /* ===== ONLY SECURITY DEPOSIT ===== */
+                  <div className={card}>
+                    <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
+                          💳
+                        </div>
 
-        <div>
-          <p className="font-medium text-gray-900">Security Deposit</p>
-          <p className="text-xs text-gray-500">
-            Refunded within 21 days after you return the car
-          </p>
-        </div>
-      </div>
+                        <div>
+                          <p className="font-medium text-gray-900">
+                            Security Deposit
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            Refunded within 21 days after you return the car
+                          </p>
+                        </div>
+                      </div>
 
-      <p className="text-lg font-semibold text-site-accent">
-        AED {securityDeposit.toLocaleString()}
-      </p>
-    </div>
-  </div>
-)}
-            
+                      <p className="text-lg font-semibold text-site-accent">
+                        AED {securityDeposit.toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <button
                   type="button"
                   onClick={() => {
@@ -1087,7 +1113,7 @@ const frontendTotal =
                   </div>
                 </div>
 
-    <div className={card}>
+                <div className={card}>
                   <div className="flex items-center justify-between gap-4">
                     <div>
                       <p className="text-sm font-extrabold text-gray-900">
@@ -1117,82 +1143,93 @@ const frontendTotal =
                     <div className="mt-4  rounded-2xl border border-gray-200 bg-gray-50 p-4">
                       <ImportantInfo />
 
-     {depositFreeAvailable ? (
-  /* ===== Deposit-Free Available ===== */
-  <div className={card}>
-    <div className="flex items-center justify-between">
-      <div>
-        <p className="font-semibold text-gray-900">
-          Enjoy a deposit-free ride for AED {depositFreeDailyFee} per day
-        </p>
-        <p className="text-sm text-gray-600 p-2">
-          You can rent a car without any deposit by including the
-          additional service fee in your rental price
-        </p>
-      </div>
+                      {depositFreeAvailable ? (
+                        /* ===== Deposit-Free Available ===== */
+                        <div className={card}>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-semibold text-gray-900">
+                                Enjoy a deposit-free ride for AED{" "}
+                                {depositFreeDailyFee} per day
+                              </p>
+                              <p className="text-sm text-gray-600 p-2">
+                                You can rent a car without any deposit by
+                                including the additional service fee in your
+                                rental price
+                              </p>
+                            </div>
 
-      <button
-        onClick={() => setDepositFree((prev) => !prev)}
-        className={`relative w-12 h-6 rounded-full transition-colors ${
-          depositFree ? "bg-site-accent" : "bg-gray-300"
-        }`}
-      >
-        <span
-          className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-            depositFree ? "translate-x-6" : "translate-x-0"
-          }`}
-        />
-      </button>
-    </div>
+                            <button
+                              onClick={() => setDepositFree((prev) => !prev)}
+                              className={`relative w-12 h-6 rounded-full transition-colors ${
+                                depositFree ? "bg-site-accent" : "bg-gray-300"
+                              }`}
+                            >
+                              <span
+                                className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                                  depositFree
+                                    ? "translate-x-6"
+                                    : "translate-x-0"
+                                }`}
+                              />
+                            </button>
+                          </div>
 
-    <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
-          💳
-        </div>
+                          <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
+                                💳
+                              </div>
 
-        <div>
-          <p className="font-medium text-gray-900">
-            {depositFree ? "Deposit-free Fee" : "Security Deposit"}
-          </p>
-          <p className="text-xs text-gray-500">
-            {depositFree
-              ? "Applied per rental day"
-              : "Refunded within 21 days after you return the car"}
-          </p>
-        </div>
-      </div>
+                              <div>
+                                <p className="font-medium text-gray-900">
+                                  {depositFree
+                                    ? "Deposit-free Fee"
+                                    : "Security Deposit"}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {depositFree
+                                    ? "Applied per rental day"
+                                    : "Refunded within 21 days after you return the car"}
+                                </p>
+                              </div>
+                            </div>
 
-      <p className="text-lg font-semibold text-site-accent">
-        AED{" "}
-        {depositFree
-          ? (depositFreeDailyFee * rentalDays).toLocaleString()
-          : securityDeposit.toLocaleString()}
-      </p>
-    </div>
-  </div>
-) : (
-<div className={`${card} mt-4`}>
-      <div className="bg-gray-50  rounded-xl p-4 flex items-center justify-between">
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
-          💳
-        </div>
+                            <p className="text-lg font-semibold text-site-accent">
+                              AED{" "}
+                              {depositFree
+                                ? (
+                                    depositFreeDailyFee * rentalDays
+                                  ).toLocaleString()
+                                : securityDeposit.toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className={`${card} mt-4`}>
+                          <div className="bg-gray-50  rounded-xl p-4 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
+                                💳
+                              </div>
 
-        <div>
-          <p className="font-medium text-gray-900">Security Deposit</p>
-          <p className="text-xs text-gray-500">
-            Refunded within 21 days after you return the car
-          </p>
-        </div>
-      </div>
+                              <div>
+                                <p className="font-medium text-gray-900">
+                                  Security Deposit
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  Refunded within 21 days after you return the
+                                  car
+                                </p>
+                              </div>
+                            </div>
 
-      <p className="text-lg font-semibold text-site-accent">
-        AED {securityDeposit.toLocaleString()}
-      </p>
-    </div>
-  </div>
-)}
+                            <p className="text-lg font-semibold text-site-accent">
+                              AED {securityDeposit.toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1503,23 +1540,22 @@ const frontendTotal =
                       </div>
                     )}
 
-{(depositFreeAvailable || securityDeposit > 0) && (
-  depositFreeAvailable && depositFree ? (
-    <div className="flex justify-between text-sm font-semibold text-gray-700">
-      <span>Deposit-free fee</span>
-      <span className="text-gray-900">
-        AED {formatMoney(depositFreeDailyFee * rentalDays)}
-      </span>
-    </div>
-  ) : securityDeposit > 0 ? (
-    <div className="flex justify-between text-sm font-semibold text-gray-700">
-      <span>Security Deposit</span>
-      <span className="text-gray-900">
-        AED {formatMoney(securityDeposit)}
-      </span>
-    </div>
-  ) : null
-)}
+                    {(depositFreeAvailable || securityDeposit > 0) &&
+                      (depositFreeAvailable && depositFree ? (
+                        <div className="flex justify-between text-sm font-semibold text-gray-700">
+                          <span>Deposit-free fee</span>
+                          <span className="text-gray-900">
+                            AED {formatMoney(depositFreeDailyFee * rentalDays)}
+                          </span>
+                        </div>
+                      ) : securityDeposit > 0 ? (
+                        <div className="flex justify-between text-sm font-semibold text-gray-700">
+                          <span>Security Deposit</span>
+                          <span className="text-gray-900">
+                            AED {formatMoney(securityDeposit)}
+                          </span>
+                        </div>
+                      ) : null)}
                     {addonsTotal > 0 && (
                       <div className="flex justify-between text-sm font-semibold text-gray-700">
                         <span>Add-ons:</span>
@@ -1532,7 +1568,7 @@ const frontendTotal =
 
                   <div className="flex justify-between text-base font-extrabold text-gray-900 pt-3 border-t border-gray-200">
                     <span>Total Price:</span>
-                    <span>AED {formatMoney(frontendTotal)}</span>
+                    <span>AED {formatMoney(adjustedTotal)}</span>
                   </div>
                 </div>
 
@@ -2245,73 +2281,76 @@ const frontendTotal =
                           <ImportantInfo />
                         </div>
                       )}
-                   {/* ===== DEPOSIT SECTION (MOBILE SAFE) ===== */}
-{(depositFreeAvailable || securityDeposit > 0) && (
-  <div className="mt-4 border-t border-gray-200 pt-4 space-y-3">
+                      {/* ===== DEPOSIT SECTION (MOBILE SAFE) ===== */}
+                      {(depositFreeAvailable || securityDeposit > 0) && (
+                        <div className="mt-4 border-t border-gray-200 pt-4 space-y-3">
+                          {/* HEADER */}
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-semibold text-gray-900">
+                                {depositFreeAvailable
+                                  ? "Deposit Option"
+                                  : "Security Deposit"}
+                              </p>
 
-    {/* HEADER */}
-    <div className="flex items-center justify-between">
-      <div>
-        <p className="font-semibold text-gray-900">
-          {depositFreeAvailable ? "Deposit Option" : "Security Deposit"}
-        </p>
+                              <p className="text-sm text-gray-600">
+                                {depositFreeAvailable
+                                  ? "Choose deposit-free or refundable deposit"
+                                  : "Refunded within 21 days after you return the car"}
+                              </p>
+                            </div>
 
-        <p className="text-sm text-gray-600">
-          {depositFreeAvailable
-            ? "Choose deposit-free or refundable deposit"
-            : "Refunded within 21 days after you return the car"}
-        </p>
-      </div>
+                            {/* TOGGLE ONLY IF DEPOSIT-FREE AVAILABLE */}
+                            {depositFreeAvailable && (
+                              <button
+                                type="button"
+                                onClick={() => setDepositFree((prev) => !prev)}
+                                className={`relative w-12 h-6 rounded-full transition-colors ${
+                                  depositFree ? "bg-site-accent" : "bg-gray-300"
+                                }`}
+                              >
+                                <span
+                                  className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                                    depositFree ? "translate-x-6" : ""
+                                  }`}
+                                />
+                              </button>
+                            )}
+                          </div>
 
-      {/* TOGGLE ONLY IF DEPOSIT-FREE AVAILABLE */}
-      {depositFreeAvailable && (
-        <button
-          type="button"
-          onClick={() => setDepositFree((prev) => !prev)}
-          className={`relative w-12 h-6 rounded-full transition-colors ${
-            depositFree ? "bg-site-accent" : "bg-gray-300"
-          }`}
-        >
-          <span
-            className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
-              depositFree ? "translate-x-6" : ""
-            }`}
-          />
-        </button>
-      )}
-    </div>
+                          {/* AMOUNT CARD */}
+                          <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
+                                💳
+                              </div>
 
-    {/* AMOUNT CARD */}
-    <div className="bg-gray-50 rounded-xl p-4 flex items-center justify-between">
-      <div className="flex items-center gap-3">
-        <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center">
-          💳
-        </div>
+                              <div>
+                                <p className="font-medium text-gray-900">
+                                  {depositFreeAvailable && depositFree
+                                    ? "Deposit-free Fee"
+                                    : "Security Deposit"}
+                                </p>
 
-        <div>
-          <p className="font-medium text-gray-900">
-            {depositFreeAvailable && depositFree
-              ? "Deposit-free Fee"
-              : "Security Deposit"}
-          </p>
+                                <p className="text-xs text-gray-500 max-w-[160px]">
+                                  {depositFreeAvailable && depositFree
+                                    ? "Applied per rental day"
+                                    : "Refunded within 21 days after you return the car"}
+                                </p>
+                              </div>
+                            </div>
 
-          <p className="text-xs text-gray-500 max-w-[160px]">
-            {depositFreeAvailable && depositFree
-              ? "Applied per rental day"
-              : "Refunded within 21 days after you return the car"}
-          </p>
-        </div>
-      </div>
-
-      <p className="text-lg font-semibold text-site-accent">
-        AED{" "}
-        {depositFreeAvailable && depositFree
-          ? (depositFreeDailyFee * rentalDays).toLocaleString()
-          : securityDeposit.toLocaleString()}
-      </p>
-    </div>
-  </div>
-)}
+                            <p className="text-lg font-semibold text-site-accent">
+                              AED{" "}
+                              {depositFreeAvailable && depositFree
+                                ? (
+                                    depositFreeDailyFee * rentalDays
+                                  ).toLocaleString()
+                                : securityDeposit.toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </>
@@ -2451,23 +2490,23 @@ const frontendTotal =
                         </div>
                       )}
 
-                   {(depositFreeAvailable || securityDeposit > 0) && (
-  depositFreeAvailable && depositFree ? (
-    <div className="flex justify-between text-sm font-semibold text-gray-700">
-      <span>Deposit-free fee</span>
-      <span className="text-gray-900">
-        AED {formatMoney(depositFreeDailyFee * rentalDays)}
-      </span>
-    </div>
-  ) : securityDeposit > 0 ? (
-    <div className="flex justify-between text-sm font-semibold text-gray-700">
-      <span>Security Deposit</span>
-      <span className="text-gray-900">
-        AED {formatMoney(securityDeposit)}
-      </span>
-    </div>
-  ) : null
-)}
+                      {(depositFreeAvailable || securityDeposit > 0) &&
+                        (depositFreeAvailable && depositFree ? (
+                          <div className="flex justify-between text-sm font-semibold text-gray-700">
+                            <span>Deposit-free fee</span>
+                            <span className="text-gray-900">
+                              AED{" "}
+                              {formatMoney(depositFreeDailyFee * rentalDays)}
+                            </span>
+                          </div>
+                        ) : securityDeposit > 0 ? (
+                          <div className="flex justify-between text-sm font-semibold text-gray-700">
+                            <span>Security Deposit</span>
+                            <span className="text-gray-900">
+                              AED {formatMoney(securityDeposit)}
+                            </span>
+                          </div>
+                        ) : null)}
                       {addonsTotal > 0 && (
                         <div className="flex justify-between text-sm font-semibold text-gray-700">
                           <span>Add-ons:</span>
@@ -2537,12 +2576,14 @@ const frontendTotal =
                         Coupon Code
                       </label>
 
-                    <div className="flex gap-2 mt-2 items-center">
-                      <input
-                        value={couponCode}
-                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                        placeholder="Enter coupon"
-                        className="
+                      <div className="flex gap-2 mt-2 items-center">
+                        <input
+                          value={couponCode}
+                          onChange={(e) =>
+                            setCouponCode(e.target.value.toUpperCase())
+                          }
+                          placeholder="Enter coupon"
+                          className="
                           flex-1 min-w-0
                           rounded-xl
                           border border-gray-200
@@ -2552,12 +2593,12 @@ const frontendTotal =
                           outline-none
                           focus:ring-2 focus:ring-site-accent/30
                         "
-                      />
+                        />
 
-                      <button
-                        onClick={handleApplyCoupon}
-                        disabled={couponLoading}
-                        className="
+                        <button
+                          onClick={handleApplyCoupon}
+                          disabled={couponLoading}
+                          className="
                           shrink-0
                           rounded-xl
                           bg-site-accent
@@ -2567,14 +2608,16 @@ const frontendTotal =
                           font-bold
                           whitespace-nowrap
                         "
-                      >
-                        {couponLoading ? "Applying..." : "Apply"}
-                      </button>
-                    </div>
+                        >
+                          {couponLoading ? "Applying..." : "Apply"}
+                        </button>
+                      </div>
 
-                    {couponError && (
-                      <p className="text-xs text-red-500 mt-1">{couponError}</p>
-                    )}
+                      {couponError && (
+                        <p className="text-xs text-red-500 mt-1">
+                          {couponError}
+                        </p>
+                      )}
                       {appliedCoupon && (
                         <p className="text-xs text-green-600 mt-1">
                           Coupon applied: −AED {appliedCoupon.discount}
