@@ -116,7 +116,7 @@ const [carData, setCarData] = useState<CarTypes | null>(null);
 
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
-        const data = await res.json();
+        const data = await res.json(); 
 
         if (data.success && data.data) {
           setBooking(data.data);

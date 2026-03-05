@@ -476,7 +476,7 @@ const clearFilters = async () => {
               )}
             </div>
           </div>
-         <div className="flex items-center gap-6 w-full mt-2 md:hidden">
+         <div className="flex items-center gap-7 w-full mt-2 md:hidden">
         <select
           value={sort}   // ✅ controlled
           onChange={(e) => handleSortChange(e.target.value)} // ✅ API call

@@ -35,7 +35,7 @@ const CompactCarCard = ({ car }: CompactCarCardProps) => {
   const [showGallery, setShowGallery] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [showSheet, setShowSheet] = useState(false);
-
+const lastScrollTime = useRef(0);
   // ✅ works for SEARCH + CATALOG
   const images = car?.car?.images ?? [];
 
@@ -245,56 +245,85 @@ useEffect(() => {
             <div className="absolute top-3 left-3 bg-white/90 px-3 py-1 rounded-full text-xs font-semibold text-gray-700">
               {car?.car?.category || "Car"}
             </div>
-
-          {showGallery && images.length > 0 && (
+  
+      {showGallery && images.length > 0 && (
   <div
-    className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center"
-    onWheel={(e) => {
-      if (isScrolling.current) return;
-      isScrolling.current = true;
+  className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center"
+// onWheel={(e) => {
+//   const now = Date.now();
+//   if (now - lastScrollTime.current < 600) return;
 
-      e.deltaY > 0 ? nextImage() : prevImage();
+//   lastScrollTime.current = now;
 
-      setTimeout(() => {
-        isScrolling.current = false;
-      }, 500);
-    }}
-    onTouchStart={(e) => (startX.current = e.touches[0].clientX)}
-    onTouchEnd={(e) => {
-      const diff = startX.current - e.changedTouches[0].clientX;
-      if (diff > 50) nextImage();
-      if (diff < -50) prevImage();
-    }}
-  >
-    {/* Close */}
+//   if (e.deltaY > 0) {
+//     nextImage();
+//   } else {
+//     prevImage();
+//   }
+// }}
+>
     <button
       onClick={() => setShowGallery(false)}
-      className="absolute top-4 right-4 text-white text-3xl font-bold"
+      className="absolute top-5 right-6 text-white text-3xl font-bold"
     >
       ✕
     </button>
 
-    {/* SLIDER */}
-    <div className="relative w-full max-w-4xl h-[70vh] overflow-hidden px-4">
-      <div
-        className="flex h-full transition-transform duration-500 ease-in-out"
-        style={{ transform: `translateX(-${activeIndex * 100}%)` }}
-      >
+    {/* BIG IMAGE */}
+<div
+  className="relative w-full max-w-5xl h-[60vh] flex items-center justify-center"
+  onWheel={(e) => {
+    const now = Date.now();
+
+    if (now - lastScrollTime.current < 600) return;
+
+    lastScrollTime.current = now;
+
+    if (e.deltaY > 0) {
+      nextImage();
+    } else {
+      prevImage();
+    }
+  }}
+>
+      <Image
+        src={images[activeIndex]?.url}
+        alt="car image"
+        fill
+        className="object-contain"
+      />
+    </div>
+
+  <div
+  className="hidden md:block mt-10 w-full max-w-5xl overflow-x-auto px-4"
+  onWheel={(e) => e.stopPropagation()}
+>
+      <div className="flex gap-3 justify-center">
+
         {images.map((img, i) => (
-          <div key={i} className="relative min-w-full h-full">
+          <div
+            key={i}
+            onClick={() => setActiveIndex(i)}
+            className={`relative w-30 h-20 rounded-lg overflow-hidden cursor-pointer border-2  
+            ${
+              activeIndex === i
+                ? "border-site-accent"
+                : "border-transparent opacity-70 hover:opacity-100"
+            }`}
+          >
             <Image
               src={img.url}
-              alt="car image"
+              alt="thumb"
               fill
-              className="object-contain select-none"
-              draggable={false}
+              className="object-cover"
             />
           </div>
         ))}
+
       </div>
     </div>
 
-    {/* Left */}
+
     <button
       onClick={prevImage}
       className="absolute left-4 w-10 h-10 flex items-center justify-center rounded-full
