@@ -36,7 +36,23 @@ const CompactCarCard = ({ car }: CompactCarCardProps) => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [showSheet, setShowSheet] = useState(false);
 const lastScrollTime = useRef(0);
-  // ✅ works for SEARCH + CATALOG
+const touchStartX = useRef(0);
+const touchEndX = useRef(0);
+const handleTouchStart = (e) => {
+  touchStartX.current = e.changedTouches[0].screenX;
+};
+
+const handleTouchEnd = (e) => {
+  touchEndX.current = e.changedTouches[0].screenX;
+
+  if (touchStartX.current - touchEndX.current > 50) {
+    nextImage(); // swipe left
+  }
+
+  if (touchEndX.current - touchStartX.current > 50) {
+    prevImage(); // swipe right
+  }
+};
   const images = car?.car?.images ?? [];
 
   const imageUrl =
@@ -285,6 +301,8 @@ useEffect(() => {
       prevImage();
     }
   }}
+    onTouchStart={handleTouchStart}
+  onTouchEnd={handleTouchEnd}
 >
       <Image
         src={images[activeIndex]?.url}
